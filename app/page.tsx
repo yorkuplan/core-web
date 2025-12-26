@@ -13,6 +13,11 @@ export default function HomePage() {
   const [topCourses, setTopCourses] = useState<Course[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<Course[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showResults, setShowResults] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
 
   useEffect(() => {
     async function fetchCourses() {
@@ -30,6 +35,29 @@ export default function HomePage() {
 
     fetchCourses()
   }, [])
+
+  useEffect(() => {
+    const delaySearch = setTimeout(async () => {
+      if (searchQuery.trim().length > 0) {
+        setIsSearching(true)
+        setShowResults(true)
+        try {
+          const results = await coursesApi.searchCourses(searchQuery)
+          setSearchResults(results)
+        } catch (error) {
+          console.error("Search failed:", error)
+          setSearchResults([])
+        } finally {
+          setIsSearching(false)
+        }
+      } else {
+        setSearchResults([])
+        setShowResults(false)
+      }
+    }, 300) // 300ms debounce
+
+    return () => clearTimeout(delaySearch)
+  }, [searchQuery])
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,12 +88,57 @@ export default function HomePage() {
 
           {/* Search Bar */}
           <div className="relative max-w-2xl mx-auto pt-4">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+              <Search className="h-5 w-5 text-muted-foreground" />
+            </div>
             <Input
               type="search"
               placeholder="Search for courses..."
-              className="pl-12 h-14 text-base bg-card shadow-sm"
+              className="pl-12 pr-4 py-0 h-14 text-base bg-card shadow-sm leading-[3.5rem]"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => {
+                setTimeout(() => {
+                  setIsFocused(false)
+                  setShowResults(false)
+                }, 200)
+              }}
             />
+            
+            {/* Search Results Dropdown */}
+            {showResults && isFocused && (
+              <Card className="absolute top-full mt-2 w-full max-h-[400px] overflow-y-auto z-50 shadow-xl border-border bg-card text-left">
+                {isSearching ? (
+                  <div className="p-6 text-muted-foreground">
+                    <div className="animate-pulse">Searching...</div>
+                  </div>
+                ) : searchResults.length === 0 ? (
+                  <div className="p-6 text-muted-foreground">
+                    No courses found for "{searchQuery}"
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {searchResults.map((course) => (
+                      <Link
+                        key={course.code}
+                        href={`/course/${course.code.toLowerCase().replace(/\s+/g, "-")}`}
+                        className="block p-4 hover:bg-muted/70 transition-colors text-left"
+                        onMouseDown={(e) => e.preventDefault()}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0 text-left">
+                            <h4 className="font-semibold text-foreground mb-1 text-left">{course.code}</h4>
+                            <p className="text-sm text-muted-foreground line-clamp-1 text-left">{course.name}</p>
+                          </div>
+                          <Badge variant="secondary" className="shrink-0">{course.credits} credits</Badge>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
           </div>
           
         </div>
