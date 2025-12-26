@@ -13,7 +13,6 @@ export async function GET() {
     }
 
     const data = await response.json()
-    console.log("API Response:", data)
     
     return NextResponse.json(data)
   } catch (error) {

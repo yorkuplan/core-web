@@ -18,8 +18,7 @@ export default function HomePage() {
     async function fetchCourses() {
       try {
         const allCourses = await coursesApi.getAllCourses()
-        console.log("Fetched courses:", allCourses)
-        const randomCourses = coursesApi.getRandomCourses(allCourses, 4)
+        const randomCourses = [...allCourses].sort(() => Math.random() - 0.5).slice(0, 4)
         setTopCourses(randomCourses)
       } catch (error) {
         console.error("Failed to fetch courses:", error)
