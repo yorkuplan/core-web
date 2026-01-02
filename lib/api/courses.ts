@@ -1,5 +1,52 @@
 import { apiClient } from "./client"
 
+const DAY_MAP: Record<string, string> = {
+  M: "Monday",
+  T: "Tuesday",
+  W: "Wednesday",
+  R: "Thursday",
+  F: "Friday",
+}
+
+export const getDayName = (dayCode: string): string => {
+  return DAY_MAP[dayCode.toUpperCase()] || dayCode
+}
+
+export const calculateEndTime = (
+  startTime: string,
+  durationMinutes: string
+): string => {
+  try {
+    const duration = parseInt(durationMinutes, 10)
+    const [hours, minutes] = startTime.split(":").map(Number)
+
+    const startTotalMinutes = hours * 60 + minutes
+    const endTotalMinutes = startTotalMinutes + duration
+
+    const endHours = Math.floor(endTotalMinutes / 60)
+    const endMinutes = endTotalMinutes % 60
+
+    return `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(
+      2,
+      "0"
+    )}`
+  } catch (e) {
+    return startTime
+  }
+}
+
+export const formatTime = (time: string): string => {
+  try {
+    const [hours, minutes] = time.split(":").map(Number)
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+      2,
+      "0"
+    )}`
+  } catch (e) {
+    return time
+  }
+}
+
 export interface Course {
   id: string
   code: string
@@ -10,9 +57,69 @@ export interface Course {
   credits: number
 }
 
+export interface Section {
+  id: string
+  course_id: string
+  letter: string
+}
+
+export interface TimeSlot {
+  day: string
+  time: string
+  duration: string
+  campus: string
+  room: string
+}
+
+export interface Lab {
+  id: string
+  section_id: string
+  catalog_number: string
+  times: string // JSON string that needs to be parsed
+}
+
+export interface Tutorial {
+  id: string
+  section_id: string
+  catalog_number: string
+  times: string // JSON string that needs to be parsed
+}
+
+export interface Instructor {
+  id: string
+  first_name: string
+  last_name: string
+  rate_my_prof_link: string
+  section_id: string
+}
+
 interface CoursesResponse {
   data?: Course[]
   courses?: Course[]
+  [key: string]: any
+}
+
+interface SectionsResponse {
+  data?: Section[]
+  sections?: Section[]
+  [key: string]: any
+}
+
+interface LabsResponse {
+  data?: Lab[]
+  labs?: Lab[]
+  [key: string]: any
+}
+
+interface TutorialsResponse {
+  data?: Tutorial[]
+  tutorials?: Tutorial[]
+  [key: string]: any
+}
+
+interface InstructorsResponse {
+  data?: Instructor[]
+  instructors?: Instructor[]
   [key: string]: any
 }
 
@@ -51,6 +158,125 @@ export const coursesApi = {
 
     if (response.courses && Array.isArray(response.courses)) {
       return response.courses
+    }
+
+    console.error("Unexpected API response structure:", response)
+    throw new Error("Invalid API response structure")
+  },
+
+  async getCourseById(id: string): Promise<Course> {
+    const response = await apiClient.get<CoursesResponse | Course>(
+      `/courses/${id}`
+    )
+
+    // Check if response is directly a Course object
+    if (
+      response &&
+      typeof response === "object" &&
+      "id" in response &&
+      "code" in response
+    ) {
+      return response as Course
+    }
+
+    // Check if response is wrapped in data property
+    if (response && typeof response === "object" && "data" in response) {
+      const data = (response as any).data
+      if (data && typeof data === "object" && "id" in data) {
+        return data as Course
+      }
+    }
+
+    // Check if response is wrapped in course property
+    if (response && typeof response === "object" && "course" in response) {
+      const course = (response as any).course
+      if (course && typeof course === "object" && "id" in course) {
+        return course as Course
+      }
+    }
+
+    console.error("Unexpected API response structure:", response)
+    throw new Error("Invalid API response structure")
+  },
+
+  async getSectionsByCourseId(courseId: string): Promise<Section[]> {
+    const response = await apiClient.get<SectionsResponse | Section[]>(
+      `/sections/${courseId}`
+    )
+
+    if (Array.isArray(response)) {
+      return response
+    }
+
+    if (response.data && Array.isArray(response.data)) {
+      return response.data
+    }
+
+    if (response.sections && Array.isArray(response.sections)) {
+      return response.sections
+    }
+
+    console.error("Unexpected API response structure:", response)
+    throw new Error("Invalid API response structure")
+  },
+
+  async getLabsBySectionId(sectionId: string): Promise<Lab[]> {
+    const response = await apiClient.get<LabsResponse | Lab[]>(
+      `/labs/${sectionId}`
+    )
+
+    if (Array.isArray(response)) {
+      return response
+    }
+
+    if (response.data && Array.isArray(response.data)) {
+      return response.data
+    }
+
+    if (response.labs && Array.isArray(response.labs)) {
+      return response.labs
+    }
+
+    console.error("Unexpected API response structure:", response)
+    throw new Error("Invalid API response structure")
+  },
+
+  async getTutorialsBySectionId(sectionId: string): Promise<Tutorial[]> {
+    const response = await apiClient.get<TutorialsResponse | Tutorial[]>(
+      `/tutorials/${sectionId}`
+    )
+
+    if (Array.isArray(response)) {
+      return response
+    }
+
+    if (response.data && Array.isArray(response.data)) {
+      return response.data
+    }
+
+    if (response.tutorials && Array.isArray(response.tutorials)) {
+      return response.tutorials
+    }
+
+    console.error("Unexpected API response structure:", response)
+    throw new Error("Invalid API response structure")
+  },
+
+  async getInstructorsByCourseId(courseId: string): Promise<Instructor[]> {
+    const response = await apiClient.get<InstructorsResponse | Instructor[]>(
+      `/instructors/${courseId}`
+    )
+
+    if (Array.isArray(response)) {
+      return response
+    }
+
+    if (response.data && Array.isArray(response.data)) {
+      return response.data
+    }
+
+    if (response.instructors && Array.isArray(response.instructors)) {
+      return response.instructors
     }
 
     console.error("Unexpected API response structure:", response)
