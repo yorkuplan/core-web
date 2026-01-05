@@ -246,9 +246,9 @@ export default function HomePage() {
               <Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
                 About
               </Link>
-              <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
+              {/* <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
                 Contact
-              </Link>
+              </Link> */}
             </nav>
           </div>
         </div>
