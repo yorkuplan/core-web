@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, GraduationCap, Clock, Users, BookOpen } from "lucide-react"
+import { Search, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { coursesApi, type Course } from "@/lib/api/courses"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 
 export default function HomePage() {
   const [topCourses, setTopCourses] = useState<Course[]>([])
@@ -61,22 +63,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <GraduationCap className="h-7 w-7 text-primary" />
-            <span className="text-2xl font-bold text-primary">YUPlan</span>
-          </Link>
-          <p className="text-sm text-muted-foreground hidden md:block">Course selection, de-cluttered.</p>
-          {/* <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm">
-              Login
-            </Button>
-            <Button size="sm">Sign Up</Button>
-          </div> */}
-        </div>
-      </header>
+      <Header subtitle="Course selection, de-cluttered." />
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 md:py-24">
@@ -231,28 +218,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card/50 mt-16">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-primary">YUPlan</span>
-            </div>
-            <nav className="flex items-center gap-6 text-sm">
-              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                Home
-              </Link>
-              <Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
-                About
-              </Link>
-              {/* <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
-                Contact
-              </Link> */}
-            </nav>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

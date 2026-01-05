@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { GraduationCap, Linkedin, Github } from "lucide-react"
+import { Linkedin, Github } from "lucide-react"
 import Link from "next/link"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 
 export default function AboutPage() {
   const team = [
@@ -24,15 +26,7 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <GraduationCap className="h-7 w-7 text-primary" />
-            <span className="text-2xl font-bold text-primary">YorkUPlan</span>
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       <div className="container mx-auto px-4 py-16">
         {/* About Section */}
@@ -80,28 +74,7 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card/50 mt-16">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-primary">YorkUPlan</span>
-            </div>
-            <nav className="flex items-center gap-6 text-sm">
-              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                Home
-              </Link>
-              <Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
-                About
-              </Link>
-              {/* <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
-                Contact
-              </Link> */}
-            </nav>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
