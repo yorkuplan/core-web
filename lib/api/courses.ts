@@ -8,8 +8,59 @@ const DAY_MAP: Record<string, string> = {
   F: "Friday",
 }
 
+const FACULTY_MAP: Record<string, string> = {
+  AP: "Faculty of Liberal Arts & Professional Studies (AP)",
+  ED: "Faculty of Education (ED)",
+  EU: "Faculty of Environmental & Urban Change (EU)",
+  FA: "School of the Arts, Media, Performance & Design (FA)",
+  GL: "Glendon College / Collège universitaire Glendon (GL)",
+  GS: "Faculty of Graduate Studies (GS)",
+  HH: "Faculty of Health (HH)",
+  LE: "Lassonde School of Engineering (LE)",
+  SB: "Schulich School of Business (SB)",
+  SC: "Faculty of Science (SC)",
+}
+
+const TYPE_MAP: Record<string, string> = {
+  BLEN: "Blended learning",
+  CLIN: "Clinical",
+  CORS: "Correspondence",
+  DIRD: "Directed reading",
+  DISS: "Dissertation",
+  FDEX: "Field experience",
+  FIEL: "Field trip",
+  HYFX: "Hyflex",
+  IDS: "Individual directed study",
+  INSP: "Internship",
+  ISTY: "Independent studies",
+  LAB: "Laboratory",
+  LECT: "Lecture",
+  LGCL: "Language classes",
+  ONCA: "Online - Campus Assessment",
+  ONLN: "Online learning",
+  PERF: "Performance",
+  PRAC: "Practicum",
+  REEV: "Research evaluation",
+  REMT: "Remote",
+  RESP: "Research paper",
+  REVP: "Review paper",
+  SEMR: "Seminar",
+  STDO: "Studio",
+  THES: "Thesis",
+  TUTR: "Tutorial",
+  WKSP: "Workshop",
+}
+
 export const getDayName = (dayCode: string): string => {
   return DAY_MAP[dayCode.toUpperCase()] || dayCode
+}
+
+export const getFacultyName = (facultyCode: string): string => {
+  return FACULTY_MAP[facultyCode.toUpperCase()] || facultyCode
+}
+
+export const getTypeName = (typeCode: string): string => {
+  return TYPE_MAP[typeCode.toUpperCase()] || typeCode
 }
 
 export const calculateEndTime = (
