@@ -52,6 +52,8 @@ export interface Course {
   code: string
   name: string
   instructor: string
+  faculty: string
+  type: string
   students: number
   sections: number
   credits: number
@@ -71,20 +73,6 @@ export interface TimeSlot {
   room: string
 }
 
-export interface Lab {
-  id: string
-  section_id: string
-  catalog_number: string
-  times: string // JSON string that needs to be parsed
-}
-
-export interface Tutorial {
-  id: string
-  section_id: string
-  catalog_number: string
-  times: string // JSON string that needs to be parsed
-}
-
 export interface Instructor {
   id: string
   first_name: string
@@ -102,18 +90,6 @@ interface CoursesResponse {
 interface SectionsResponse {
   data?: Section[]
   sections?: Section[]
-  [key: string]: any
-}
-
-interface LabsResponse {
-  data?: Lab[]
-  labs?: Lab[]
-  [key: string]: any
-}
-
-interface TutorialsResponse {
-  data?: Tutorial[]
-  tutorials?: Tutorial[]
   [key: string]: any
 }
 
@@ -214,48 +190,6 @@ export const coursesApi = {
 
     if (response.sections && Array.isArray(response.sections)) {
       return response.sections
-    }
-
-    console.error("Unexpected API response structure:", response)
-    throw new Error("Invalid API response structure")
-  },
-
-  async getLabsBySectionId(sectionId: string): Promise<Lab[]> {
-    const response = await apiClient.get<LabsResponse | Lab[]>(
-      `/labs/${sectionId}`
-    )
-
-    if (Array.isArray(response)) {
-      return response
-    }
-
-    if (response.data && Array.isArray(response.data)) {
-      return response.data
-    }
-
-    if (response.labs && Array.isArray(response.labs)) {
-      return response.labs
-    }
-
-    console.error("Unexpected API response structure:", response)
-    throw new Error("Invalid API response structure")
-  },
-
-  async getTutorialsBySectionId(sectionId: string): Promise<Tutorial[]> {
-    const response = await apiClient.get<TutorialsResponse | Tutorial[]>(
-      `/tutorials/${sectionId}`
-    )
-
-    if (Array.isArray(response)) {
-      return response
-    }
-
-    if (response.data && Array.isArray(response.data)) {
-      return response.data
-    }
-
-    if (response.tutorials && Array.isArray(response.tutorials)) {
-      return response.tutorials
     }
 
     console.error("Unexpected API response structure:", response)
