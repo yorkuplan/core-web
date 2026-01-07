@@ -1,68 +1,65 @@
-"use client";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, GraduationCap, Users, BookOpen } from "lucide-react";
-import Link from "next/link";
+"use client"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Calendar, GraduationCap, Users, BookOpen } from "lucide-react"
+import Link from "next/link"
 import {
   coursesApi,
   type Course,
   type Section,
-  type Lab,
-  type Tutorial,
+  type Activity,
   type Instructor,
   getDayName,
+  getFacultyName,
+  getTypeName,
   calculateEndTime,
   formatTime,
-} from "@/lib/api/courses";
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
+  getSemesterName,
+} from "@/lib/api/courses"
+import { useParams } from "next/navigation"
+import { useEffect, useState } from "react"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 
 export default function CoursePage() {
-  const params = useParams();
-  const courseId = getIDFromParams({ id: params.id as string });
-  const [course, setCourse] = useState<Course | null>(null);
-  const [sections, setSections] = useState<Section[]>([]);
-  const [labsBySection, setLabsBySection] = useState<Record<string, Lab[]>>({});
-  const [tutorialsBySection, setTutorialsBySection] = useState<
-    Record<string, Tutorial[]>
-  >({});
+  const params = useParams()
+  const courseId = getIDFromParams({ id: params.id as string })
+  const [course, setCourse] = useState<Course | null>(null)
+  const [sections, setSections] = useState<Section[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [instructorsBySection, setInstructorsBySection] = useState<
     Record<string, Instructor>
-  >({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  >({})
 
   useEffect(() => {
     async function fetchCourseData() {
       try {
-        setIsLoading(true);
+        setIsLoading(true)
         const [courseData, sectionsData, instructorsData] = await Promise.all([
           coursesApi.getCourseById(courseId),
           coursesApi.getSectionsByCourseId(courseId),
-          coursesApi.getInstructorsByCourseId(courseId).catch(() => []),
-        ]);
-        setCourse(courseData);
-        setSections(sectionsData);
-
+          coursesApi.getInstructorsByCourseId(courseId),
+        ])
+        setCourse(courseData)
+        setSections(sectionsData)
         // Map instructors to their sections
-        const instructorsMap: Record<string, Instructor> = {};
+        const instructorsMap: Record<string, Instructor> = {}
         instructorsData.forEach((instructor) => {
-          instructorsMap[instructor.section_id] = instructor;
-        });
-        setInstructorsBySection(instructorsMap);
+          instructorsMap[instructor.section_id] = instructor
+        })
+        setInstructorsBySection(instructorsMap)
       } catch (err) {
-        console.error("Failed to fetch course data:", err);
-        setError("Failed to load course. Please try again later.");
+        console.error("Failed to fetch course data:", err)
+        setError("Failed to load course. Please try again later.")
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
     }
 
-    fetchCourseData();
-  }, [courseId]);
+    fetchCourseData()
+  }, [courseId])
 
   return (
     <div className="min-h-screen bg-background">
@@ -122,7 +119,7 @@ export default function CoursePage() {
               <div className="flex flex-wrap items-center gap-6 mt-8 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  <span>*Sem*</span>
+                  <span>{getSemesterName(course.term)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
@@ -133,7 +130,7 @@ export default function CoursePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
-                  <span>*Faculty*</span>
+                  <span>{getFacultyName(course.faculty)}</span>
                 </div>
               </div>
             </div>
@@ -166,36 +163,49 @@ export default function CoursePage() {
                       </div>
 
                       <div className="space-y-3 mb-4">
-                        <div className="bg-muted/50 rounded-lg p-3">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                            <BookOpen className="h-3 w-3" />
-                            <span>Lecture</span>
-                          </div>
-                          {/* <p className="text-sm font-medium">
-                              {section.lecture.day}: {section.lecture.time}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {section.lecture.location}
-                            </p> */}
-                        </div>
-
-                        {labsBySection[section.id] &&
-                          labsBySection[section.id].length > 0 &&
-                          labsBySection[section.id].map((lab, idx) => {
-                            let times = [];
+                        {section.activities && section.activities.length > 0 ? (
+                          section.activities.map((activity, idx) => {
+                            let times: Array<{
+                              day: string
+                              time: string
+                              duration: string
+                              campus: string
+                              room: string
+                            }> = []
                             try {
-                              times = JSON.parse(lab.times);
+                              times = JSON.parse(activity.times)
                             } catch (e) {
-                              times = [];
+                              times = []
                             }
+
+                            const activityType = getTypeName(
+                              activity.course_type
+                            )
+                            const activityCount = section.activities!.filter(
+                              (a) => a.course_type === activity.course_type
+                            ).length
+                            const isMultiple = activityCount > 1
+
                             return (
                               <div
-                                key={lab.id}
-                                className="bg-muted/30 rounded-lg p-3"
+                                key={activity.id}
+                                className="bg-muted/50 rounded-lg p-3"
                               >
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                                   <BookOpen className="h-3 w-3" />
-                                  <span>Lab {idx + 1}</span>
+                                  <span>
+                                    {activityType}
+                                    {isMultiple &&
+                                      ` ${
+                                        section
+                                          .activities!.filter(
+                                            (a) =>
+                                              a.course_type ===
+                                              activity.course_type
+                                          )
+                                          .indexOf(activity) + 1
+                                      }`}
+                                  </span>
                                 </div>
                                 {times.length > 0 && (
                                   <>
@@ -208,51 +218,20 @@ export default function CoursePage() {
                                       )}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                      {times[0].room}, {times[0].campus}
+                                      {[times[0]?.room, times[0]?.campus]
+                                        .filter(Boolean)
+                                        .join(", ")}
                                     </p>
                                   </>
                                 )}
                               </div>
-                            );
-                          })}
-                        {tutorialsBySection[section.id] &&
-                          tutorialsBySection[section.id].length > 0 &&
-                          tutorialsBySection[section.id].map(
-                            (tutorial, idx) => {
-                              let times = [];
-                              try {
-                                times = JSON.parse(tutorial.times);
-                              } catch (e) {
-                                times = [];
-                              }
-                              return (
-                                <div
-                                  key={tutorial.id}
-                                  className="bg-muted/20 rounded-lg p-3"
-                                >
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                                    <BookOpen className="h-3 w-3" />
-                                    <span>Tutorial {idx + 1}</span>
-                                  </div>
-                                  {times.length > 0 && (
-                                    <>
-                                      <p className="text-sm font-medium">
-                                        {getDayName(times[0].day)}:{" "}
-                                        {formatTime(times[0].time)} -{" "}
-                                        {calculateEndTime(
-                                          times[0].time,
-                                          times[0].duration
-                                        )}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {times[0].room}, {times[0].campus}
-                                      </p>
-                                    </>
-                                  )}
-                                </div>
-                              );
-                            }
-                          )}
+                            )
+                          })
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            No activities scheduled
+                          </p>
+                        )}
                       </div>
                     </Card>
                   ))}
@@ -265,13 +244,13 @@ export default function CoursePage() {
 
       <Footer />
     </div>
-  );
+  )
 }
 
 function getIDFromParams(params: { id?: string }) {
-  const { id } = params;
+  const { id } = params
   if (!id || Array.isArray(id)) {
-    throw new Error("Invalid or missing course ID");
+    throw new Error("Invalid or missing course ID")
   }
-  return id;
+  return id
 }
