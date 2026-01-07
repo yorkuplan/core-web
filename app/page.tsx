@@ -167,7 +167,7 @@ export default function HomePage() {
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
               {topCourses.map((course) => (
-                <Link key={course.code} href={`/course/${course.id}`}>
+                <Link key={course.id} href={`/course/${course.id}`}>
                   <Card className="p-6 hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer group">
                     <div className="flex items-start justify-between mb-3">
                       <div>
