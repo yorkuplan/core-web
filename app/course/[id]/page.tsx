@@ -1,14 +1,12 @@
 "use client"
-import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, GraduationCap, Users, BookOpen } from "lucide-react"
+import { Calendar, Users, BookOpen } from "lucide-react"
 import Link from "next/link"
 import {
   coursesApi,
   type Course,
   type Section,
-  type Activity,
   type Instructor,
   getDayName,
   getFacultyName,
@@ -118,18 +116,18 @@ export default function CoursePage() {
 
               <div className="flex flex-wrap items-center gap-6 mt-8 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="h-4 w-4" aria-hidden="true" />
                   <span>{getSemesterName(course.term)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
+                  <Users className="h-4 w-4" aria-hidden="true" />
                   <span>
                     {sections.length}{" "}
                     {sections.length === 1 ? "section" : "sections"} available
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
+                  <BookOpen className="h-4 w-4" aria-hidden="true" />
                   <span>{getFacultyName(course.faculty)}</span>
                 </div>
               </div>
@@ -196,7 +194,10 @@ export default function CoursePage() {
                                 className="bg-muted/50 rounded-lg p-3"
                               >
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                                  <BookOpen className="h-3 w-3" />
+                                  <BookOpen
+                                    className="h-3 w-3"
+                                    aria-hidden="true"
+                                  />
                                   <span>
                                     {activityType}
                                     {isMultiple &&
@@ -215,10 +216,7 @@ export default function CoursePage() {
                                   <p className="text-sm font-bold">Cancelled</p>
                                 ) : times.length > 0 &&
                                   (!times[0].time ||
-                                    times[0].time === "0:00" ||
-                                    (times[0].time === "0:00" &&
-                                      times[0].duration === "0" &&
-                                      !times[0].day)) ? (
+                                    times[0].time === "0:00") ? (
                                   <p className="text-sm font-bold">
                                     No Scheduled Times
                                   </p>
