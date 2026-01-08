@@ -200,7 +200,6 @@ export default function HomePage() {
                         variant="ghost"
                         size="sm"
                         className="group-hover:bg-primary group-hover:text-primary-foreground"
-                        onClick={(e) => e.preventDefault()}
                       >
                         View Details
                       </Button>
