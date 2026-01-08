@@ -158,7 +158,7 @@ export default function CoursePage() {
                             {instructorsBySection[section.id].last_name}
                           </p>
                         ) : (
-                          <p className="text-sm text-destructive">
+                          <p className="text-sm text-muted-foreground">
                             No instructor info available
                           </p>
                         )}
