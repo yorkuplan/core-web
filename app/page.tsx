@@ -128,7 +128,8 @@ export default function HomePage() {
                             </p>
                           </div>
                           <Badge variant="secondary" className="shrink-0">
-                            {course.credits} credits
+                            {course.credits}.0 credit
+                            {course.credits === 1 ? "" : "s"}
                           </Badge>
                         </div>
                       </Link>
@@ -179,7 +180,7 @@ export default function HomePage() {
                         </p>
                       </div>
                       <Badge variant="secondary">
-                        {course.credits} credits
+                        {course.credits} credit{course.credits === 1 ? "" : "s"}
                       </Badge>
                     </div>
 
