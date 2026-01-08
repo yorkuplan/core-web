@@ -180,7 +180,8 @@ export default function HomePage() {
                         </p>
                       </div>
                       <Badge variant="secondary">
-                        {course.credits} credit{course.credits === 1 ? "" : "s"}
+                        {course.credits}.0 credit
+                        {course.credits === 1 ? "" : "s"}
                       </Badge>
                     </div>
 
