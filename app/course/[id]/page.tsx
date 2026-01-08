@@ -31,14 +31,27 @@ export default function CoursePage() {
   const [instructorsBySection, setInstructorsBySection] = useState<
     Record<string, Instructor>
   >({})
-  const [copiedCatalogue, setCopiedCatalogue] = useState<string | null>(null)
+  const [copiedCatalog, setCopiedCatalog] = useState<string | null>(null)
 
-  const handleCopyCatalogue = (catalogueNumber: string) => {
-    navigator.clipboard.writeText(catalogueNumber)
-    setCopiedCatalogue(catalogueNumber)
-    setTimeout(() => setCopiedCatalogue(null), 2000)
+  const handleCopyCatalog = async (catalogNumber: string) => {
+    if (!navigator?.clipboard?.writeText) {
+      console.error("Clipboard API is not available in this browser.")
+      if (typeof window !== "undefined" && typeof window.alert === "function") {
+        window.alert("Copy to clipboard is not supported in this browser.")
+      }
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(catalogNumber)
+      setCopiedCatalog(catalogNumber)
+      setTimeout(() => setCopiedCatalog(null), 2000)
+    } catch (err) {
+      console.error("Failed to copy catalog number to clipboard:", err)
+      if (typeof window !== "undefined" && typeof window.alert === "function") {
+        window.alert("Failed to copy to clipboard. Please try again.")
+      }
+    }
   }
-
   useEffect(() => {
     async function fetchCourseData() {
       try {
@@ -240,17 +253,19 @@ export default function CoursePage() {
                                     {activity.catalog_number && (
                                       <button
                                         onClick={() =>
-                                          handleCopyCatalogue(
+                                          handleCopyCatalog(
                                             activity.catalog_number
                                           )
                                         }
                                         className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group ml-auto"
-                                        title="Click to copy catalogue number"
+                                        title="Click to copy catalog number"
+                                        aria-label="Copy catalog number"
+                                        type="button"
                                       >
                                         <span className="text-xs font-mono font-medium text-primary">
                                           {activity.catalog_number}
                                         </span>
-                                        {copiedCatalogue ===
+                                        {copiedCatalog ===
                                         activity.catalog_number ? (
                                           <Check className="h-3 w-3 text-primary" />
                                         ) : (
