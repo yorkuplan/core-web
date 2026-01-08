@@ -108,6 +108,12 @@ export const formatTime = (time: string): string => {
   }
 }
 
+export const formatCourseCode = (code: string): string => {
+  // Insert a space between letters and numbers
+  // E.g., "EECS2030" -> "EECS 2030"
+  return code.replace(/([A-Za-z]+)(\d+)/, "$1 $2")
+}
+
 export interface Course {
   id: string
   code: string

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { coursesApi, type Course } from "@/lib/api/courses"
+import { coursesApi, type Course, formatCourseCode } from "@/lib/api/courses"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
@@ -121,14 +121,15 @@ export default function HomePage() {
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0 text-left">
                             <h4 className="font-semibold text-foreground mb-1 text-left">
-                              {course.code}
+                              {formatCourseCode(course.code)}
                             </h4>
                             <p className="text-sm text-muted-foreground line-clamp-1 text-left">
                               {course.name}
                             </p>
                           </div>
                           <Badge variant="secondary" className="shrink-0">
-                            {course.credits} credits
+                            {course.credits} credit
+                            {course.credits === 1 ? "" : "s"}
                           </Badge>
                         </div>
                       </Link>
@@ -172,14 +173,15 @@ export default function HomePage() {
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h3 className="font-bold text-xl mb-1 group-hover:text-primary transition-colors">
-                          {course.code}
+                          {formatCourseCode(course.code)}
                         </h3>
                         <p className="text-sm text-foreground font-medium">
                           {course.name}
                         </p>
                       </div>
                       <Badge variant="secondary">
-                        {course.credits} credits
+                        {course.credits} credit
+                        {course.credits === 1 ? "" : "s"}
                       </Badge>
                     </div>
 
@@ -198,7 +200,6 @@ export default function HomePage() {
                         variant="ghost"
                         size="sm"
                         className="group-hover:bg-primary group-hover:text-primary-foreground"
-                        onClick={(e) => e.preventDefault()}
                       >
                         View Details
                       </Button>
