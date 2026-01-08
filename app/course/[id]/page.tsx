@@ -1,7 +1,7 @@
 "use client"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Users, BookOpen } from "lucide-react"
+import { Calendar, Users, BookOpen, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import {
   coursesApi,
@@ -31,7 +31,44 @@ export default function CoursePage() {
   const [instructorsBySection, setInstructorsBySection] = useState<
     Record<string, Instructor>
   >({})
+  const [copiedCatalog, setCopiedCatalog] = useState<string | null>(null)
 
+  const handleCopyCatalog = async (catalogNumber: string) => {
+    try {
+      // Try modern Clipboard API first
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(catalogNumber)
+        setCopiedCatalog(catalogNumber)
+        setTimeout(() => setCopiedCatalog(null), 2000)
+        return
+      }
+
+      // Fallback for older browsers and Safari
+      const textArea = document.createElement("textarea")
+      textArea.value = catalogNumber
+      textArea.style.position = "fixed"
+      textArea.style.left = "-999999px"
+      textArea.style.top = "-999999px"
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+
+      const successful = document.execCommand("copy")
+      document.body.removeChild(textArea)
+
+      if (successful) {
+        setCopiedCatalog(catalogNumber)
+        setTimeout(() => setCopiedCatalog(null), 2000)
+      } else {
+        throw new Error("execCommand copy failed")
+      }
+    } catch (err) {
+      console.error("Failed to copy catalog number to clipboard:", err)
+      if (typeof window !== "undefined" && typeof window.alert === "function") {
+        window.alert("Failed to copy to clipboard. Please try again.")
+      }
+    }
+  }
   useEffect(() => {
     async function fetchCourseData() {
       try {
@@ -230,6 +267,29 @@ export default function CoursePage() {
                                             .indexOf(activity) + 1
                                         }`}
                                     </span>
+                                    {activity.catalog_number && (
+                                      <button
+                                        onClick={() =>
+                                          handleCopyCatalog(
+                                            activity.catalog_number
+                                          )
+                                        }
+                                        className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group ml-auto"
+                                        title="Click to copy catalog number"
+                                        aria-label="Copy catalog number"
+                                        type="button"
+                                      >
+                                        <span className="text-xs font-mono font-medium text-primary">
+                                          {activity.catalog_number}
+                                        </span>
+                                        {copiedCatalog ===
+                                        activity.catalog_number ? (
+                                          <Check className="h-3 w-3 text-primary" />
+                                        ) : (
+                                          <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100" />
+                                        )}
+                                      </button>
+                                    )}
                                   </div>
                                   {times.length === 0 ? (
                                     <p className="text-sm font-bold">
