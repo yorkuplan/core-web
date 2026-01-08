@@ -34,17 +34,34 @@ export default function CoursePage() {
   const [copiedCatalog, setCopiedCatalog] = useState<string | null>(null)
 
   const handleCopyCatalog = async (catalogNumber: string) => {
-    if (!navigator?.clipboard?.writeText) {
-      console.error("Clipboard API is not available in this browser.")
-      if (typeof window !== "undefined" && typeof window.alert === "function") {
-        window.alert("Copy to clipboard is not supported in this browser.")
-      }
-      return
-    }
     try {
-      await navigator.clipboard.writeText(catalogNumber)
-      setCopiedCatalog(catalogNumber)
-      setTimeout(() => setCopiedCatalog(null), 2000)
+      // Try modern Clipboard API first
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(catalogNumber)
+        setCopiedCatalog(catalogNumber)
+        setTimeout(() => setCopiedCatalog(null), 2000)
+        return
+      }
+
+      // Fallback for older browsers and Safari
+      const textArea = document.createElement("textarea")
+      textArea.value = catalogNumber
+      textArea.style.position = "fixed"
+      textArea.style.left = "-999999px"
+      textArea.style.top = "-999999px"
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+
+      const successful = document.execCommand("copy")
+      document.body.removeChild(textArea)
+
+      if (successful) {
+        setCopiedCatalog(catalogNumber)
+        setTimeout(() => setCopiedCatalog(null), 2000)
+      } else {
+        throw new Error("execCommand copy failed")
+      }
     } catch (err) {
       console.error("Failed to copy catalog number to clipboard:", err)
       if (typeof window !== "undefined" && typeof window.alert === "function") {
