@@ -159,7 +159,7 @@ export default function CoursePage() {
                           </p>
                         ) : (
                           <p className="text-sm text-muted-foreground">
-                            No instructor info available
+                            No instructor assigned yet
                           </p>
                         )}
                       </div>
