@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Search, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
@@ -64,11 +65,12 @@ export default function HomePage() {
   }, [searchQuery])
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header subtitle="Course selection, de-cluttered." />
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
+      <div className="flex-grow flex flex-col">
+        {/* Hero Section */}
+        <section className="container mx-auto px-4 py-16 md:py-24">
         <div className="max-w-4xl mx-auto text-center space-y-6">
           <h1 className="text-4xl md:text-6xl font-bold text-balance leading-tight">
             Plan your perfect semester
@@ -80,23 +82,24 @@ export default function HomePage() {
 
           {/* Search Bar */}
           <div className="relative max-w-2xl mx-auto pt-4">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
-              <Search className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <Input
-              type="search"
-              placeholder="Search for courses..."
-              className="pl-12 pr-4 py-0 h-14 text-base bg-card shadow-sm leading-[3.5rem]"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => {
-                setTimeout(() => {
-                  setIsFocused(false)
-                  setShowResults(false)
-                }, 200)
-              }}
-            />
+            <InputGroup className="h-14 text-base bg-card shadow-sm">
+              <InputGroupAddon align="inline-start">
+                <Search className="h-12 w-12 text-muted-foreground" strokeWidth={2.5} />
+              </InputGroupAddon>
+              <InputGroupInput
+                type="search"
+                placeholder="Search for courses..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => {
+                  setTimeout(() => {
+                    setIsFocused(false)
+                    setShowResults(false)
+                  }, 200)
+                }}
+              />
+            </InputGroup>
 
             {/* Search Results Dropdown */}
             {showResults && isFocused && (
@@ -169,37 +172,37 @@ export default function HomePage() {
             <div className="grid md:grid-cols-2 gap-4">
               {topCourses.map((course) => (
                 <Link key={course.id} href={`/course/${course.id}`}>
-                  <Card className="p-6 hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer group">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
+                  <Card className="p-6 hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer group h-[260px] flex flex-col">
+                    <div className="flex items-start justify-between mb-3 flex-shrink-0">
+                      <div className="flex-1 min-w-0 pr-2">
                         <h3 className="font-bold text-xl mb-1 group-hover:text-primary transition-colors">
                           {formatCourseCode(course.code)}
                         </h3>
-                        <p className="text-sm text-foreground font-medium">
+                        <p className="text-sm text-foreground font-medium line-clamp-2">
                           {course.name}
                         </p>
                       </div>
-                      <Badge variant="secondary">
+                      <Badge variant="secondary" className="flex-shrink-0">
                         {course.credits} credit
                         {course.credits === 1 ? "" : "s"}
                       </Badge>
                     </div>
 
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3 flex-shrink-0">
                       <div className="flex items-center gap-1">
                         <BookOpen className="h-4 w-4" />
                         <span>{course.sections} Sections </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-border">
-                      <p className="text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between pt-3 border-t border-border mt-auto flex-shrink-0 pb-0">
+                      <p className="text-sm text-muted-foreground truncate pr-2 flex-1 min-w-0">
                         {course.instructor}
                       </p>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="group-hover:bg-primary group-hover:text-primary-foreground"
+                        className="group-hover:bg-primary group-hover:text-primary-foreground flex-shrink-0"
                       >
                         View Details
                       </Button>
@@ -244,6 +247,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      </div>
 
       <Footer />
     </div>

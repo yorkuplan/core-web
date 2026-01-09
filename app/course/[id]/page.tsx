@@ -33,6 +33,36 @@ export default function CoursePage() {
   >({})
   const [copiedCatalog, setCopiedCatalog] = useState<string | null>(null)
 
+  const parseCatalogNumbers = (catalogNumber: string): string[] => {
+    if (!catalogNumber) return []
+    
+    // Pattern to match catalog numbers like "K28B01 (HH NRSC)" or "D75K01 (SC NRSC)"
+    // This regex matches: alphanumeric code, optional space, (faculty info), followed by space or end
+    const catalogPattern = /([A-Z0-9]+)\s*\([^)]+\)/g
+    const matches: string[] = []
+    let match
+    
+    // Reset regex lastIndex to ensure we start from the beginning
+    catalogPattern.lastIndex = 0
+    
+    while ((match = catalogPattern.exec(catalogNumber)) !== null) {
+      matches.push(match[0].trim())
+    }
+    
+    if (matches.length > 1) {
+      return matches
+    }
+    
+    // If no pattern matches, try splitting by multiple spaces (2+ spaces)
+    const parts = catalogNumber.split(/\s{2,}/).filter(Boolean)
+    if (parts.length > 1) {
+      return parts.map(p => p.trim())
+    }
+    
+    // Fallback: return as single item
+    return [catalogNumber.trim()]
+  }
+
   const handleCopyCatalog = async (catalogNumber: string) => {
     try {
       // Try modern Clipboard API first
@@ -98,10 +128,10 @@ export default function CoursePage() {
   }, [courseId])
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header subtitle="Course selection, de-cluttered." />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 flex-grow">
         {isLoading ? (
           <div className="max-w-6xl mx-auto text-center py-12">
             <p className="text-muted-foreground">Loading course...</p>
@@ -184,10 +214,19 @@ export default function CoursePage() {
                 </div>
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {sections.map((section) => (
+                  {sections.map((section) => {
+                    // Check if any activity has multiple catalog numbers
+                    const hasMultipleCatalogs = section.activities?.some(
+                      (activity) => activity.catalog_number && 
+                        parseCatalogNumbers(activity.catalog_number).length > 1
+                    ) || false
+                    
+                    return (
                     <Card
                       key={section.id}
-                      className="p-5 hover:shadow-lg transition-all hover:border-primary/50"
+                      className={`p-5 hover:shadow-lg transition-all hover:border-primary/50 ${
+                        hasMultipleCatalogs ? 'md:col-span-2 lg:col-span-2' : ''
+                      }`}
                     >
                       <div className="mb-4">
                         <h3 className="text-2xl font-bold">
@@ -249,12 +288,12 @@ export default function CoursePage() {
                                   key={activity.id}
                                   className="bg-muted/50 rounded-lg p-3"
                                 >
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                                  <div className="flex items-start gap-2 text-xs text-muted-foreground mb-1 min-w-0">
                                     <BookOpen
-                                      className="h-3 w-3"
+                                      className="h-3 w-3 flex-shrink-0 mt-0.5"
                                       aria-hidden="true"
                                     />
-                                    <span>
+                                    <span className="flex-shrink-0">
                                       {activityType}
                                       {isMultiple &&
                                         ` ${
@@ -268,27 +307,29 @@ export default function CoursePage() {
                                         }`}
                                     </span>
                                     {activity.catalog_number && (
-                                      <button
-                                        onClick={() =>
-                                          handleCopyCatalog(
-                                            activity.catalog_number
-                                          )
-                                        }
-                                        className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group ml-auto"
-                                        title="Click to copy catalog number"
-                                        aria-label="Copy catalog number"
-                                        type="button"
-                                      >
-                                        <span className="text-xs font-mono font-medium text-primary">
-                                          {activity.catalog_number}
-                                        </span>
-                                        {copiedCatalog ===
-                                        activity.catalog_number ? (
-                                          <Check className="h-3 w-3 text-primary" />
-                                        ) : (
-                                          <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100" />
-                                        )}
-                                      </button>
+                                      <div className="flex flex-wrap gap-1.5 ml-auto flex-shrink min-w-0">
+                                        {parseCatalogNumbers(activity.catalog_number).map((catalogNum, idx) => (
+                                          <button
+                                            key={idx}
+                                            onClick={() =>
+                                              handleCopyCatalog(catalogNum.trim())
+                                            }
+                                            className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0"
+                                            title="Click to copy catalog number"
+                                            aria-label={`Copy catalog number ${catalogNum}`}
+                                            type="button"
+                                          >
+                                            <span className="text-xs font-mono font-medium text-primary">
+                                              {catalogNum.trim()}
+                                            </span>
+                                            {copiedCatalog === catalogNum.trim() ? (
+                                              <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                                            ) : (
+                                              <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 flex-shrink-0" />
+                                            )}
+                                          </button>
+                                        ))}
+                                      </div>
                                     )}
                                   </div>
                                   {times.length === 0 ? (
@@ -328,7 +369,8 @@ export default function CoursePage() {
                         )}
                       </div>
                     </Card>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>

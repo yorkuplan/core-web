@@ -25,10 +25,10 @@ export default function AboutPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-16 flex-grow">
         {/* About Section */}
         <div className="max-w-3xl mx-auto mb-16 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 text-balance">About YorkUPlan</h1>
