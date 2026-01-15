@@ -17,6 +17,7 @@ const FACULTY_MAP: Record<string, string> = {
   GS: "Faculty of Graduate Studies (GS)",
   HH: "Faculty of Health (HH)",
   LE: "Lassonde School of Engineering (LE)",
+  LW: "Osgoode Hall Law School (LW)",
   SB: "Schulich School of Business (SB)",
   SC: "Faculty of Science (SC)",
 }

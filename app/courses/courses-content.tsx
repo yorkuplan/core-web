@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
-  GraduationCap,
   Search,
   ChevronLeft,
   ChevronRight,
@@ -17,6 +16,8 @@ import {
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { coursesApi, formatCourseCode, getFacultyName, Course } from "@/lib/api/courses"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 
 // Map UI faculty IDs to API faculty codes
 const FACULTY_CODE_MAP: Record<string, string> = {
@@ -28,8 +29,10 @@ const FACULTY_CODE_MAP: Record<string, string> = {
   education: "ED",
   "fine-arts": "FA",
   glendon: "GL",
-  osgoode: "OS", // Note: Check if this is correct
+  osgoode: "LW",
   schulich: "SB",
+  "environmental-urban": "EU",
+  "graduate-studies": "GS",
 }
 
 // Map course level IDs to API course_code_range values
@@ -68,6 +71,8 @@ export default function CoursesContent() {
     { id: "glendon", name: "Glendon Campus" },
     { id: "osgoode", name: "Osgoode Hall Law School" },
     { id: "schulich", name: "Schulich School of Business" },
+    { id: "environmental-urban", name: "Faculty of Environmental and Urban Change" },
+    { id: "graduate-studies", name: "Faculty of Graduate Studies" },
   ]
 
   const courseLevels = [
@@ -232,23 +237,8 @@ export default function CoursesContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <GraduationCap className="h-7 w-7 text-primary" />
-            <span className="text-2xl font-bold text-primary">YorkUPlan</span>
-          </Link>
-          <p className="text-sm text-muted-foreground hidden md:block">Course selection, de-cluttered.</p>
-          {/* <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm">
-              Login
-            </Button>
-            <Button size="sm">Sign Up</Button>
-          </div> */}
-        </div>
-      </header>
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header subtitle="Course selection, de-cluttered." />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
@@ -483,28 +473,7 @@ export default function CoursesContent() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card/50 mt-16">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-primary">YorkUPlan</span>
-            </div>
-            <nav className="flex items-center gap-6 text-sm">
-              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                Home
-              </Link>
-              <Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
-                About
-              </Link>
-              <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
-                Contact
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
