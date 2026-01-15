@@ -268,7 +268,10 @@ export default function CoursePage() {
                                   } on Rate My Professors`}
                                 >
                                   <span className="text-xs font-medium text-primary">
-                                    RateMyProf
+                                    ratemyprof/
+                                    {instructorsBySection[
+                                      section.id
+                                    ].last_name.toLowerCase()}
                                   </span>
                                   <ExternalLink className="h-3 w-3 text-primary" />
                                 </a>
