@@ -1,0 +1,20 @@
+export default function Loading() {
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="h-7 w-32 bg-muted animate-pulse rounded" />
+        </div>
+      </header>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto space-y-4">
+          <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+          <div className="h-12 bg-muted animate-pulse rounded" />
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-24 bg-muted animate-pulse rounded" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
