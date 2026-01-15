@@ -1,7 +1,14 @@
 "use client"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Users, BookOpen, Copy, Check } from "lucide-react"
+import {
+  Calendar,
+  Users,
+  BookOpen,
+  Copy,
+  Check,
+  ExternalLink,
+} from "lucide-react"
 import Link from "next/link"
 import {
   coursesApi,
@@ -35,30 +42,30 @@ export default function CoursePage() {
 
   const parseCatalogNumbers = (catalogNumber: string): string[] => {
     if (!catalogNumber) return []
-    
+
     // Pattern to match catalog numbers like "K28B01 (HH NRSC)" or "D75K01 (SC NRSC)"
     // This regex matches: alphanumeric code, optional space, (faculty info), followed by space or end
     const catalogPattern = /([A-Z0-9]+)\s*\([^)]+\)/g
     const matches: string[] = []
     let match
-    
+
     // Reset regex lastIndex to ensure we start from the beginning
     catalogPattern.lastIndex = 0
-    
+
     while ((match = catalogPattern.exec(catalogNumber)) !== null) {
       matches.push(match[0].trim())
     }
-    
+
     if (matches.length > 1) {
       return matches
     }
-    
+
     // If no pattern matches, try splitting by multiple spaces (2+ spaces)
     const parts = catalogNumber.split(/\s{2,}/).filter(Boolean)
     if (parts.length > 1) {
-      return parts.map(p => p.trim())
+      return parts.map((p) => p.trim())
     }
-    
+
     // Fallback: return as single item
     return [catalogNumber.trim()]
   }
@@ -216,159 +223,197 @@ export default function CoursePage() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {sections.map((section) => {
                     // Check if any activity has multiple catalog numbers
-                    const hasMultipleCatalogs = section.activities?.some(
-                      (activity) => activity.catalog_number && 
-                        parseCatalogNumbers(activity.catalog_number).length > 1
-                    ) || false
-                    
+                    const hasMultipleCatalogs =
+                      section.activities?.some(
+                        (activity) =>
+                          activity.catalog_number &&
+                          parseCatalogNumbers(activity.catalog_number).length >
+                            1
+                      ) || false
+
                     return (
-                    <Card
-                      key={section.id}
-                      className={`p-5 hover:shadow-lg transition-all hover:border-primary/50 ${
-                        hasMultipleCatalogs ? 'md:col-span-2 lg:col-span-2' : ''
-                      }`}
-                    >
-                      <div className="mb-4">
-                        <h3 className="text-2xl font-bold">
-                          Section {section.letter}
-                        </h3>
-                        {instructorsBySection[section.id] ? (
-                          <p className="text-sm text-muted-foreground">
-                            {instructorsBySection[section.id].first_name}{" "}
-                            {instructorsBySection[section.id].last_name}
-                          </p>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            No instructor assigned yet
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-3 mb-4">
-                        {section.activities && section.activities.length > 0 ? (
-                          [...section.activities]
-                            .sort((a, b) => {
-                              // Lect type comes first
-                              if (
-                                a.course_type === "LECT" &&
-                                b.course_type !== "LECT"
-                              )
-                                return -1
-                              if (
-                                a.course_type !== "LECT" &&
-                                b.course_type === "LECT"
-                              )
-                                return 1
-                              return 0
-                            })
-                            .map((activity, idx) => {
-                              let times: Array<{
-                                day: string
-                                time: string
-                                duration: string
-                                campus: string
-                                room: string
-                              }> = []
-                              try {
-                                times = JSON.parse(activity.times)
-                              } catch (e) {
-                                times = []
-                              }
-
-                              const activityType = getTypeName(
-                                activity.course_type
-                              )
-                              const activityCount = section.activities!.filter(
-                                (a) => a.course_type === activity.course_type
-                              ).length
-                              const isMultiple = activityCount > 1
-
-                              return (
-                                <div
-                                  key={activity.id}
-                                  className="bg-muted/50 rounded-lg p-3"
+                      <Card
+                        key={section.id}
+                        className={`p-5 hover:shadow-lg transition-all hover:border-primary/50 ${
+                          hasMultipleCatalogs
+                            ? "md:col-span-2 lg:col-span-2"
+                            : ""
+                        }`}
+                      >
+                        <div className="mb-4">
+                          <h3 className="text-2xl font-bold">
+                            Section {section.letter}
+                          </h3>
+                          {instructorsBySection[section.id] ? (
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm text-muted-foreground">
+                                {instructorsBySection[section.id].first_name}{" "}
+                                {instructorsBySection[section.id].last_name}
+                              </p>
+                              {instructorsBySection[section.id]
+                                .rate_my_prof_link && (
+                                <a
+                                  href={
+                                    instructorsBySection[section.id]
+                                      .rate_my_prof_link
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0"
+                                  title="View on Rate My Professors"
+                                  aria-label={`View ${
+                                    instructorsBySection[section.id].first_name
+                                  } ${
+                                    instructorsBySection[section.id].last_name
+                                  } on Rate My Professors`}
                                 >
-                                  <div className="flex items-start gap-2 text-xs text-muted-foreground mb-1 min-w-0">
-                                    <BookOpen
-                                      className="h-3 w-3 flex-shrink-0 mt-0.5"
-                                      aria-hidden="true"
-                                    />
-                                    <span className="flex-shrink-0">
-                                      {activityType}
-                                      {isMultiple &&
-                                        ` ${
-                                          section
-                                            .activities!.filter(
-                                              (a) =>
-                                                a.course_type ===
-                                                activity.course_type
-                                            )
-                                            .indexOf(activity) + 1
-                                        }`}
-                                    </span>
-                                    {activity.catalog_number && (
-                                      <div className="flex flex-wrap gap-1.5 ml-auto flex-shrink min-w-0">
-                                        {parseCatalogNumbers(activity.catalog_number).map((catalogNum, idx) => (
-                                          <button
-                                            key={idx}
-                                            onClick={() =>
-                                              handleCopyCatalog(catalogNum.trim())
-                                            }
-                                            className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0"
-                                            title="Click to copy catalog number"
-                                            aria-label={`Copy catalog number ${catalogNum}`}
-                                            type="button"
-                                          >
-                                            <span className="text-xs font-mono font-medium text-primary">
-                                              {catalogNum.trim()}
-                                            </span>
-                                            {copiedCatalog === catalogNum.trim() ? (
-                                              <Check className="h-3 w-3 text-primary flex-shrink-0" />
-                                            ) : (
-                                              <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 flex-shrink-0" />
-                                            )}
-                                          </button>
-                                        ))}
-                                      </div>
+                                  <span className="text-xs font-medium text-primary">
+                                    RateMyProf
+                                  </span>
+                                  <ExternalLink className="h-3 w-3 text-primary" />
+                                </a>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No instructor assigned yet
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-3 mb-4">
+                          {section.activities &&
+                          section.activities.length > 0 ? (
+                            [...section.activities]
+                              .sort((a, b) => {
+                                // Lect type comes first
+                                if (
+                                  a.course_type === "LECT" &&
+                                  b.course_type !== "LECT"
+                                )
+                                  return -1
+                                if (
+                                  a.course_type !== "LECT" &&
+                                  b.course_type === "LECT"
+                                )
+                                  return 1
+                                return 0
+                              })
+                              .map((activity, idx) => {
+                                let times: Array<{
+                                  day: string
+                                  time: string
+                                  duration: string
+                                  campus: string
+                                  room: string
+                                }> = []
+                                try {
+                                  times = JSON.parse(activity.times)
+                                } catch (e) {
+                                  times = []
+                                }
+
+                                const activityType = getTypeName(
+                                  activity.course_type
+                                )
+                                const activityCount =
+                                  section.activities!.filter(
+                                    (a) =>
+                                      a.course_type === activity.course_type
+                                  ).length
+                                const isMultiple = activityCount > 1
+
+                                return (
+                                  <div
+                                    key={activity.id}
+                                    className="bg-muted/50 rounded-lg p-3"
+                                  >
+                                    <div className="flex items-start gap-2 text-xs text-muted-foreground mb-1 min-w-0">
+                                      <BookOpen
+                                        className="h-3 w-3 flex-shrink-0 mt-0.5"
+                                        aria-hidden="true"
+                                      />
+                                      <span className="flex-shrink-0">
+                                        {activityType}
+                                        {isMultiple &&
+                                          ` ${
+                                            section
+                                              .activities!.filter(
+                                                (a) =>
+                                                  a.course_type ===
+                                                  activity.course_type
+                                              )
+                                              .indexOf(activity) + 1
+                                          }`}
+                                      </span>
+                                      {activity.catalog_number && (
+                                        <div className="flex flex-wrap gap-1.5 ml-auto flex-shrink min-w-0">
+                                          {parseCatalogNumbers(
+                                            activity.catalog_number
+                                          ).map((catalogNum, idx) => (
+                                            <button
+                                              key={idx}
+                                              onClick={() =>
+                                                handleCopyCatalog(
+                                                  catalogNum.trim()
+                                                )
+                                              }
+                                              className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0"
+                                              title="Click to copy catalog number"
+                                              aria-label={`Copy catalog number ${catalogNum}`}
+                                              type="button"
+                                            >
+                                              <span className="text-xs font-mono font-medium text-primary">
+                                                {catalogNum.trim()}
+                                              </span>
+                                              {copiedCatalog ===
+                                              catalogNum.trim() ? (
+                                                <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                                              ) : (
+                                                <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 flex-shrink-0" />
+                                              )}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                    {times.length === 0 ? (
+                                      <p className="text-sm font-bold">
+                                        Cancelled
+                                      </p>
+                                    ) : times.length > 0 &&
+                                      (!times[0].time ||
+                                        times[0].time === "0:00") ? (
+                                      <p className="text-sm font-bold">
+                                        No Scheduled Times
+                                      </p>
+                                    ) : (
+                                      <>
+                                        <p className="text-sm font-medium">
+                                          {getDayName(times[0].day)}:{" "}
+                                          {formatTime(times[0].time)} -{" "}
+                                          {calculateEndTime(
+                                            times[0].time,
+                                            times[0].duration
+                                          )}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {[times[0]?.room, times[0]?.campus]
+                                            .filter(Boolean)
+                                            .join(", ")}
+                                        </p>
+                                      </>
                                     )}
                                   </div>
-                                  {times.length === 0 ? (
-                                    <p className="text-sm font-bold">
-                                      Cancelled
-                                    </p>
-                                  ) : times.length > 0 &&
-                                    (!times[0].time ||
-                                      times[0].time === "0:00") ? (
-                                    <p className="text-sm font-bold">
-                                      No Scheduled Times
-                                    </p>
-                                  ) : (
-                                    <>
-                                      <p className="text-sm font-medium">
-                                        {getDayName(times[0].day)}:{" "}
-                                        {formatTime(times[0].time)} -{" "}
-                                        {calculateEndTime(
-                                          times[0].time,
-                                          times[0].duration
-                                        )}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {[times[0]?.room, times[0]?.campus]
-                                          .filter(Boolean)
-                                          .join(", ")}
-                                      </p>
-                                    </>
-                                  )}
-                                </div>
-                              )
-                            })
-                        ) : (
-                          <p className="text-xs text-muted-foreground">
-                            No activities scheduled
-                          </p>
-                        )}
-                      </div>
-                    </Card>
+                                )
+                              })
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              No activities scheduled
+                            </p>
+                          )}
+                        </div>
+                      </Card>
                     )
                   })}
                 </div>
