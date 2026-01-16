@@ -125,6 +125,7 @@ export interface Course {
   students: number
   sections: number
   credits: number
+  description?: string
 }
 
 export interface TimeSlot {
