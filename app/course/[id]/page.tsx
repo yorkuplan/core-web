@@ -396,7 +396,7 @@ export default function CoursePage() {
                               )}
                             </div>
                           ) : (
-                            <p className="text-xs sm:text-sm text-muted-foreground mt-1\">
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                               No instructor assigned yet
                             </p>
                           )}
