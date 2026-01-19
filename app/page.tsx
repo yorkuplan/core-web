@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -118,14 +117,14 @@ export default function HomePage() {
                     </div>
                   ) : searchResults.length === 0 ? (
                     <div className="p-4 sm:p-6 text-muted-foreground text-sm sm:text-base">
-                      No courses found for "{searchQuery}"
+                      No courses found for &quot;{searchQuery}&quot;
                     </div>
                   ) : (
                     <div className="divide-y divide-border">
                       {searchResults.map((course) => (
                         <Link
                           key={course.id}
-                          href={`/course/${course.id}`}
+                          href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
                           className="block p-3 sm:p-4 hover:bg-muted/70 transition-colors text-left"
                           onMouseDown={(e) => e.preventDefault()}
                         >
@@ -193,7 +192,10 @@ export default function HomePage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {topCourses.map((course) => (
-                  <Link key={course.id} href={`/course/${course.id}`}>
+                  <Link
+                    key={course.id}
+                    href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
+                  >
                     <Card className="p-4 sm:p-6 hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer group flex flex-col h-full">
                       <div className="flex items-start justify-between mb-3 flex-shrink-0 gap-2 sm:gap-3">
                         <div className="flex-1 min-w-0 pr-2">
