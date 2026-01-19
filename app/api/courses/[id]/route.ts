@@ -6,15 +6,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = await getRouteParam(params, "id")
+    const courseCode = await getRouteParam(params, "id")
     return fetchApiData(
-      `/courses/${id}`,
+      `/courses/${courseCode}`,
       "Failed to fetch course",
-      `Failed to fetch course ${id}:`
+      `Failed to fetch course ${courseCode}:`
     )
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { error: "Course ID is required" },
+      { error: "Course code is required" },
       { status: 400 }
     )
   }
