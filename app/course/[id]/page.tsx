@@ -70,7 +70,9 @@ export default function CoursePage() {
     return [catalogNumber.trim()]
   }
 
-  const parseDescription = (description: string | undefined): { description: string; prerequisites: string | null } => {
+  const parseDescription = (
+    description: string | undefined,
+  ): { description: string; prerequisites: string | null } => {
     if (!description) {
       return { description: "", prerequisites: null }
     }
@@ -89,7 +91,9 @@ export default function CoursePage() {
     const prerequisitesText = description.substring(match).trim()
 
     // Remove the "Prerequisite(s):" prefix from the prerequisites text
-    const cleanedPrerequisites = prerequisitesText.replace(prerequisiteRegex, "").trim()
+    const cleanedPrerequisites = prerequisitesText
+      .replace(prerequisiteRegex, "")
+      .trim()
 
     return {
       description: mainDescription,
@@ -102,29 +106,38 @@ export default function CoursePage() {
 
     // Split by semicolons first (common separator for prerequisites)
     const items: string[] = []
-    
+
     // Handle special sections like "Course credit exclusions:" and "Previously offered as:"
-    const sections = prerequisites.split(/(?=Course credit exclusions:|Previously offered as:)/i)
-    
+    const sections = prerequisites.split(
+      /(?=Course credit exclusions:|Previously offered as:)/i,
+    )
+
     sections.forEach((section) => {
       const trimmed = section.trim()
       if (!trimmed) return
 
       // Check if this is a special section
-      if (trimmed.match(/^(Course credit exclusions|Previously offered as):/i)) {
+      if (
+        trimmed.match(/^(Course credit exclusions|Previously offered as):/i)
+      ) {
         // Add the section header as a separate item
-        const match = trimmed.match(/^(Course credit exclusions|Previously offered as):\s*(.+)/i)
+        const match = trimmed.match(
+          /^(Course credit exclusions|Previously offered as):\s*(.+)/i,
+        )
         if (match) {
           items.push(`${match[1]}: ${match[2].trim()}`)
         }
       } else {
         // Split by semicolons for regular prerequisites
-        const parts = trimmed.split(';').map(p => p.trim()).filter(p => p)
+        const parts = trimmed
+          .split(";")
+          .map((p) => p.trim())
+          .filter((p) => p)
         items.push(...parts)
       }
     })
 
-    return items.filter(item => item.length > 0)
+    return items.filter((item) => item.length > 0)
   }
 
   const handleCopyCatalog = async (catalogNumber: string) => {
@@ -195,14 +208,18 @@ export default function CoursePage() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header subtitle="Course selection, de-cluttered." />
 
-      <div className="container mx-auto px-4 py-8 flex-grow">
+      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 flex-grow">
         {isLoading ? (
-          <div className="max-w-6xl mx-auto text-center py-12">
-            <p className="text-muted-foreground">Loading course...</p>
+          <div className="max-w-6xl mx-auto text-center py-8 sm:py-12">
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Loading course...
+            </p>
           </div>
         ) : error || !course ? (
-          <div className="max-w-6xl mx-auto text-center py-12">
-            <p className="text-destructive">{error || "Course not found"}</p>
+          <div className="max-w-6xl mx-auto text-center py-8 sm:py-12">
+            <p className="text-sm sm:text-base text-destructive">
+              {error || "Course not found"}
+            </p>
             <Link
               href="/"
               className="text-primary hover:underline mt-4 inline-block"
@@ -213,79 +230,98 @@ export default function CoursePage() {
         ) : (
           <>
             {/* Course Header */}
-            <div className="max-w-6xl mx-auto mb-8">
+            <div className="max-w-6xl mx-auto mb-6 sm:mb-8">
               <Link
                 href="/"
-                className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block"
+                className="text-xs sm:text-sm text-muted-foreground hover:text-foreground mb-3 sm:mb-4 inline-block"
               >
                 ← Back to search
               </Link>
 
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex-1">
-                  <h1 className="text-5xl font-bold mb-3">
+              <div className="mb-4 sm:mb-6">
+                <div className="flex items-start justify-between gap-2 sm:gap-4 mb-2 sm:mb-3">
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold break-words">
                     {formatCourseCode(course.code)}
                   </h1>
-                  <p className="text-2xl text-muted-foreground mb-4">
-                    {course.name}
-                  </p>
+                  <Badge
+                    variant="secondary"
+                    className="text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 shrink-0 mt-0.5"
+                  >
+                    {course.credits} credit
+                    {course.credits === 1 ? "" : "s"}
+                  </Badge>
                 </div>
-                <Badge variant="secondary" className="text-base px-4 py-2">
-                  {course.credits} credit
-                  {course.credits === 1 ? "" : "s"}
-                </Badge>
+                <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground line-clamp-3">
+                  {course.name}
+                </p>
               </div>
 
-              {course.description && (() => {
-                const { description, prerequisites } = parseDescription(course.description)
-                return (
-                  <>
-                    {description && (
-                      <Card className="p-8 bg-muted/30">
-                        <p className="text-base text-foreground leading-relaxed whitespace-pre-line">
-                          {description}
-                        </p>
-                      </Card>
-                    )}
-                    {prerequisites && (() => {
-                      const prerequisiteItems = parsePrerequisitesIntoList(prerequisites)
-                      return (
-                        <Card className="p-6 bg-muted/30 mt-4">
-                          <h3 className="text-xl font-bold text-primary mb-1.5">
-                            Prerequisites
-                          </h3>
-                          {prerequisiteItems.length > 0 ? (
-                            <ul className="list-disc list-outside space-y-2 text-base text-foreground leading-relaxed pl-5 -ml-1">
-                              {prerequisiteItems.map((item, index) => (
-                                <li key={index} className="pl-0">{item}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-base text-foreground leading-relaxed whitespace-pre-line">
-                              {prerequisites}
-                            </p>
-                          )}
+              {course.description &&
+                (() => {
+                  const { description, prerequisites } = parseDescription(
+                    course.description,
+                  )
+                  return (
+                    <>
+                      {description && (
+                        <Card className="p-4 sm:p-6 md:p-8 bg-muted/30">
+                          <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">
+                            {description}
+                          </p>
                         </Card>
-                      )
-                    })()}
-                  </>
-                )
-              })()}
+                      )}
+                      {prerequisites &&
+                        (() => {
+                          const prerequisiteItems =
+                            parsePrerequisitesIntoList(prerequisites)
+                          return (
+                            <Card className="p-4 sm:p-6 bg-muted/30 mt-3 sm:mt-4">
+                              <h3 className="text-lg sm:text-xl font-bold text-primary mb-1.5">
+                                Prerequisites
+                              </h3>
+                              {prerequisiteItems.length > 0 ? (
+                                <ul className="list-disc list-outside space-y-2 text-sm sm:text-base text-foreground leading-relaxed pl-5 -ml-1">
+                                  {prerequisiteItems.map((item, index) => (
+                                    <li key={index} className="pl-0">
+                                      {item}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">
+                                  {prerequisites}
+                                </p>
+                              )}
+                            </Card>
+                          )
+                        })()}
+                    </>
+                  )
+                })()}
 
-              <div className="flex flex-wrap items-center gap-6 mt-8 text-sm text-muted-foreground">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-6 mt-6 sm:mt-8 text-xs sm:text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" aria-hidden="true" />
+                  <Calendar
+                    className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0"
+                    aria-hidden="true"
+                  />
                   <span>{getSemesterName(course.term)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4" aria-hidden="true" />
+                  <Users
+                    className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0"
+                    aria-hidden="true"
+                  />
                   <span>
                     {sections.length}{" "}
                     {sections.length === 1 ? "section" : "sections"} available
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" aria-hidden="true" />
+                  <BookOpen
+                    className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0"
+                    aria-hidden="true"
+                  />
                   <span>{getFacultyName(course.faculty)}</span>
                 </div>
               </div>
@@ -293,14 +329,16 @@ export default function CoursePage() {
 
             {/* Sections */}
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-2xl font-bold mb-6">Available Sections</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
+                Available Sections
+              </h2>
 
               {sections.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
+                <div className="text-center py-8 sm:py-12 text-sm sm:text-base text-muted-foreground">
                   No sections available for this course.
                 </div>
               ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {sections.map((section) => {
                     // Check if any activity has multiple catalog numbers
                     const hasMultipleCatalogs =
@@ -308,25 +346,25 @@ export default function CoursePage() {
                         (activity) =>
                           activity.catalog_number &&
                           parseCatalogNumbers(activity.catalog_number).length >
-                            1
+                            1,
                       ) || false
 
                     return (
                       <Card
                         key={section.id}
-                        className={`p-5 hover:shadow-lg transition-all hover:border-primary/50 ${
+                        className={`p-4 sm:p-5 hover:shadow-lg transition-all hover:border-primary/50 ${
                           hasMultipleCatalogs
-                            ? "md:col-span-2 lg:col-span-2"
+                            ? "sm:col-span-2 lg:col-span-2"
                             : ""
                         }`}
                       >
-                        <div className="mb-4">
-                          <h3 className="text-2xl font-bold">
+                        <div className="mb-3 sm:mb-4">
+                          <h3 className="text-xl sm:text-2xl font-bold">
                             Section {section.letter}
                           </h3>
                           {instructorsBySection[section.id] ? (
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm text-muted-foreground">
+                            <div className="flex items-center justify-between gap-2 mt-1">
+                              <p className="text-xs sm:text-sm text-muted-foreground">
                                 {instructorsBySection[section.id].first_name}{" "}
                                 {instructorsBySection[section.id].last_name}
                               </p>
@@ -339,7 +377,7 @@ export default function CoursePage() {
                                   }
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0"
+                                  className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0 text-xs"
                                   title="View on Rate My Professors"
                                   aria-label={`View ${
                                     instructorsBySection[section.id].first_name
@@ -358,13 +396,13 @@ export default function CoursePage() {
                               )}
                             </div>
                           ) : (
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                               No instructor assigned yet
                             </p>
                           )}
                         </div>
 
-                        <div className="space-y-3 mb-4">
+                        <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
                           {section.activities &&
                           section.activities.length > 0 ? (
                             [...section.activities]
@@ -397,56 +435,58 @@ export default function CoursePage() {
                                 }
 
                                 const activityType = getTypeName(
-                                  activity.course_type
+                                  activity.course_type,
                                 )
                                 const activityCount =
                                   section.activities!.filter(
                                     (a) =>
-                                      a.course_type === activity.course_type
+                                      a.course_type === activity.course_type,
                                   ).length
                                 const isMultiple = activityCount > 1
 
                                 return (
                                   <div
                                     key={activity.id}
-                                    className="bg-muted/50 rounded-lg p-3"
+                                    className="bg-muted/50 rounded-lg p-2.5 sm:p-3"
                                   >
-                                    <div className="flex items-start gap-2 text-xs text-muted-foreground mb-1 min-w-0">
-                                      <BookOpen
-                                        className="h-3 w-3 flex-shrink-0 mt-0.5"
-                                        aria-hidden="true"
-                                      />
-                                      <span className="flex-shrink-0">
-                                        {activityType}
-                                        {isMultiple &&
-                                          ` ${
-                                            section
-                                              .activities!.filter(
-                                                (a) =>
-                                                  a.course_type ===
-                                                  activity.course_type
-                                              )
-                                              .indexOf(activity) + 1
-                                          }`}
-                                      </span>
+                                    <div className="flex items-center justify-between gap-1.5 sm:gap-2 text-xs text-muted-foreground mb-1 min-w-0">
+                                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                        <BookOpen
+                                          className="h-3 w-3 flex-shrink-0"
+                                          aria-hidden="true"
+                                        />
+                                        <span className="flex-shrink-0 whitespace-nowrap">
+                                          {activityType}
+                                          {isMultiple &&
+                                            ` ${
+                                              section
+                                                .activities!.filter(
+                                                  (a) =>
+                                                    a.course_type ===
+                                                    activity.course_type,
+                                                )
+                                                .indexOf(activity) + 1
+                                            }`}
+                                        </span>
+                                      </div>
                                       {activity.catalog_number && (
-                                        <div className="flex flex-wrap gap-1.5 ml-auto flex-shrink min-w-0">
+                                        <div className="flex gap-1 sm:gap-1.5 flex-shrink-0">
                                           {parseCatalogNumbers(
-                                            activity.catalog_number
+                                            activity.catalog_number,
                                           ).map((catalogNum, idx) => (
                                             <button
                                               key={idx}
                                               onClick={() =>
                                                 handleCopyCatalog(
-                                                  catalogNum.trim()
+                                                  catalogNum.trim(),
                                                 )
                                               }
-                                              className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0"
+                                              className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0 text-xs"
                                               title="Click to copy catalog number"
                                               aria-label={`Copy catalog number ${catalogNum}`}
                                               type="button"
                                             >
-                                              <span className="text-xs font-mono font-medium text-primary">
+                                              <span className="text-xs font-mono font-medium text-primary line-clamp-1">
                                                 {catalogNum.trim()}
                                               </span>
                                               {copiedCatalog ===
@@ -461,23 +501,23 @@ export default function CoursePage() {
                                       )}
                                     </div>
                                     {times.length === 0 ? (
-                                      <p className="text-sm font-bold">
+                                      <p className="text-xs sm:text-sm font-bold">
                                         Cancelled
                                       </p>
                                     ) : times.length > 0 &&
                                       (!times[0].time ||
                                         times[0].time === "0:00") ? (
-                                      <p className="text-sm font-bold">
+                                      <p className="text-xs sm:text-sm font-bold">
                                         No Scheduled Times
                                       </p>
                                     ) : (
                                       <>
-                                        <p className="text-sm font-medium">
+                                        <p className="text-xs sm:text-sm font-medium">
                                           {getDayName(times[0].day)}:{" "}
                                           {formatTime(times[0].time)} -{" "}
                                           {calculateEndTime(
                                             times[0].time,
-                                            times[0].duration
+                                            times[0].duration,
                                           )}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
@@ -491,7 +531,7 @@ export default function CoursePage() {
                                 )
                               })
                           ) : (
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground mt-1">
                               No activities scheduled
                             </p>
                           )}

@@ -12,10 +12,16 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  SlidersHorizontal,
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { coursesApi, formatCourseCode, getFacultyName, Course } from "@/lib/api/courses"
+import {
+  coursesApi,
+  formatCourseCode,
+  getFacultyName,
+  Course,
+} from "@/lib/api/courses"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
@@ -43,6 +49,9 @@ const COURSE_LEVEL_TO_RANGE: Record<string, string> = {
   "4xxx": "4000s",
   "5xxx": "5000s",
   "6xxx": "6000s",
+  "7xxx": "7000s",
+  "8xxx": "8000s",
+  "9xxx": "9000s",
 }
 
 export default function CoursesContent() {
@@ -50,6 +59,7 @@ export default function CoursesContent() {
   const [selectedFaculty, setSelectedFaculty] = useState("all")
   const [selectedCourseLevel, setSelectedCourseLevel] = useState<string[]>([])
   const [isFacultyExpanded, setIsFacultyExpanded] = useState(true)
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
   const [courses, setCourses] = useState<Course[]>([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
@@ -67,7 +77,10 @@ export default function CoursesContent() {
     { id: "science", name: "Science" },
     { id: "health", name: "Health" },
     { id: "education", name: "Education" },
-    { id: "fine-arts", name: "School of the Arts, Media, Performance & Design" },
+    {
+      id: "fine-arts",
+      name: "School of the Arts, Media, Performance & Design",
+    },
     { id: "glendon", name: "Glendon Campus" },
     { id: "osgoode", name: "Osgoode Hall Law School" },
     { id: "schulich", name: "Schulich School of Business" },
@@ -82,11 +95,16 @@ export default function CoursesContent() {
     { id: "4xxx", label: "4000s", range: [4000, 4999] },
     { id: "5xxx", label: "5000s", range: [5000, 5999] },
     { id: "6xxx", label: "6000s", range: [6000, 6999] },
+    { id: "7xxx", label: "7000s", range: [7000, 7999] },
+    { id: "8xxx", label: "8000s", range: [8000, 8999] },
+    { id: "9xxx", label: "9000s", range: [9000, 9999] },
   ]
 
   const toggleCourseLevel = (levelId: string) => {
     setSelectedCourseLevel((prev) =>
-      prev.includes(levelId) ? prev.filter((id) => id !== levelId) : [...prev, levelId],
+      prev.includes(levelId)
+        ? prev.filter((id) => id !== levelId)
+        : [...prev, levelId],
     )
   }
 
@@ -137,7 +155,7 @@ export default function CoursesContent() {
     const fetchCourses = async () => {
       setIsLoading(true)
       setError(null)
-      
+
       try {
         const params: {
           page: number
@@ -168,7 +186,7 @@ export default function CoursesContent() {
         }
 
         const response = await coursesApi.getPaginatedCourses(params)
-        
+
         if (response && response.data && Array.isArray(response.data)) {
           // Create a new array reference to ensure React detects the change
           const newCourses = [...response.data]
@@ -215,7 +233,11 @@ export default function CoursesContent() {
     const range = []
     const rangeWithDots = []
 
-    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
       range.push(i)
     }
 
@@ -240,17 +262,20 @@ export default function CoursesContent() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header subtitle="Course selection, de-cluttered." />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto">
           {/* Page Header */}
-          <div className="mb-8">
-            <Link href="/" className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block">
+          <div className="mb-6 sm:mb-8">
+            <Link
+              href="/"
+              className="text-xs sm:text-sm text-muted-foreground hover:text-foreground mb-2 sm:mb-4 inline-block"
+            >
               ← Back to home
             </Link>
-            <h1 className="text-4xl font-bold mb-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
               {isSearchMode ? "Search Results" : "All Courses"}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {isLoading || isSearching
                 ? "Loading courses..."
                 : error
@@ -267,17 +292,17 @@ export default function CoursesContent() {
             )} */}
           </div>
 
-          <div className="flex gap-8">
+          <div className="flex gap-4 lg:gap-8">
             {/* Main Content - Left Side */}
             <div className="flex-1 min-w-0">
-              {/* Search */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              {/* Search + Mobile Filter Button */}
+              <div className="mb-6 flex gap-2 sm:gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-4 sm:h-5 w-4 sm:w-5 text-muted-foreground" />
                   <Input
                     type="text"
                     placeholder="Search courses..."
-                    className="pl-12 pr-10 h-12 bg-card"
+                    className="pl-9 sm:pl-12 pr-8 sm:pr-10 h-10 sm:h-12 bg-card text-sm sm:text-base"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -287,34 +312,125 @@ export default function CoursesContent() {
                         setSearchQuery("")
                         setIsSearchMode(false)
                       }}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
                       aria-label="Clear search"
                     >
                       <X className="h-4 w-4" />
                     </button>
                   )}
                 </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+                  className="lg:hidden h-10 sm:h-12 w-10 sm:w-12 shrink-0"
+                  aria-label="Toggle filters"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                </Button>
               </div>
 
+              {/* Mobile Filter Panel */}
+              {isMobileFilterOpen && (
+                <Card className="p-4 sm:p-6 mb-6 lg:hidden">
+                  <h2 className="font-semibold text-base sm:text-lg mb-4">
+                    Filter your results
+                  </h2>
+
+                  {/* Course Code Level Filter */}
+                  <div className="mb-6 pb-6 border-b">
+                    <label className="text-xs sm:text-sm font-medium block mb-3">
+                      Course code
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {courseLevels.map((level) => (
+                        <Button
+                          key={level.id}
+                          size="sm"
+                          variant={
+                            selectedCourseLevel.includes(level.id)
+                              ? "default"
+                              : "outline"
+                          }
+                          onClick={() => toggleCourseLevel(level.id)}
+                          className="rounded-full text-xs sm:text-sm"
+                        >
+                          {level.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Faculty Filter - Collapsible */}
+                  <div className="mb-6">
+                    <button
+                      onClick={() => setIsFacultyExpanded(!isFacultyExpanded)}
+                      className="w-full flex items-center justify-between text-xs sm:text-sm font-medium mb-3 hover:text-primary transition-colors"
+                    >
+                      <span>Faculty</span>
+                      {isFacultyExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+                    <div
+                      className={`space-y-2 ${isFacultyExpanded ? "block" : "hidden"}`}
+                    >
+                      {faculties.map((faculty) => (
+                        <button
+                          key={faculty.id}
+                          onClick={() => setSelectedFaculty(faculty.id)}
+                          className={`w-full text-left px-3 py-2 rounded-md text-xs sm:text-sm transition-colors ${
+                            selectedFaculty === faculty.id
+                              ? "bg-primary text-primary-foreground"
+                              : "hover:bg-accent"
+                          }`}
+                        >
+                          {faculty.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Clear Filter Button */}
+                  {(selectedFaculty !== "all" ||
+                    selectedCourseLevel.length > 0) && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={clearAllFilters}
+                      className="w-full text-xs sm:text-sm"
+                    >
+                      × Clear filter
+                    </Button>
+                  )}
+                </Card>
+              )}
+
               {isLoading ? (
-                <div className="flex flex-col gap-6 mb-8">
+                <div className="flex flex-col gap-4 sm:gap-6 mb-8">
                   {[...Array(5)].map((_, i) => (
-                    <Card key={i} className="p-6">
-                      <div className="h-24 bg-muted animate-pulse rounded" />
+                    <Card key={i} className="p-4 sm:p-6">
+                      <div className="h-16 sm:h-24 bg-muted animate-pulse rounded" />
                     </Card>
                   ))}
                 </div>
               ) : error ? (
-                <Card className="p-6 mb-8">
-                  <div className="text-center py-8">
-                    <p className="text-destructive mb-4">{error}</p>
-                    <Button onClick={() => window.location.reload()}>Retry</Button>
+                <Card className="p-4 sm:p-6 mb-8">
+                  <div className="text-center py-6 sm:py-8">
+                    <p className="text-sm sm:text-base text-destructive mb-4">
+                      {error}
+                    </p>
+                    <Button onClick={() => window.location.reload()} size="sm">
+                      Retry
+                    </Button>
                   </div>
                 </Card>
               ) : courses.length === 0 && !isLoading ? (
-                <Card className="p-6 mb-8">
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
+                <Card className="p-4 sm:p-6 mb-8">
+                  <div className="text-center py-6 sm:py-8">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       {isSearchMode
                         ? `No courses found for "${searchQuery}". Try a different search term.`
                         : "No courses found matching your filters."}
@@ -322,43 +438,58 @@ export default function CoursesContent() {
                   </div>
                 </Card>
               ) : (
-                <div className="flex flex-col gap-6 mb-8">
+                <div className="flex flex-col gap-4 sm:gap-6 mb-8">
                   {courses.map((course, index) => {
                     const courseCode = formatCode(course.code)
-                    const courseSlug = courseCode.toLowerCase().replace(/\s+/g, "-")
-                    // Use a more unique key that includes index to force re-render
+                    const courseSlug = courseCode
+                      .toLowerCase()
+                      .replace(/\s+/g, "-")
                     const uniqueKey = `${course.id || course.code}-${course.term || ""}-${index}`
                     return (
-                      <Link key={uniqueKey} href={`/course/${course.id || courseSlug}`}>
-                        <Card className="p-6 hover:shadow-md transition-all hover:border-primary/50 cursor-pointer group">
-                          <div className="flex items-start justify-between gap-4">
+                      <Link
+                        key={uniqueKey}
+                        href={`/course/${course.id || courseSlug}`}
+                      >
+                        <Card className="p-4 sm:p-6 hover:shadow-md transition-all hover:border-primary/50 cursor-pointer group">
+                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="font-bold text-xl group-hover:text-primary transition-colors">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                                <h3 className="font-bold text-base sm:text-lg md:text-xl group-hover:text-primary transition-colors break-words">
                                   {courseCode}
                                 </h3>
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge
+                                  variant="secondary"
+                                  className="text-xs sm:text-sm w-fit"
+                                >
                                   {course.credits || "N/A"} credits
                                 </Badge>
                               </div>
-                              <p className="text-base font-medium text-foreground mb-3">{course.name}</p>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                                {course.instructor && <span>{course.instructor}</span>}
-                                <span className="flex items-center gap-1.5">
-                                  <Calendar className="h-3.5 w-3.5" />
-                                  Term: {getCourseTerms(course)}
+                              <p className="text-sm sm:text-base font-medium text-foreground mb-2 sm:mb-3 line-clamp-2">
+                                {course.name}
+                              </p>
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                                {course.instructor && (
+                                  <span className="line-clamp-1">
+                                    {course.instructor}
+                                  </span>
+                                )}
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">
+                                    Term: {getCourseTerms(course)}
+                                  </span>
                                 </span>
                                 {course.faculty && (
-                                  <span className="text-xs">
+                                  <span className="text-xs hidden sm:inline">
                                     {getFacultyName(course.faculty)}
                                   </span>
                                 )}
                               </div>
                             </div>
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
-                              className="group-hover:bg-primary group-hover:text-primary-foreground shrink-0"
+                              className="group-hover:bg-primary group-hover:text-primary-foreground shrink-0 w-full sm:w-auto text-xs sm:text-sm shadow-md hover:shadow-lg border-2 sm:border-2"
                             >
                               View Details
                             </Button>
@@ -372,19 +503,25 @@ export default function CoursesContent() {
 
               {/* Pagination */}
               {!isLoading && !error && !isSearchMode && totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
                     disabled={currentPage === 1 || isLoading}
+                    className="h-8 sm:h-9 w-8 sm:w-9 p-0"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
 
                   {getPaginationRange().map((page, idx) =>
                     page === "..." ? (
-                      <span key={`dots-${idx}`} className="px-2 text-muted-foreground">
+                      <span
+                        key={`dots-${idx}`}
+                        className="px-1 sm:px-2 text-xs sm:text-sm text-muted-foreground"
+                      >
                         ...
                       </span>
                     ) : (
@@ -394,7 +531,7 @@ export default function CoursesContent() {
                         size="sm"
                         onClick={() => setCurrentPage(page as number)}
                         disabled={isLoading}
-                        className="min-w-[2.5rem]"
+                        className="min-w-[2rem] sm:min-w-[2.5rem] h-8 sm:h-9 text-xs sm:text-sm"
                       >
                         {page}
                       </Button>
@@ -404,8 +541,11 @@ export default function CoursesContent() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
                     disabled={currentPage === totalPages || isLoading}
+                    className="h-8 sm:h-9 w-8 sm:w-9 p-0"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -413,22 +553,30 @@ export default function CoursesContent() {
               )}
             </div>
 
-            <aside className="w-80 shrink-0 hidden lg:block">
+            <aside className="hidden lg:block w-80 shrink-0">
               <div className="sticky top-24">
-                <Card className="p-6">
-                  <h2 className="font-semibold text-lg mb-6">Filter your results</h2>
+                <Card className="p-4 sm:p-6">
+                  <h2 className="font-semibold text-base sm:text-lg mb-4 sm:mb-6">
+                    Filter your results
+                  </h2>
 
                   {/* Course Code Level Filter */}
                   <div className="mb-6 pb-6 border-b">
-                    <label className="text-sm font-medium block mb-3">Course code</label>
+                    <label className="text-xs sm:text-sm font-medium block mb-3">
+                      Course code
+                    </label>
                     <div className="flex flex-wrap gap-2">
                       {courseLevels.map((level) => (
                         <Button
                           key={level.id}
                           size="sm"
-                          variant={selectedCourseLevel.includes(level.id) ? "default" : "outline"}
+                          variant={
+                            selectedCourseLevel.includes(level.id)
+                              ? "default"
+                              : "outline"
+                          }
                           onClick={() => toggleCourseLevel(level.id)}
-                          className="rounded-full"
+                          className="rounded-full text-xs sm:text-sm"
                         >
                           {level.label}
                         </Button>
@@ -440,18 +588,26 @@ export default function CoursesContent() {
                   <div className="mb-6">
                     <button
                       onClick={() => setIsFacultyExpanded(!isFacultyExpanded)}
-                      className="w-full flex items-center justify-between text-sm font-medium mb-3 hover:text-primary transition-colors"
+                      className="w-full flex items-center justify-between text-xs sm:text-sm font-medium mb-3 hover:text-primary transition-colors"
                     >
                       <span>Faculty</span>
-                      {isFacultyExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {isFacultyExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
                     </button>
-                    <div className={`space-y-2 ${isFacultyExpanded ? "block" : "hidden"}`}>
+                    <div
+                      className={`space-y-2 ${isFacultyExpanded ? "block" : "hidden"}`}
+                    >
                       {faculties.map((faculty) => (
                         <button
                           key={faculty.id}
                           onClick={() => setSelectedFaculty(faculty.id)}
-                          className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                            selectedFaculty === faculty.id ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                          className={`w-full text-left px-3 py-2 rounded-md text-xs sm:text-sm transition-colors ${
+                            selectedFaculty === faculty.id
+                              ? "bg-primary text-primary-foreground"
+                              : "hover:bg-accent"
                           }`}
                         >
                           {faculty.name}
@@ -461,8 +617,14 @@ export default function CoursesContent() {
                   </div>
 
                   {/* Clear Filter Button */}
-                  {(selectedFaculty !== "all" || selectedCourseLevel.length > 0) && (
-                    <Button variant="default" size="sm" onClick={clearAllFilters} className="w-full">
+                  {(selectedFaculty !== "all" ||
+                    selectedCourseLevel.length > 0) && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={clearAllFilters}
+                      className="w-full text-xs sm:text-sm"
+                    >
                       × Clear filter
                     </Button>
                   )}
