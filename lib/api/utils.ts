@@ -4,14 +4,6 @@ import { NextResponse } from "next/server"
 export function getApiUrl(): string {
   const apiUrl = process.env.API_URL || "http://localhost:8080/api/v1"
   
-  // Always log in serverless environments (Netlify sets NODE_ENV to production)
-  console.log('[getApiUrl] Environment check:', {
-    NODE_ENV: process.env.NODE_ENV,
-    API_URL_set: !!process.env.API_URL,
-    API_URL_value: process.env.API_URL ? `${process.env.API_URL.substring(0, 30)}...` : 'NOT SET',
-    final_apiUrl: apiUrl ? `${apiUrl.substring(0, 30)}...` : 'NOT SET'
-  })
-  
   // Validate API_URL is set in production
   if (process.env.NODE_ENV === 'production' && !process.env.API_URL) {
     console.error('WARNING: API_URL environment variable is not set in production!')
@@ -44,15 +36,12 @@ export async function fetchFromApi(
   }
   
   const url = `${apiUrl}${endpoint}`
-  console.log('[fetchFromApi] Fetching from:', url)
   
   try {
     const response = await fetch(url, {
       cache: "no-store",
       ...options,
     })
-
-    console.log('[fetchFromApi] Response status:', response.status, response.statusText)
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'No error body')
