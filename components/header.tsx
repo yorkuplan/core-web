@@ -19,7 +19,7 @@ export function Header({ subtitle }: HeaderProps) {
           <img
             src={Logo.src}
             alt="YUPlan Logo"
-            className="w-auto h-6 md:h-8 object-contain"
+            className="w-auto h-5 md:h-7 object-contain"
           />
         </Link>
         {subtitle && (
