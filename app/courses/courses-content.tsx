@@ -8,6 +8,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  BookOpen,
   ChevronDown,
   ChevronUp,
   X,
@@ -470,7 +471,8 @@ export default function CoursesContent() {
                                   {course.credits || "N/A"} credits
                                 </Badge>
                               </div>
-                              <p className="text-sm sm:text-base font-medium text-foreground mb-2 sm:mb-3 line-clamp-2">
+                              {/* Reserve a consistent 2-line height so meta aligns across cards */}
+                              <p className="text-sm sm:text-base font-medium text-foreground mb-2 sm:mb-3 line-clamp-2 min-h-[2.75rem] sm:min-h-[3rem] leading-snug">
                                 {course.name}
                               </p>
                               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
@@ -480,8 +482,11 @@ export default function CoursesContent() {
                                   </span>
                                 )}
                                 {course.faculty && (
-                                  <span className="text-xs hidden sm:inline">
-                                    {getFacultyName(course.faculty)}
+                                  <span className="flex items-start gap-1 min-w-0">
+                                    <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 shrink-0 mt-0.5" />
+                                    <span className="min-w-0 leading-snug whitespace-normal break-words">
+                                      {getFacultyName(course.faculty)}
+                                    </span>
                                   </span>
                                 )}
                               </div>
