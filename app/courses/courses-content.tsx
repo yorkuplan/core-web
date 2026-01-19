@@ -8,7 +8,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Calendar,
   ChevronDown,
   ChevronUp,
   X,
@@ -70,6 +69,21 @@ export default function CoursesContent() {
   const [isSearchMode, setIsSearchMode] = useState(false)
   const coursesPerPage = 20
 
+  const normalizeCourseCodeKey = (code: string) =>
+    code.replace(/\s+/g, "").toUpperCase()
+
+  const dedupeCoursesByCode = (items: Course[]) => {
+    const seen = new Set<string>()
+    const out: Course[] = []
+    for (const c of items) {
+      const key = normalizeCourseCodeKey(c.code || "")
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      out.push(c)
+    }
+    return out
+  }
+
   const faculties = [
     { id: "all", name: "All Faculties" },
     { id: "lassonde", name: "Lassonde School of Engineering" },
@@ -123,8 +137,9 @@ export default function CoursesContent() {
       setError(null)
       try {
         const results = await coursesApi.searchCourses(searchQuery)
-        setCourses(Array.isArray(results) ? results : [])
-        setTotalItems(Array.isArray(results) ? results.length : 0)
+        const deduped = Array.isArray(results) ? dedupeCoursesByCode(results) : []
+        setCourses(deduped)
+        setTotalItems(deduped.length)
         setTotalPages(1) // Search results don't use pagination
       } catch (err) {
         console.error("Search failed:", err)
@@ -222,12 +237,6 @@ export default function CoursesContent() {
   }
 
   // Get course terms from the course object
-  // Note: The API Course interface has a 'term' field, but we might need to handle multiple terms
-  // For now, we'll display the term field if available
-  const getCourseTerms = (course: Course) => {
-    return course.term || "N/A"
-  }
-
   const getPaginationRange = () => {
     const delta = 2
     const range = []
@@ -441,14 +450,11 @@ export default function CoursesContent() {
                 <div className="flex flex-col gap-4 sm:gap-6 mb-8">
                   {courses.map((course, index) => {
                     const courseCode = formatCode(course.code)
-                    const courseSlug = courseCode
-                      .toLowerCase()
-                      .replace(/\s+/g, "-")
                     const uniqueKey = `${course.id || course.code}-${course.term || ""}-${index}`
                     return (
                       <Link
                         key={uniqueKey}
-                        href={`/course/${course.id || courseSlug}`}
+                        href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
                       >
                         <Card className="p-4 sm:p-6 hover:shadow-md transition-all hover:border-primary/50 cursor-pointer group">
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
@@ -473,12 +479,6 @@ export default function CoursesContent() {
                                     {course.instructor}
                                   </span>
                                 )}
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3 shrink-0" />
-                                  <span className="truncate">
-                                    Term: {getCourseTerms(course)}
-                                  </span>
-                                </span>
                                 {course.faculty && (
                                   <span className="text-xs hidden sm:inline">
                                     {getFacultyName(course.faculty)}
