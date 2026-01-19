@@ -207,8 +207,11 @@ export default function HomePage() {
                           <h3 className="font-bold text-lg sm:text-xl mb-0.5 group-hover:text-primary transition-colors line-clamp-1">
                             {formatCourseCode(course.code)}
                           </h3>
-                          {/* Reserve a consistent 2-line height so meta aligns across cards */}
-                          <p className="text-xs sm:text-sm text-foreground font-medium line-clamp-2 min-h-[2.5rem] sm:min-h-[2.75rem] leading-snug">
+                          {/* Reserve a consistent 3-line height so long titles aren't cut too aggressively */}
+                          <p
+                            className="text-xs sm:text-sm text-foreground font-medium line-clamp-3 min-h-[3.75rem] sm:min-h-[4.25rem] leading-snug"
+                            title={course.name}
+                          >
                             {course.name}
                           </p>
                         </div>
