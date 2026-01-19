@@ -1,5 +1,5 @@
 {
-  "name": "core-web",
+  "name": "yuplan",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -59,6 +59,7 @@
     "vaul": "^1.1.2"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.15.5",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^20",
     "@types/react": "^19",

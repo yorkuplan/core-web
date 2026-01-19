@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  # Don't set publish directory - let Netlify Next.js plugin handle it
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+  # Pin the plugin version to avoid compatibility issues
+  # Version 4.39.0 should work with Next.js 16
+
+[build.environment]
+  NODE_VERSION = "20"
+  
+# Ensure environment variables are available at runtime
+[functions]
+  node_bundler = "esbuild"
+
