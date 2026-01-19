@@ -115,6 +115,21 @@ export const formatCourseCode = (code: string): string => {
   return code.replace(/([A-Za-z]+)(\d+)/, "$1 $2")
 }
 
+const normalizeCourseCodeKey = (code: string): string =>
+  code.replace(/\s+/g, "").toUpperCase()
+
+const dedupeCoursesByCode = (courses: Course[]): Course[] => {
+  const seen = new Set<string>()
+  const out: Course[] = []
+  for (const c of courses) {
+    const key = normalizeCourseCodeKey(c.code || "")
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push(c)
+  }
+  return out
+}
+
 export interface Course {
   id: string
   code: string
@@ -159,22 +174,40 @@ export interface Instructor {
   section_id: string
 }
 
+// Course detail endpoint: GET /courses/{course_code}
+// Returns all offerings (terms) for a given course code, including sections and activities.
+export interface CourseOffering {
+  id: string
+  code: string
+  name: string
+  credits: number
+  description?: string
+  faculty: string
+  term: string
+  sections: Section[]
+}
+
+export interface CoursesByCodeResponse {
+  count: number
+  data: CourseOffering[]
+}
+
 interface CoursesResponse {
   data?: Course[]
   courses?: Course[]
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface SectionsResponse {
   data?: Section[]
   sections?: Section[]
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface InstructorsResponse {
   data?: Instructor[]
   instructors?: Instructor[]
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface PaginatedCoursesResponse {
@@ -217,49 +250,36 @@ export const coursesApi = {
     const response = await apiClient.get<CoursesResponse | Course[]>(endpoint)
 
     if (Array.isArray(response)) {
-      return response
+      return dedupeCoursesByCode(response)
     }
 
     if (response.data && Array.isArray(response.data)) {
-      return response.data
+      return dedupeCoursesByCode(response.data)
     }
 
     if (response.courses && Array.isArray(response.courses)) {
-      return response.courses
+      return dedupeCoursesByCode(response.courses)
     }
 
     console.error("Unexpected API response structure:", response)
     throw new Error("Invalid API response structure")
   },
 
-  async getCourseById(id: string): Promise<Course> {
-    const response = await apiClient.get<CoursesResponse | Course>(
-      `/courses/${id}`
+  async getCoursesByCode(courseCode: string): Promise<CourseOffering[]> {
+    const normalized = courseCode.trim().toLowerCase()
+    const response = await apiClient.get<CoursesByCodeResponse | CourseOffering[]>(
+      `/courses/${encodeURIComponent(normalized)}`
     )
 
-    // Check if response is directly a Course object
-    if (
-      response &&
-      typeof response === "object" &&
-      "id" in response &&
-      "code" in response
-    ) {
-      return response as Course
+    // Some environments may return the array directly
+    if (Array.isArray(response)) {
+      return response as CourseOffering[]
     }
 
-    // Check if response is wrapped in data property
     if (response && typeof response === "object" && "data" in response) {
-      const data = (response as any).data
-      if (data && typeof data === "object" && "id" in data) {
-        return data as Course
-      }
-    }
-
-    // Check if response is wrapped in course property
-    if (response && typeof response === "object" && "course" in response) {
-      const course = (response as any).course
-      if (course && typeof course === "object" && "id" in course) {
-        return course as Course
+      const data = (response as { data?: unknown }).data
+      if (Array.isArray(data)) {
+        return data as CourseOffering[]
       }
     }
 
