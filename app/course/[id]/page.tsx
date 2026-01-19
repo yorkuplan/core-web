@@ -2,7 +2,6 @@
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
-  Calendar,
   Users,
   BookOpen,
   Copy,
@@ -12,9 +11,9 @@ import {
 import Link from "next/link"
 import {
   coursesApi,
-  type Course,
   type Section,
   type Instructor,
+  type CourseOffering,
   getDayName,
   getFacultyName,
   getTypeName,
@@ -28,17 +27,34 @@ import { useEffect, useState } from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
+const TERM_ORDER: Record<string, number> = {
+  F: 1,
+  W: 2,
+  S: 3,
+  Y: 4,
+}
+
+const formatTermLabel = (term: string): string => {
+  // getSemesterName returns e.g. "Fall (F)" -> prefer "Fall"
+  const name = getSemesterName(term)
+  return name.replace(/\s*\([^)]+\)\s*$/, "").trim() || term
+}
+
 export default function CoursePage() {
   const params = useParams()
-  const courseId = getIDFromParams({ id: params.id as string })
-  const [course, setCourse] = useState<Course | null>(null)
-  const [sections, setSections] = useState<Section[]>([])
+  const courseCode = getIDFromParams({ id: params.id as string })
+  const [offerings, setOfferings] = useState<CourseOffering[]>([])
+  const [selectedTerm, setSelectedTerm] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [instructorsBySection, setInstructorsBySection] = useState<
     Record<string, Instructor>
   >({})
   const [copiedCatalog, setCopiedCatalog] = useState<string | null>(null)
+
+  const selectedOffering =
+    offerings.find((o) => o.term === selectedTerm) || offerings[0] || null
+  const sections: Section[] = selectedOffering?.sections || []
 
   const parseCatalogNumbers = (catalogNumber: string): string[] => {
     if (!catalogNumber) return []
@@ -180,19 +196,17 @@ export default function CoursePage() {
     async function fetchCourseData() {
       try {
         setIsLoading(true)
-        const [courseData, sectionsData, instructorsData] = await Promise.all([
-          coursesApi.getCourseById(courseId),
-          coursesApi.getSectionsByCourseId(courseId),
-          coursesApi.getInstructorsByCourseId(courseId),
-        ])
-        setCourse(courseData)
-        setSections(sectionsData)
-        // Map instructors to their sections
-        const instructorsMap: Record<string, Instructor> = {}
-        instructorsData.forEach((instructor) => {
-          instructorsMap[instructor.section_id] = instructor
+        const data = await coursesApi.getCoursesByCode(courseCode)
+        const sorted = [...data].sort((a, b) => {
+          const ao = TERM_ORDER[a.term?.toUpperCase?.() || ""] ?? 999
+          const bo = TERM_ORDER[b.term?.toUpperCase?.() || ""] ?? 999
+          if (ao !== bo) return ao - bo
+          return (a.term || "").localeCompare(b.term || "")
         })
-        setInstructorsBySection(instructorsMap)
+        setOfferings(sorted)
+
+        const initialTerm = sorted[0]?.term ?? null
+        setSelectedTerm(initialTerm)
       } catch (err) {
         console.error("Failed to fetch course data:", err)
         setError("Failed to load course. Please try again later.")
@@ -202,7 +216,28 @@ export default function CoursePage() {
     }
 
     fetchCourseData()
-  }, [courseId])
+  }, [courseCode])
+
+  useEffect(() => {
+    async function fetchInstructors() {
+      if (!selectedOffering?.id) return
+      try {
+        const instructorsData = await coursesApi.getInstructorsByCourseId(
+          selectedOffering.id
+        )
+        const instructorsMap: Record<string, Instructor> = {}
+        instructorsData.forEach((instructor) => {
+          instructorsMap[instructor.section_id] = instructor
+        })
+        setInstructorsBySection(instructorsMap)
+      } catch (err) {
+        console.error("Failed to fetch instructors:", err)
+        setInstructorsBySection({})
+      }
+    }
+
+    fetchInstructors()
+  }, [selectedOffering?.id])
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -215,13 +250,13 @@ export default function CoursePage() {
               Loading course...
             </p>
           </div>
-        ) : error || !course ? (
+        ) : error || !selectedOffering ? (
           <div className="max-w-6xl mx-auto text-center py-8 sm:py-12">
             <p className="text-sm sm:text-base text-destructive">
               {error || "Course not found"}
             </p>
             <Link
-              href="/"
+              href="/courses"
               className="text-primary hover:underline mt-4 inline-block"
             >
               ← Back to search
@@ -232,7 +267,7 @@ export default function CoursePage() {
             {/* Course Header */}
             <div className="max-w-6xl mx-auto mb-6 sm:mb-8">
               <Link
-                href="/"
+                href="/courses"
                 className="text-xs sm:text-sm text-muted-foreground hover:text-foreground mb-3 sm:mb-4 inline-block"
               >
                 ← Back to search
@@ -241,25 +276,25 @@ export default function CoursePage() {
               <div className="mb-4 sm:mb-6">
                 <div className="flex items-start justify-between gap-2 sm:gap-4 mb-2 sm:mb-3">
                   <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold break-words">
-                    {formatCourseCode(course.code)}
+                    {formatCourseCode(selectedOffering.code)}
                   </h1>
                   <Badge
                     variant="secondary"
                     className="text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 shrink-0 mt-0.5"
                   >
-                    {course.credits} credit
-                    {course.credits === 1 ? "" : "s"}
+                    {selectedOffering.credits} credit
+                    {selectedOffering.credits === 1 ? "" : "s"}
                   </Badge>
                 </div>
                 <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground line-clamp-3">
-                  {course.name}
+                  {selectedOffering.name}
                 </p>
               </div>
 
-              {course.description &&
+              {selectedOffering.description &&
                 (() => {
                   const { description, prerequisites } = parseDescription(
-                    course.description,
+                    selectedOffering.description,
                   )
                   return (
                     <>
@@ -299,39 +334,66 @@ export default function CoursePage() {
                   )
                 })()}
 
-              <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-6 mt-6 sm:mt-8 text-xs sm:text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Calendar
-                    className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0"
-                    aria-hidden="true"
-                  />
-                  <span>{getSemesterName(course.term)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users
-                    className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0"
-                    aria-hidden="true"
-                  />
-                  <span>
-                    {sections.length}{" "}
-                    {sections.length === 1 ? "section" : "sections"} available
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <BookOpen
-                    className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0"
-                    aria-hidden="true"
-                  />
-                  <span>{getFacultyName(course.faculty)}</span>
-                </div>
-              </div>
             </div>
 
             {/* Sections */}
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
-                Available Sections
-              </h2>
+              <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <h2 className="text-2xl sm:text-3xl font-bold">
+                    Available Sections
+                  </h2>
+
+                  {/* Term selector (right side) */}
+                  <div className="flex sm:justify-end">
+                    <div
+                      className="flex w-full sm:w-auto items-center gap-2 bg-muted rounded-lg p-1"
+                      role="tablist"
+                      aria-label="Select term"
+                    >
+                      {offerings.map((o) => {
+                        const isActive = o.term === selectedTerm
+                        return (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onClick={() => setSelectedTerm(o.term)}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                              isActive
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                            aria-pressed={isActive}
+                            aria-current={isActive ? "true" : undefined}
+                          >
+                            {formatTermLabel(o.term)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-6 text-xs sm:text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Users
+                      className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span>
+                      {sections.length}{" "}
+                      {sections.length === 1 ? "section" : "sections"} available
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <BookOpen
+                      className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span>{getFacultyName(selectedOffering.faculty)}</span>
+                  </div>
+                </div>
+              </div>
 
               {sections.length === 0 ? (
                 <div className="text-center py-8 sm:py-12 text-sm sm:text-base text-muted-foreground">
@@ -420,7 +482,7 @@ export default function CoursePage() {
                                   return 1
                                 return 0
                               })
-                              .map((activity, idx) => {
+                              .map((activity) => {
                                 let times: Array<{
                                   day: string
                                   time: string
@@ -430,7 +492,7 @@ export default function CoursePage() {
                                 }> = []
                                 try {
                                   times = JSON.parse(activity.times)
-                                } catch (e) {
+                                } catch {
                                   times = []
                                 }
 
