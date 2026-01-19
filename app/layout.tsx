@@ -9,7 +9,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: 'YuPlan',
-  description: 'core-web calls core-api',
+  description: 'Plan your perfect semester. For YU Students.',
   icons: {
     icon: [
       {
