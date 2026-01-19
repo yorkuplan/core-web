@@ -9,17 +9,17 @@ const DAY_MAP: Record<string, string> = {
 }
 
 const FACULTY_MAP: Record<string, string> = {
-  AP: "Faculty of Liberal Arts & Professional Studies (AP)",
-  ED: "Faculty of Education (ED)",
-  EU: "Faculty of Environmental & Urban Change (EU)",
+  AP: "Liberal Arts & Professional Studies (AP)",
+  ED: "Education (ED)",
+  EU: "Environmental & Urban Change (EU)",
   FA: "School of the Arts, Media, Performance & Design (FA)",
   GL: "Glendon College / Collège universitaire Glendon (GL)",
-  GS: "Faculty of Graduate Studies (GS)",
-  HH: "Faculty of Health (HH)",
+  GS: "Graduate Studies (GS)",
+  HH: "Health (HH)",
   LE: "Lassonde School of Engineering (LE)",
   LW: "Osgoode Hall Law School (LW)",
   SB: "Schulich School of Business (SB)",
-  SC: "Faculty of Science (SC)",
+  SC: "Science (SC)",
 }
 
 const TYPE_MAP: Record<string, string> = {
