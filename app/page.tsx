@@ -113,7 +113,7 @@ export default function HomePage() {
                   </InputGroupAddon>
                   <InputGroupInput
                     type="search"
-                    placeholder="Search for courses, subjects, or professors..."
+                    placeholder="Search through course name, course code, or faculties ..."
                     className="text-sm sm:text-base text-foreground"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
