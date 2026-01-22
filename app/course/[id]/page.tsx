@@ -1,7 +1,13 @@
 "use client"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Users, BookOpen, Copy, Check, ExternalLink } from "lucide-react"
+import {
+  Users,
+  BookOpen,
+  Copy,
+  Check,
+  ExternalLink,
+} from "lucide-react"
 import Link from "next/link"
 import {
   coursesApi,
@@ -218,7 +224,7 @@ export default function CoursePage() {
       if (!selectedOffering?.id) return
       try {
         const instructorsData = await coursesApi.getInstructorsByCourseId(
-          selectedOffering.id,
+          selectedOffering.id
         )
         const instructorsMap: Record<string, Instructor> = {}
         instructorsData.forEach((instructor) => {
@@ -263,10 +269,7 @@ export default function CoursePage() {
           </div>
         ) : (
           <>
-            <BlurredHero
-              className="pt-8 sm:pt-12 pb-10 sm:pb-12 md:pb-14"
-              priority
-            >
+            <BlurredHero className="pt-8 sm:pt-12 pb-10 sm:pb-12 md:pb-14" priority>
               <div className="container mx-auto px-3 sm:px-4">
                 {/* Course Header */}
                 <div className="max-w-6xl mx-auto">
@@ -312,13 +315,15 @@ export default function CoursePage() {
                                 parsePrerequisitesIntoList(prerequisites)
                               return (
                                 <Card className="p-4 sm:p-6 bg-background/85 backdrop-blur-md border-white/30 mt-3 sm:mt-4 shadow-lg shadow-black/10">
-                                  <h3 className="text-lg sm:text-xl font-bold text-primary mb-3">
+                                  <h3 className="text-lg sm:text-xl font-bold text-primary mb-1.5">
                                     Prerequisites
                                   </h3>
                                   {prerequisiteItems.length > 0 ? (
-                                    <ul className="list-disc list-outside space-y-2 text-sm sm:text-base text-foreground leading-relaxed pl-6 sm:pl-7">
+                                    <ul className="list-disc list-outside space-y-2 text-sm sm:text-base text-foreground leading-relaxed pl-5 -ml-1">
                                       {prerequisiteItems.map((item, index) => (
-                                        <li key={index}>{item}</li>
+                                        <li key={index} className="pl-0">
+                                          {item}
+                                        </li>
                                       ))}
                                     </ul>
                                   ) : (
@@ -383,8 +388,7 @@ export default function CoursePage() {
                       />
                       <span>
                         {sections.length}{" "}
-                        {sections.length === 1 ? "section" : "sections"}{" "}
-                        available
+                        {sections.length === 1 ? "section" : "sections"} available
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -409,20 +413,20 @@ export default function CoursePage() {
                         section.activities?.some(
                           (activity) =>
                             activity.catalog_number &&
-                            parseCatalogNumbers(activity.catalog_number)
-                              .length > 1,
+                            parseCatalogNumbers(activity.catalog_number).length >
+                              1,
                         ) || false
 
                       return (
                         <Card
                           key={section.id}
-                          className={`p-4 sm:p-6 hover:shadow-lg transition-all hover:border-primary/50 ${
+                          className={`p-4 sm:p-5 hover:shadow-lg transition-all hover:border-primary/50 ${
                             hasMultipleCatalogs
                               ? "sm:col-span-2 lg:col-span-2"
                               : ""
                           }`}
                         >
-                          <div className="mb-4">
+                          <div className="mb-3 sm:mb-4">
                             <h3 className="text-xl sm:text-2xl font-bold">
                               Section {section.letter}
                             </h3>
@@ -444,8 +448,7 @@ export default function CoursePage() {
                                     className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0 text-xs"
                                     title="View on Rate My Professors"
                                     aria-label={`View ${
-                                      instructorsBySection[section.id]
-                                        .first_name
+                                      instructorsBySection[section.id].first_name
                                     } ${
                                       instructorsBySection[section.id].last_name
                                     } on Rate My Professors`}
@@ -467,7 +470,7 @@ export default function CoursePage() {
                             )}
                           </div>
 
-                          <div className="space-y-3 mb-4">
+                          <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
                             {section.activities &&
                             section.activities.length > 0 ? (
                               [...section.activities]
@@ -512,10 +515,10 @@ export default function CoursePage() {
                                   return (
                                     <div
                                       key={activity.id}
-                                      className="bg-muted/50 rounded-lg p-3 sm:p-4"
+                                      className="bg-muted/50 rounded-lg p-2.5 sm:p-3"
                                     >
-                                      <div className="flex items-start justify-between gap-2 mb-2">
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <div className="flex items-center justify-between gap-1.5 sm:gap-2 text-xs text-muted-foreground mb-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                                           <BookOpen
                                             className="h-3 w-3 flex-shrink-0"
                                             aria-hidden="true"
@@ -535,7 +538,7 @@ export default function CoursePage() {
                                           </span>
                                         </div>
                                         {activity.catalog_number && (
-                                          <div className="flex flex-col sm:grid sm:grid-cols-2 gap-1.5 items-end sm:justify-items-end">
+                                          <div className="flex gap-1 sm:gap-1.5 flex-shrink-0">
                                             {parseCatalogNumbers(
                                               activity.catalog_number,
                                             ).map((catalogNum, idx) => (
