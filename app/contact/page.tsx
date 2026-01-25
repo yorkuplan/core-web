@@ -6,17 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ThemeToggle } from "@/components/theme-toggle"
-import {
-  GraduationCap,
-  Mail,
-  MessageSquare,
-  AlertCircle,
-  Send,
-} from "lucide-react"
+import { Mail, MessageSquare, AlertCircle, Send } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import Link from "next/link"
 import { useState } from "react"
 
 export default function ContactPage() {
@@ -26,6 +18,7 @@ export default function ContactPage() {
     type: "feedback",
     message: "",
   })
+  const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   const handleInputChange = (
@@ -40,12 +33,30 @@ export default function ContactPage() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("[v0] Form submitted:", formData)
-    setSubmitted(true)
-    setFormData({ name: "", email: "", type: "feedback", message: "" })
-    setTimeout(() => setSubmitted(false), 5000)
+    setLoading(true)
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        console.error("Failed to submit form:", res.status, errorData)
+        alert(`Submission failed: ${errorData.error || "Unknown error"}`)
+      } else {
+        setSubmitted(true)
+        setFormData({ name: "", email: "", type: "feedback", message: "" })
+        setTimeout(() => setSubmitted(false), 5000)
+      }
+    } catch (err) {
+      console.error("Error submitting form", err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -196,8 +207,8 @@ export default function ContactPage() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full h-11">
-                  Send Message
+                <Button type="submit" className="w-full h-11" disabled={loading}>
+                  {loading ? "Sending…" : "Send Message"}
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">
