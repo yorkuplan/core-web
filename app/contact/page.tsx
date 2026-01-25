@@ -60,19 +60,19 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header subtitle="Course selection, de-cluttered." />
 
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-10 sm:py-16 lg:py-20 flex-1 w-full">
         {/* Hero Section */}
-        <div className="max-w-3xl mx-auto mb-12 text-center">
-          <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
+        <div className="max-w-3xl mx-auto mb-8 sm:mb-12 text-center space-y-4">
+          <Badge className="inline-flex w-auto justify-center mb-2 sm:mb-3 bg-primary/10 text-primary hover:bg-primary/20">
             Get in Touch
           </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-balance">
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-balance">
             We'd Love to Hear From You
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed text-pretty">
+          <p className="text-sm sm:text-lg text-muted-foreground leading-relaxed text-pretty max-w-2xl mx-auto">
             Have feedback about YorkUPlan? Found an error in our course data?
             Have a feature suggestion? Let us know! We're committed to improving
             your course selection experience.
@@ -80,10 +80,10 @@ export default function ContactPage() {
         </div>
 
         {/* Contact Info Cards */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
-          <Card className="p-6 text-center">
-            <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <MessageSquare className="h-6 w-6 text-primary" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 max-w-4xl mx-auto mb-9 sm:mb-12">
+          <Card className="p-4 sm:p-6 lg:p-8 text-center h-full">
+            <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             </div>
             <h3 className="font-bold mb-2">Feedback</h3>
             <p className="text-sm text-muted-foreground">
@@ -91,9 +91,9 @@ export default function ContactPage() {
             </p>
           </Card>
 
-          <Card className="p-6 text-center">
-            <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="h-6 w-6 text-primary" />
+          <Card className="p-4 sm:p-6 lg:p-8 text-center h-full">
+            <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             </div>
             <h3 className="font-bold mb-2">Report Issues</h3>
             <p className="text-sm text-muted-foreground">
@@ -101,9 +101,9 @@ export default function ContactPage() {
             </p>
           </Card>
 
-          <Card className="p-6 text-center">
-            <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Mail className="h-6 w-6 text-primary" />
+          <Card className="p-4 sm:p-6 lg:p-8 text-center h-full">
+            <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             </div>
             <h3 className="font-bold mb-2">Suggestions</h3>
             <p className="text-sm text-muted-foreground">
@@ -113,8 +113,8 @@ export default function ContactPage() {
         </div>
 
         {/* Contact Form */}
-        <div className="max-w-2xl mx-auto">
-          <Card className="p-8">
+        <div className="max-w-2xl mx-auto w-full">
+          <Card className="p-5 sm:p-8">
             {submitted ? (
               <div className="text-center py-8">
                 <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
@@ -127,8 +127,8 @@ export default function ContactPage() {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
+              <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label
                       htmlFor="name"
@@ -144,7 +144,7 @@ export default function ContactPage() {
                       value={formData.name}
                       onChange={handleInputChange}
                       required
-                      className="h-10"
+                      className="h-11"
                     />
                   </div>
                   <div>
@@ -162,7 +162,7 @@ export default function ContactPage() {
                       value={formData.email}
                       onChange={handleInputChange}
                       required
-                      className="h-10"
+                      className="h-11"
                     />
                   </div>
                 </div>
@@ -179,7 +179,7 @@ export default function ContactPage() {
                     name="type"
                     value={formData.type}
                     onChange={handleInputChange}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-foreground"
+                    className="w-full h-11 px-3 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
                     <option value="feedback">General Feedback</option>
                     <option value="bug">Report Incorrect Data</option>
@@ -202,12 +202,16 @@ export default function ContactPage() {
                     value={formData.message}
                     onChange={handleInputChange}
                     required
-                    rows={6}
+                    rows={5}
                     className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
                   />
                 </div>
 
-                <Button type="submit" className="w-full h-11" disabled={loading}>
+                <Button
+                  type="submit"
+                  className="w-full h-11"
+                  disabled={loading}
+                >
                   {loading ? "Sending…" : "Send Message"}
                 </Button>
 
