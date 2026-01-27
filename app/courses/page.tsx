@@ -1,5 +1,16 @@
+import type { Metadata } from "next"
 import { Suspense } from "react"
 import CoursesContent from "./courses-content"
+
+export const metadata: Metadata = {
+  title: 'Browse All Courses - York University Course Catalog',
+  description: 'Browse the complete York University course catalog. Search and filter through YorkU courses by department, credits, and more. Find the perfect courses for your semester at YU.',
+  openGraph: {
+    title: 'Browse York University Courses - YuPlan',
+    description: 'Explore the full catalog of York University courses. Search by code, title, or department to plan your perfect semester.',
+    url: 'https://yuplan.ca/courses',
+  },
+}
 
 export default function CoursesPage() {
   return (

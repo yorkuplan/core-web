@@ -73,7 +73,7 @@ export default function ContactPage() {
             We'd Love to Hear From You
           </h1>
           <p className="text-sm sm:text-lg text-muted-foreground leading-relaxed text-pretty max-w-2xl mx-auto">
-            Have feedback about YorkUPlan? Found an error in our course data?
+            Have feedback about YuPlan? Found an error in our course data?
             Have a feature suggestion? Let us know! We're committed to improving
             your course selection experience.
           </p>
@@ -123,7 +123,7 @@ export default function ContactPage() {
                 <h3 className="text-xl font-bold mb-2">Thank You!</h3>
                 <p className="text-muted-foreground mb-6">
                   We've received your message and will get back to you soon.
-                  Your feedback helps us improve YorkUPlan.
+                  Your feedback helps us improve YuPlan.
                 </p>
               </div>
             ) : (

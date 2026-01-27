@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -5,6 +6,16 @@ import { Linkedin, Github } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+
+export const metadata: Metadata = {
+  title: 'About YuPlan - York University Course Planning Made Easy',
+  description: 'Learn about YuPlan, the modern course planning platform built for York University students. Discover how we help YorkU students find courses, compare sections, and plan their academic journey.',
+  openGraph: {
+    title: 'About YuPlan - York University Course Planning',
+    description: 'Meet the team behind YuPlan, the course planning tool designed specifically for York University students.',
+    url: 'https://yuplan.ca/about',
+  },
+}
 
 export default function AboutPage() {
   const team = [
@@ -32,14 +43,14 @@ export default function AboutPage() {
         {/* About Section */}
         <div className="max-w-3xl mx-auto mb-8 sm:mb-12 md:mb-16 text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-balance">
-            About YorkUPlan
+            About YuPlan
           </h1>
           <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed text-pretty">
-            YUPlan is a modern course planning platform designed to help York
-            University students discover, explore, and plan their academic
-            journey. We provide an intuitive interface for browsing courses,
-            viewing detailed information, and making informed decisions about
-            your education.
+            YuPlan is a modern course planning platform designed to help York
+            University (YorkU) students discover, explore, and plan their academic
+            journey. We provide an intuitive interface for browsing York University courses,
+            viewing detailed information, comparing sections, and making informed decisions about
+            your education at York University.
           </p>
         </div>
 

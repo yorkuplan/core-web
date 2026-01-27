@@ -10,7 +10,7 @@ export function Footer() {
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <img
               src={Logo.src}
-              alt="YUPlan Logo"
+              alt="YUPlan - York University Course Planner"
               className="w-auto h-5 md:h-7 object-contain"
             />
           </div>
