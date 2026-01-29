@@ -97,8 +97,43 @@ export default function HomePage() {
     return () => clearTimeout(delaySearch)
   }, [searchQuery])
 
+  // Structured data for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "YuPlan",
+    "applicationCategory": "EducationalApplication",
+    "description": "Course planner and scheduler for York University students. Search courses, compare sections, and plan your perfect semester at YorkU.",
+    "url": "https://yuplan.ca",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "CAD"
+    },
+    "audience": {
+      "@type": "EducationalAudience",
+      "educationalRole": "student"
+    },
+    "provider": {
+      "@type": "Organization",
+      "name": "YuPlan",
+      "url": "https://yuplan.ca"
+    },
+    "about": {
+      "@type": "EducationalOrganization",
+      "name": "York University",
+      "alternateName": ["YorkU", "YU"],
+      "url": "https://www.yorku.ca"
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <Header subtitle="Course selection, de-cluttered." />
 
       <div className="flex-grow flex flex-col">
@@ -132,7 +167,7 @@ export default function HomePage() {
                 </span>
               </h1>
               <p className="text-base sm:text-lg md:text-xl text-white/85 text-pretty max-w-2xl mx-auto px-2 sm:px-0">
-                Browse courses, compare sections, and build your schedule with
+                The ultimate course planner for York University students. Browse YorkU courses, compare sections, and build your ideal schedule with
                 ease. No more confusion, just clarity.
               </p>
 
@@ -150,7 +185,7 @@ export default function HomePage() {
                   </InputGroupAddon>
                   <InputGroupInput
                     type="search"
-                    placeholder="Search through course name, course code, or faculties ..."
+                    placeholder="Search York University courses by name, code, or faculty..."
                     className="text-sm sm:text-base text-foreground"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -311,7 +346,7 @@ export default function HomePage() {
         <section className="container mx-auto px-3 sm:px-4 py-8 sm:py-12 md:py-16">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
-              Everything you need to plan your courses
+              Everything YU students need to plan courses
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
