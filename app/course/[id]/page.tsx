@@ -2,7 +2,16 @@
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, BookOpen, Copy, Check, ExternalLink } from "lucide-react"
+import {
+  Users,
+  BookOpen,
+  Copy,
+  Check,
+  ExternalLink,
+  Star,
+  MessageSquare,
+  Sparkles,
+} from "lucide-react"
 import Link from "next/link"
 import {
   coursesApi,
@@ -679,38 +688,90 @@ export default function CoursePage() {
             {/* Reviews Section */}
             <section className="container mx-auto px-3 sm:px-4 py-6 sm:py-10">
               <div className="max-w-6xl mx-auto">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                  <h2 className="text-2xl sm:text-3xl font-bold">Reviews</h2>
-                  <Button
-                    onClick={() => setIsReviewFormOpen(true)}
-                    variant="outline"
-                    className="shadow-md shadow-primary"
-                  >
-                    Add your review
-                  </Button>
+                <div className="mb-4 sm:mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold">
+                      Reviews
+                    </h2>
+                    {reviewsData && reviewsData.stats.total_reviews > 0 && (
+                      <Button
+                        onClick={() => setIsReviewFormOpen(true)}
+                        size="sm"
+                        className="shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary group"
+                      >
+                        <MessageSquare
+                          className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 group-hover:scale-110 transition-transform"
+                          aria-hidden="true"
+                        />
+                        <span className="text-xs sm:text-sm">Add review</span>
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {isLoadingReviews ? (
-                  <div className="text-center py-8 sm:py-12 text-sm sm:text-base text-muted-foreground">
-                    Loading reviews...
-                  </div>
+                  <Card className="p-8 sm:p-12 text-center border-dashed">
+                    <div className="flex flex-col items-center gap-3 sm:gap-4">
+                      <div className="animate-pulse">
+                        <Star
+                          className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50"
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <p className="text-sm sm:text-base text-muted-foreground">
+                        Loading reviews...
+                      </p>
+                    </div>
+                  </Card>
                 ) : reviewsData && reviewsData.stats.total_reviews > 0 ? (
                   <>
                     <ReviewStats stats={reviewsData.stats} />
                     <ReviewsList reviews={reviewsData.data} />
                   </>
                 ) : (
-                  <Card className="p-8 text-center">
-                    <p className="text-muted-foreground mb-4">
-                      No reviews yet. Be the first to review this course!
-                    </p>
-                    <Button
-                      onClick={() => setIsReviewFormOpen(true)}
-                      variant="outline"
-                      className="shadow-md shadow-primary"
-                    >
-                      Write the first review
-                    </Button>
+                  <Card className="relative overflow-hidden border-2 border-dashed border-primary/30 bg-linear-to-br from-background via-primary/5 to-background">
+                    <div
+                      className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"
+                      aria-hidden="true"
+                    />
+                    <div
+                      className="absolute bottom-0 left-0 w-48 h-48 sm:w-64 sm:h-64 bg-primary/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"
+                      aria-hidden="true"
+                    />
+                    <div className="relative p-8 sm:p-12 md:p-16 text-center">
+                      <div className="flex justify-center mb-4 sm:mb-6">
+                        <div className="relative">
+                          <div
+                            className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse"
+                            aria-hidden="true"
+                          />
+                          <div className="relative p-3 sm:p-4 bg-background border-2 border-primary/30 rounded-full">
+                            <MessageSquare
+                              className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 text-primary"
+                              aria-hidden="true"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 bg-linear-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                        No reviews yet
+                      </h3>
+                      <p className="text-xs sm:text-sm md:text-base text-muted-foreground mb-4 sm:mb-6 max-w-md mx-auto px-4">
+                        Be the first to share your experience and help future
+                        students make informed decisions!
+                      </p>
+                      <Button
+                        onClick={() => setIsReviewFormOpen(true)}
+                        size="lg"
+                        className="w-full sm:w-auto shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary group"
+                      >
+                        <Sparkles
+                          className="h-4 w-4 sm:h-5 sm:w-5 mr-2 group-hover:rotate-12 transition-transform"
+                          aria-hidden="true"
+                        />
+                        Write the first review
+                      </Button>
+                    </div>
                   </Card>
                 )}
               </div>

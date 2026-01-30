@@ -24,12 +24,18 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
     const diffMonths = Math.floor(diffDays / 30)
     const diffYears = Math.floor(diffDays / 365)
 
-    if (diffYears > 0) return `${diffYears} ${diffYears === 1 ? "year" : "years"} ago`
-    if (diffMonths > 0) return `${diffMonths} ${diffMonths === 1 ? "month" : "months"} ago`
-    if (diffWeeks > 0) return `${diffWeeks} ${diffWeeks === 1 ? "week" : "weeks"} ago`
-    if (diffDays > 0) return `${diffDays} ${diffDays === 1 ? "day" : "days"} ago`
-    if (diffHours > 0) return `${diffHours} ${diffHours === 1 ? "hour" : "hours"} ago`
-    if (diffMins > 0) return `${diffMins} ${diffMins === 1 ? "minute" : "minutes"} ago`
+    if (diffYears > 0)
+      return `${diffYears} ${diffYears === 1 ? "year" : "years"} ago`
+    if (diffMonths > 0)
+      return `${diffMonths} ${diffMonths === 1 ? "month" : "months"} ago`
+    if (diffWeeks > 0)
+      return `${diffWeeks} ${diffWeeks === 1 ? "week" : "weeks"} ago`
+    if (diffDays > 0)
+      return `${diffDays} ${diffDays === 1 ? "day" : "days"} ago`
+    if (diffHours > 0)
+      return `${diffHours} ${diffHours === 1 ? "hour" : "hours"} ago`
+    if (diffMins > 0)
+      return `${diffMins} ${diffMins === 1 ? "minute" : "minutes"} ago`
     return "just now"
   }
 
@@ -48,7 +54,10 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
     return name.substring(0, 2).toUpperCase()
   }
 
-  const getAvatarUrl = (reviewId: string, authorName: string | null): string => {
+  const getAvatarUrl = (
+    reviewId: string,
+    authorName: string | null,
+  ): string => {
     // Use review ID as seed for consistent, random-looking avatars
     const seed = reviewId
     const avatar = createAvatar(thumbs, {
@@ -67,41 +76,46 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {reviews.map((review) => {
         const authorDisplay = getAuthorDisplay(review.author_name)
-        
+
         return (
-          <Card key={review.id} className="p-6">
-            <div className="flex gap-4 items-start">
+          <Card key={review.id} className="p-4 sm:p-6">
+            <div className="flex gap-3 sm:gap-4 items-start">
               {/* Avatar */}
-              <Avatar className="h-10 w-10 flex-shrink-0 mt-0.5">
-                <AvatarImage 
-                  src={getAvatarUrl(review.id, review.author_name)} 
+              <Avatar className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 mt-0.5">
+                <AvatarImage
+                  src={getAvatarUrl(review.id, review.author_name)}
                   alt={authorDisplay}
                 />
-                <AvatarFallback className="bg-primary/10 text-primary">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs sm:text-sm">
                   {review.author_name ? getInitials(review.author_name) : "AN"}
                 </AvatarFallback>
               </Avatar>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-4 mb-2">
-                  <div>
-                    <p className="text-base leading-tight">{review.review_text}</p>
+                {/* Stacked on mobile, side-by-side on desktop */}
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-2">
+                  {/* Review Text */}
+                  <div className="flex-1 min-w-0 mb-3 sm:mb-0">
+                    <p className="text-sm sm:text-base leading-relaxed">
+                      {review.review_text}
+                    </p>
                   </div>
-                  
-                  {/* Ratings on the right side */}
-                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
+
+                  {/* Ratings - Below on mobile, right side on desktop */}
+                  <div className="flex flex-col shrink-0 sm:items-end">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">Difficulty</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        Difficulty
+                      </span>
                       <div className="flex items-center gap-0.5">
                         {[1, 2, 3, 4, 5].map((value) => (
                           <Star
                             key={value}
-                            className={`h-4 w-4 ${
+                            className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${
                               value <= review.difficulty
                                 ? "fill-yellow-400 text-yellow-400"
                                 : "text-gray-300 dark:text-gray-600"
@@ -111,12 +125,14 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">Real-World Relevance</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        Real-World Relevance
+                      </span>
                       <div className="flex items-center gap-0.5">
                         {[1, 2, 3, 4, 5].map((value) => (
                           <Star
                             key={value}
-                            className={`h-4 w-4 ${
+                            className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${
                               value <= review.real_world_relevance
                                 ? "fill-yellow-400 text-yellow-400"
                                 : "text-gray-300 dark:text-gray-600"
@@ -126,16 +142,22 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">Opinion</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        Opinion
+                      </span>
                       {review.liked ? (
                         <div className="flex items-center gap-1 text-green-600 dark:text-green-500">
-                          <ThumbsUp className="h-4 w-4 fill-current" />
-                          <span className="text-xs font-medium">Liked this course</span>
+                          <ThumbsUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" />
+                          <span className="text-xs font-medium">
+                            Liked this course
+                          </span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 text-red-600 dark:text-red-500">
-                          <ThumbsDown className="h-4 w-4 fill-current" />
-                          <span className="text-xs font-medium">Disliked this course</span>
+                          <ThumbsDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" />
+                          <span className="text-xs font-medium">
+                            Disliked this course
+                          </span>
                         </div>
                       )}
                     </div>
@@ -143,8 +165,9 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
+                <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
                   <span>— {authorDisplay}</span>
+                  <span className="text-muted-foreground/60">•</span>
                   <span>{formatTimeAgo(review.created_at)}</span>
                 </div>
               </div>
