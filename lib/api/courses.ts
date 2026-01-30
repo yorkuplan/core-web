@@ -19,7 +19,7 @@ const FACULTY_MAP: Record<string, string> = {
   GS: "Graduate Studies (GS)",
   HH: "Health (HH)",
   LE: "Lassonde School of Engineering (LE)",
-  LW: "Osgoode Hall Law School (LW)",
+  // LW: "Osgoode Hall Law School (LW)",
   SB: "Schulich School of Business (SB)",
   SC: "Science (SC)",
 }
@@ -78,7 +78,7 @@ export const getSemesterName = (semCode: string): string => {
 
 export const calculateEndTime = (
   startTime: string,
-  durationMinutes: string
+  durationMinutes: string,
 ): string => {
   try {
     const duration = parseInt(durationMinutes, 10)
@@ -92,7 +92,7 @@ export const calculateEndTime = (
 
     return `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(
       2,
-      "0"
+      "0",
     )}`
   } catch (e) {
     return startTime
@@ -104,7 +104,7 @@ export const formatTime = (time: string): string => {
     const [hours, minutes] = time.split(":").map(Number)
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
       2,
-      "0"
+      "0",
     )}`
   } catch (e) {
     return time
@@ -305,9 +305,9 @@ export const coursesApi = {
 
   async getCoursesByCode(courseCode: string): Promise<CourseOffering[]> {
     const normalized = courseCode.trim().toLowerCase()
-    const response = await apiClient.get<CoursesByCodeResponse | CourseOffering[]>(
-      `/courses/${encodeURIComponent(normalized)}`
-    )
+    const response = await apiClient.get<
+      CoursesByCodeResponse | CourseOffering[]
+    >(`/courses/${encodeURIComponent(normalized)}`)
 
     // Some environments may return the array directly
     if (Array.isArray(response)) {
@@ -327,7 +327,7 @@ export const coursesApi = {
 
   async getSectionsByCourseId(courseId: string): Promise<Section[]> {
     const response = await apiClient.get<SectionsResponse | Section[]>(
-      `/sections/${courseId}`
+      `/sections/${courseId}`,
     )
 
     if (Array.isArray(response)) {
@@ -348,7 +348,7 @@ export const coursesApi = {
 
   async getInstructorsByCourseId(courseId: string): Promise<Instructor[]> {
     const response = await apiClient.get<InstructorsResponse | Instructor[]>(
-      `/instructors/${courseId}`
+      `/instructors/${courseId}`,
     )
 
     if (Array.isArray(response)) {
@@ -367,9 +367,11 @@ export const coursesApi = {
     throw new Error("Invalid API response structure")
   },
 
-  async getPaginatedCourses(params: PaginatedCoursesParams = {}): Promise<PaginatedCoursesResponse> {
+  async getPaginatedCourses(
+    params: PaginatedCoursesParams = {},
+  ): Promise<PaginatedCoursesResponse> {
     const queryParams = new URLSearchParams()
-    
+
     if (params.page !== undefined) {
       queryParams.append("page", params.page.toString())
     }
@@ -388,24 +390,28 @@ export const coursesApi = {
 
     const queryString = queryParams.toString()
     const endpoint = `/courses/paginated?${queryString}`
-    
+
     const response = await apiClient.get<PaginatedCoursesResponse>(endpoint)
-    
+
     // Ensure the response has the expected structure
     if (!response || !response.data) {
       console.error("Unexpected API response structure:", response)
       throw new Error("Invalid API response structure")
     }
-    
+
     return response
   },
 
   async getReviews(
     courseCode: string,
-    params: { sort?: "recent" | "earliest"; limit?: number; offset?: number } = {}
+    params: {
+      sort?: "recent" | "earliest"
+      limit?: number
+      offset?: number
+    } = {},
   ): Promise<ReviewsResponse> {
     const queryParams = new URLSearchParams()
-    
+
     if (params.sort) {
       queryParams.append("sort", params.sort)
     }
@@ -419,18 +425,18 @@ export const coursesApi = {
     const normalized = courseCode.trim().toLowerCase()
     const queryString = queryParams.toString()
     const endpoint = `/courses/${encodeURIComponent(normalized)}/reviews${queryString ? `?${queryString}` : ""}`
-    
+
     const response = await apiClient.get<ReviewsResponse>(endpoint)
     return response
   },
 
   async submitReview(
     courseCode: string,
-    reviewData: SubmitReviewBody
+    reviewData: SubmitReviewBody,
   ): Promise<Review> {
     const normalized = courseCode.trim().toLowerCase()
     const url = `${API_URL}/courses/${encodeURIComponent(normalized)}/reviews`
-    
+
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -440,7 +446,9 @@ export const coursesApi = {
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: "Failed to submit review" }))
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Failed to submit review" }))
       throw new Error(errorData.error || "Failed to submit review")
     }
 

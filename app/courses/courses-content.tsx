@@ -35,7 +35,7 @@ const FACULTY_CODE_MAP: Record<string, string> = {
   education: "ED",
   "fine-arts": "FA",
   glendon: "GL",
-  osgoode: "LW",
+  // osgoode: "LW",
   schulich: "SB",
   "environmental-urban": "EU",
   "graduate-studies": "GS",
@@ -97,7 +97,7 @@ export default function CoursesContent() {
       name: "School of the Arts, Media, Performance & Design",
     },
     { id: "glendon", name: "Glendon Campus" },
-    { id: "osgoode", name: "Osgoode Hall Law School" },
+    // { id: "osgoode", name: "Osgoode Hall Law School" },
     { id: "schulich", name: "Schulich School of Business" },
     { id: "environmental-urban", name: "Environmental and Urban Change" },
     { id: "graduate-studies", name: "Graduate Studies" },
@@ -138,7 +138,9 @@ export default function CoursesContent() {
       setError(null)
       try {
         const results = await coursesApi.searchCourses(searchQuery)
-        const deduped = Array.isArray(results) ? dedupeCoursesByCode(results) : []
+        const deduped = Array.isArray(results)
+          ? dedupeCoursesByCode(results)
+          : []
         setCourses(deduped)
         setTotalItems(deduped.length)
         setTotalPages(1) // Search results don't use pagination
