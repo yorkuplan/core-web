@@ -8,7 +8,15 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { Search, BookOpen } from "lucide-react"
+import {
+  Search,
+  BookOpen,
+  Sparkles,
+  Calendar,
+  Info,
+  MessageSquareText,
+  Users,
+} from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import {
@@ -30,7 +38,7 @@ export default function HomePage() {
   const [isSearching, setIsSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
-  const heroText = "Plan your perfect semester"
+  const heroText = "Find your perfect courses"
   const [typedHeroText, setTypedHeroText] = useState("")
 
   useEffect(() => {
@@ -53,7 +61,6 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    // Respect reduced motion preferences.
     if (typeof window === "undefined") return
     const media = window.matchMedia?.("(prefers-reduced-motion: reduce)")
     if (media?.matches) {
@@ -92,7 +99,7 @@ export default function HomePage() {
         setSearchResults([])
         setShowResults(false)
       }
-    }, 300) // 300ms debounce
+    }, 300)
 
     return () => clearTimeout(delaySearch)
   }, [searchQuery])
@@ -101,31 +108,32 @@ export default function HomePage() {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "YuPlan",
-    "applicationCategory": "EducationalApplication",
-    "description": "Course planner and scheduler for York University students. Search courses, compare sections, and plan your perfect semester at YorkU.",
-    "url": "https://yuplan.ca",
-    "operatingSystem": "Any",
-    "offers": {
+    name: "YuPlan",
+    applicationCategory: "EducationalApplication",
+    description:
+      "Course information platform for York University students. Search courses, view details, compare sections, and read student reviews at YorkU.",
+    url: "https://yuplan.ca",
+    operatingSystem: "Any",
+    offers: {
       "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "CAD"
+      price: "0",
+      priceCurrency: "CAD",
     },
-    "audience": {
+    audience: {
       "@type": "EducationalAudience",
-      "educationalRole": "student"
+      educationalRole: "student",
     },
-    "provider": {
+    provider: {
       "@type": "Organization",
-      "name": "YuPlan",
-      "url": "https://yuplan.ca"
+      name: "YuPlan",
+      url: "https://yuplan.ca",
     },
-    "about": {
+    about: {
       "@type": "EducationalOrganization",
-      "name": "York University",
-      "alternateName": ["YorkU", "YU"],
-      "url": "https://www.yorku.ca"
-    }
+      name: "York University",
+      alternateName: ["YorkU", "YU"],
+      url: "https://www.yorku.ca",
+    },
   }
 
   return (
@@ -136,119 +144,225 @@ export default function HomePage() {
       />
       <Header subtitle="Course selection, de-cluttered." />
 
-      <div className="flex-grow flex flex-col">
-        {/* Hero Section */}
+      <div className="grow flex flex-col">
         <BlurredHero
-          className="pt-8 sm:pt-12 md:pt-20 pb-8 sm:pb-10 md:pb-14"
+          className="pt-10 sm:pt-14 md:pt-20 pb-12 sm:pb-16 md:pb-20"
           priority
         >
           <div className="container mx-auto px-3 sm:px-4">
-            <div className="max-w-4xl mx-auto text-center space-y-4 sm:space-y-6">
-              <div className="flex justify-center">
-                <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-xs sm:text-sm font-semibold text-primary-foreground shadow-md">
-                  Fall/Winter 2025-2026
-                </span>
+            <div className="grid gap-10 md:grid-cols-2 md:items-center">
+              <div className="space-y-6 text-center md:text-left">
+                <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-primary/90 px-3 py-1 text-xs sm:text-sm font-semibold text-primary-foreground shadow-md">
+                    <Sparkles className="h-4 w-4" />
+                    Fall/Winter 2025-2026
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs sm:text-sm text-white/90">
+                    Built for YorkU students
+                  </span>
+                </div>
+
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-balance leading-tight text-white drop-shadow-sm">
+                  <span className="sr-only">{heroText}</span>
+                  <span aria-hidden className="relative inline-block">
+                    <span className="invisible">{heroText}</span>
+                    <span className="absolute inset-0">
+                      {typedHeroText}
+                      {typedHeroText.length < heroText.length && (
+                        <span
+                          className="ml-1 inline-block w-[0.08em] h-[1em] bg-white/85 align-[-0.12em] animate-pulse"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </span>
+                  </span>
+                </h1>
+                <p className="text-base sm:text-lg md:text-xl text-white/85 text-pretty max-w-xl mx-auto md:mx-0">
+                  Explore YorkU courses with ease. View detailed course info,
+                  compare sections, read student reviews, and make informed
+                  decisions.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
+                  <Link href="/courses" className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto shadow-md">
+                      Browse Courses
+                    </Button>
+                  </Link>
+                  <Link href="#how-it-works" className="w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto bg-white/10 text-white border-white/30 hover:bg-white/20"
+                    >
+                      How it works
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-foreground/80 justify-center md:justify-start">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/85 text-slate-900 ring-1 ring-black/5 px-3 py-1 dark:bg-white/10 dark:text-white/85 dark:ring-white/10">
+                    <MessageSquareText className="h-4 w-4" />
+                    Student reviews inside
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/85 text-slate-900 ring-1 ring-black/5 px-3 py-1 dark:bg-white/10 dark:text-white/85 dark:ring-white/10">
+                    <BookOpen className="h-4 w-4" />
+                    Compare sections easily
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/85 text-slate-900 ring-1 ring-black/5 px-3 py-1 dark:bg-white/10 dark:text-white/85 dark:ring-white/10">
+                    <Search className="h-4 w-4" />
+                    Fast course search
+                  </span>
+                </div>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-balance leading-tight text-white drop-shadow-sm">
-                <span className="sr-only">{heroText}</span>
-                <span aria-hidden className="relative inline-block">
-                  {/* Reserve space to avoid layout shift */}
-                  <span className="invisible">{heroText}</span>
-                  <span className="absolute inset-0">
-                    {typedHeroText}
-                    {typedHeroText.length < heroText.length && (
-                      <span
-                        className="ml-1 inline-block w-[0.08em] h-[1em] bg-white/85 align-[-0.12em] animate-pulse"
-                        aria-hidden="true"
+              <div className="space-y-4">
+                <Card className="p-4 sm:p-5 bg-background/95 backdrop-blur border-primary/20 shadow-2xl overflow-visible">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Quick search
+                      </p>
+                      <h3 className="text-base sm:text-lg font-semibold">
+                        Find your next class
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <InputGroup className="h-12 text-sm bg-background border-primary/30">
+                      <InputGroupAddon
+                        align="inline-start"
+                        className="text-primary"
+                      >
+                        <Search className="h-6 w-6 text-primary/90" />
+                      </InputGroupAddon>
+                      <InputGroupInput
+                        type="search"
+                        placeholder="Search by code, name, faculty..."
+                        className="text-sm text-foreground"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => {
+                          setTimeout(() => {
+                            setIsFocused(false)
+                            setShowResults(false)
+                          }, 200)
+                        }}
                       />
-                    )}
-                  </span>
-                </span>
-              </h1>
-              <p className="text-base sm:text-lg md:text-xl text-white/85 text-pretty max-w-2xl mx-auto px-2 sm:px-0">
-                The ultimate course planner for York University students. Browse YorkU courses, compare sections, and build your ideal schedule with
-                ease. No more confusion, just clarity.
-              </p>
+                    </InputGroup>
 
-              {/* Search Bar */}
-              <div className="relative max-w-2xl mx-auto pt-2 sm:pt-4 px-2 sm:px-0">
-                <InputGroup className="h-12 sm:h-14 text-sm sm:text-base bg-background/90 backdrop-blur-md border-primary/30 shadow-xl shadow-black/20">
-                  <InputGroupAddon
-                    align="inline-start"
-                    className="text-primary"
-                  >
-                    <Search
-                      className="h-10 w-10 sm:h-12 sm:w-12 text-primary/90"
-                      strokeWidth={2.5}
-                    />
-                  </InputGroupAddon>
-                  <InputGroupInput
-                    type="search"
-                    placeholder="Search York University courses by name, code, or faculty..."
-                    className="text-sm sm:text-base text-foreground"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => {
-                      setTimeout(() => {
-                        setIsFocused(false)
-                        setShowResults(false)
-                      }, 200)
-                    }}
-                  />
-                </InputGroup>
-
-                {/* Search Results Dropdown */}
-                {showResults && isFocused && (
-                  <Card className="absolute top-full mt-2 w-full max-h-[50vh] sm:max-h-[400px] overflow-y-auto z-50 shadow-xl border-border bg-card text-left">
-                    {isSearching ? (
-                      <div className="p-4 sm:p-6 text-muted-foreground">
-                        <div className="animate-pulse">Searching...</div>
-                      </div>
-                    ) : searchResults.length === 0 ? (
-                      <div className="p-4 sm:p-6 text-muted-foreground text-sm sm:text-base">
-                        No courses found for &quot;{searchQuery}&quot;
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-border">
-                        {searchResults.map((course) => (
-                          <Link
-                            key={course.id}
-                            href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
-                            className="block p-3 sm:p-4 hover:bg-muted/70 transition-colors text-left"
-                            onMouseDown={(e) => e.preventDefault()}
-                          >
-                            <div className="flex items-start justify-between gap-2 sm:gap-4">
-                              <div className="flex-1 min-w-0 text-left">
-                                <h4 className="font-semibold text-foreground mb-1 text-sm sm:text-base text-left">
-                                  {formatCourseCode(course.code)}
-                                </h4>
-                                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 text-left">
-                                  {course.name}
-                                </p>
-                              </div>
-                              <Badge
-                                variant="secondary"
-                                className="shrink-0 text-xs sm:text-sm"
+                    {showResults && isFocused && (
+                      <Card className="absolute top-full mt-2 w-full max-h-[50vh] sm:max-h-100 overflow-y-auto z-50 shadow-xl border-border bg-card text-left">
+                        {isSearching ? (
+                          <div className="p-4 sm:p-6 text-muted-foreground">
+                            <div className="animate-pulse">Searching...</div>
+                          </div>
+                        ) : searchResults.length === 0 ? (
+                          <div className="p-4 sm:p-6 text-muted-foreground text-sm sm:text-base">
+                            No courses found for &quot;{searchQuery}&quot;
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-border">
+                            {searchResults.map((course) => (
+                              <Link
+                                key={course.id}
+                                href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
+                                className="block p-3 sm:p-4 hover:bg-muted/70 transition-colors text-left"
+                                onMouseDown={(e) => e.preventDefault()}
                               >
-                                {course.credits} credit
-                                {course.credits === 1 ? "" : "s"}
-                              </Badge>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
+                                <div className="flex items-start justify-between gap-2 sm:gap-4">
+                                  <div className="flex-1 min-w-0 text-left">
+                                    <h4 className="font-semibold text-foreground mb-1 text-sm sm:text-base text-left">
+                                      {formatCourseCode(course.code)}
+                                    </h4>
+                                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 text-left">
+                                      {course.name}
+                                    </p>
+                                  </div>
+                                  <Badge
+                                    variant="secondary"
+                                    className="shrink-0 text-xs sm:text-sm"
+                                  >
+                                    {course.credits} credit
+                                    {course.credits === 1 ? "" : "s"}
+                                  </Badge>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </Card>
                     )}
-                  </Card>
-                )}
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                    <div className="rounded-lg bg-muted/40 px-3 py-2">
+                      <div className="text-sm font-semibold text-foreground">
+                        5500+ courses
+                      </div>
+                      10 faculties
+                    </div>
+                    <div className="rounded-lg bg-muted/40 px-3 py-2">
+                      <div className="text-sm font-semibold text-foreground">
+                        Instant filters
+                      </div>
+                      Level, term, credits
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4 sm:p-5 bg-background/90">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm sm:text-base font-semibold">
+                      Trending right now
+                    </h3>
+                    <Link
+                      href="/courses"
+                      className="text-xs text-primary hover:underline"
+                    >
+                      View all
+                    </Link>
+                  </div>
+                  {isLoading ? (
+                    <p className="text-sm text-muted-foreground">
+                      Loading picks...
+                    </p>
+                  ) : topCourses.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No courses available.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {topCourses.slice(0, 3).map((course) => (
+                        <Link
+                          key={course.id}
+                          href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
+                          className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2 hover:bg-muted/40 transition-colors"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-foreground">
+                              {formatCourseCode(course.code)}
+                            </div>
+                            <div className="text-xs text-muted-foreground line-clamp-1">
+                              {course.name}
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {course.credits} credit
+                            {course.credits === 1 ? "" : "s"}
+                          </Badge>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </Card>
               </div>
             </div>
           </div>
         </BlurredHero>
 
-        {/* Top Courses Section */}
-        <section className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 md:py-10">
+        <section className="container mx-auto px-3 sm:px-4 py-10 sm:py-12 md:py-16">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
               <div>
@@ -256,7 +370,7 @@ export default function HomePage() {
                   Trending Courses
                 </h2>
                 <p className="text-sm sm:text-base text-muted-foreground">
-                  Most popular courses this semester
+                  Discover what students are adding this week
                 </p>
               </div>
               <Link href="/courses" className="w-full sm:w-auto">
@@ -289,32 +403,28 @@ export default function HomePage() {
                     href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
                   >
                     <Card className="p-4 sm:p-5 hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer group flex flex-col h-full">
-                      <div className="flex items-start justify-between mb-2 flex-shrink-0 gap-2 sm:gap-3">
+                      <div className="flex items-start justify-between mb-2 shrink-0 gap-2 sm:gap-3">
                         <div className="flex-1 min-w-0 pr-2">
                           <h3 className="font-bold text-lg sm:text-xl mb-0.5 group-hover:text-primary transition-colors line-clamp-1">
                             {formatCourseCode(course.code)}
                           </h3>
-                          {/* Reserve a consistent 3-line height so long titles aren't cut too aggressively */}
                           <p
-                            className="text-xs sm:text-sm text-foreground font-medium line-clamp-3 min-h-[3.75rem] sm:min-h-[4.25rem] leading-snug"
+                            className="text-xs sm:text-sm text-foreground font-medium line-clamp-3 min-h-15 sm:min-h-17 leading-snug"
                             title={course.name}
                           >
                             {course.name}
                           </p>
                         </div>
-                        <Badge
-                          variant="secondary"
-                          className="flex-shrink-0 text-xs"
-                        >
+                        <Badge variant="secondary" className="shrink-0 text-xs">
                           {course.credits} credit
                           {course.credits === 1 ? "" : "s"}
                         </Badge>
                       </div>
 
-                      <div className="flex items-start gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-2 flex-shrink-0">
+                      <div className="flex items-start gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-2 shrink-0">
                         <div className="flex items-start gap-1 min-w-0">
                           <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 shrink-0 mt-0.5" />
-                          <span className="min-w-0 leading-snug whitespace-normal break-words">
+                          <span className="min-w-0 leading-snug whitespace-normal wrap-break-word">
                             {course.faculty
                               ? getFacultyName(course.faculty)
                               : "Faculty N/A"}
@@ -342,38 +452,70 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="container mx-auto px-3 sm:px-4 py-8 sm:py-12 md:py-16">
+        <section
+          id="how-it-works"
+          className="container mx-auto px-3 sm:px-4 pb-10 sm:pb-12 md:pb-16"
+        >
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
-              Everything YU students need to plan courses
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
-              <div className="text-center space-y-3">
-                <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-                  <Search className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-bold text-base sm:text-lg">Smart Search</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Find courses by code, title, or department with
-                  intelligent filtering
-                </p>
-              </div>
-
-              <div className="text-center space-y-3">
-                <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-                  <BookOpen className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-bold text-base sm:text-lg">
-                  Course Details
-                </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Get complete information on prerequisites, descriptions, and
-                  section availability
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold">How it works</h2>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  A clear, three-step flow to build your schedule.
                 </p>
               </div>
             </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                {
+                  title: "Search",
+                  body: "Find every YorkU course by code, name, or faculty.",
+                },
+                {
+                  title: "Compare",
+                  body: "Review sections, instructors, and time slots side by side.",
+                },
+                {
+                  title: "Plan",
+                  body: "Build a conflict-free schedule and save your picks.",
+                },
+              ].map((step, index) => (
+                <Card key={step.title} className="p-5 sm:p-6 h-full">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+                      {index + 1}
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold">
+                      {step.title}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {step.body}
+                  </p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="container mx-auto px-3 sm:px-4 pb-16">
+          <div className="max-w-6xl mx-auto rounded-2xl bg-linear-to-r from-primary/15 via-primary/10 to-background p-6 sm:p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <p className="text-xs sm:text-sm uppercase tracking-widest text-primary">
+                Ready to start?
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-bold mt-2">
+                Build your schedule with confidence.
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground mt-2">
+                Explore courses and lock your plan in minutes.
+              </p>
+            </div>
+            <Link href="/courses" className="w-full md:w-auto">
+              <Button className="w-full md:w-auto shadow-md">
+                Browse Courses
+              </Button>
+            </Link>
           </div>
         </section>
       </div>
