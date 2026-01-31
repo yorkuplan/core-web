@@ -2,7 +2,16 @@ import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Linkedin, Github, Sparkles, BookOpen, Search } from "lucide-react"
+import {
+  Linkedin,
+  Github,
+  Sparkles,
+  BookOpen,
+  Search,
+  Calendar,
+  Info,
+  Users,
+} from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -62,32 +71,138 @@ export default function AboutPage() {
         </div>
 
         {/* Value Highlights */}
-        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 mb-12 sm:mb-16">
-          <Card className="p-5 sm:p-6 hover:shadow-lg hover:border-primary/30 transition-all group">
-            <div className="h-12 w-12 bg-linear-to-br from-primary/20 to-primary/5 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Search className="h-6 w-6 text-primary" />
+        <section className="container mx-auto px-3 sm:px-4 py-10 sm:py-12 md:py-16">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Card className="p-6 lg:col-span-2 bg-linear-to-r from-primary/10 via-primary/5 to-background">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Search className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-semibold">
+                      Smarter search, faster decisions
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Filter by term, level, credits, and faculty in seconds.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3 text-sm">
+                  {[
+                    "Student reviews + ratings",
+                    "Prereqs clearly surfaced",
+                    "RateMyProf links",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="rounded-lg border border-border/70 px-3 py-2 bg-background"
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Calendar className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      Section comparison
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      View all available sections side-by-side.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="rounded-lg bg-muted/40 px-3 py-2">
+                    See all meeting times
+                  </div>
+                  <div className="rounded-lg bg-muted/40 px-3 py-2">
+                    Compare instructor options
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Info className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      Unofficial course data
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Sourced from YorkU listings, not verified by the
+                      university.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="rounded-lg bg-muted/40 px-3 py-2">
+                    Updated regularly
+                  </div>
+                  <div className="rounded-lg bg-muted/40 px-3 py-2">
+                    Faculty + credit info included
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      Deep course details
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Everything you need in one view.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="rounded-lg bg-muted/40 px-3 py-2">
+                    Descriptions, prereqs, credits
+                  </div>
+                  <div className="rounded-lg bg-muted/40 px-3 py-2">
+                    Student reviews + feedback
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      Instructor insights
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Learn about who's teaching before you enroll.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="rounded-lg bg-muted/40 px-3 py-2">
+                    Direct RateMyProfessors links
+                  </div>
+                  <div className="rounded-lg bg-muted/40 px-3 py-2">
+                    Browse courses by instructor
+                  </div>
+                </div>
+              </Card>
             </div>
-            <h3 className="text-lg font-semibold mb-2">
-              Discover courses faster
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Quickly find classes, sections, and schedules with a clean, modern
-              interface.
-            </p>
-          </Card>
-          <Card className="p-5 sm:p-6 hover:shadow-lg hover:border-primary/30 transition-all group">
-            <div className="h-12 w-12 bg-linear-to-br from-primary/20 to-primary/5 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <BookOpen className="h-6 w-6 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">
-              Compare sections easily
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              See timings, instructors, and details side-by-side to make
-              confident choices.
-            </p>
-          </Card>
-        </div>
+          </div>
+        </section>
 
         {/* Team Section */}
         <div className="max-w-5xl mx-auto">
