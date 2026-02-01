@@ -219,11 +219,8 @@ export default function HomePage() {
 
               <div className="space-y-3 sm:space-y-4">
                 <Card className="p-3 sm:p-4 md:p-5 bg-background/95 backdrop-blur border-primary/20 shadow-2xl overflow-visible">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-1">
                     <div>
-                      <p className="text-xs text-muted-foreground">
-                        Quick search
-                      </p>
                       <h3 className="text-base sm:text-lg font-semibold">
                         Find your next class
                       </h3>
@@ -231,7 +228,7 @@ export default function HomePage() {
                   </div>
 
                   <div className="relative">
-                    <InputGroup className="h-12 text-sm bg-background border-primary/30">
+                    <InputGroup className="h-10 sm:h-11 text-sm bg-background border-primary/30">
                       <InputGroupAddon
                         align="inline-start"
                         className="text-primary"
@@ -298,7 +295,7 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
                     <div className="rounded-lg bg-muted/40 px-3 py-2">
                       <div className="text-sm font-semibold text-foreground">
                         5500+ courses
