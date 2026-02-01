@@ -149,10 +149,10 @@ export default function HomePage() {
           className="pt-10 sm:pt-14 md:pt-20 pb-12 sm:pb-16 md:pb-20"
           priority
         >
-          <div className="container mx-auto px-3 sm:px-4">
-            <div className="grid gap-10 md:grid-cols-2 md:items-center">
-              <div className="space-y-6 text-center md:text-left">
-                <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
+          <div className="container mx-auto px-4 sm:px-6 md:px-8">
+            <div className="grid gap-6 sm:gap-10 lg:grid-cols-2 lg:items-center">
+              <div className="space-y-6 text-center lg:text-left">
+                <div className="flex flex-wrap items-center gap-2 justify-center lg:justify-start">
                   <span className="inline-flex items-center gap-2 rounded-full bg-primary/90 px-3 py-1 text-xs sm:text-sm font-semibold text-primary-foreground shadow-md">
                     <Sparkles className="h-4 w-4" />
                     Fall/Winter 2025-2026
@@ -162,7 +162,7 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight text-white drop-shadow-sm whitespace-nowrap">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-tight text-white drop-shadow-sm">
                   <span className="sr-only">{heroText}</span>
                   <span aria-hidden className="relative block">
                     <span className="invisible whitespace-nowrap">
@@ -179,13 +179,13 @@ export default function HomePage() {
                     </span>
                   </span>
                 </h1>
-                <p className="text-base sm:text-lg md:text-xl text-white/85 text-pretty max-w-xl mx-auto md:mx-0">
+                <p className="text-sm sm:text-base md:text-xl text-white/85 text-pretty max-w-xl mx-auto lg:mx-0">
                   Explore YorkU courses with ease. View detailed course info,
                   compare sections, read student reviews, and make informed
                   decisions.
                 </p>
 
-                <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center lg:justify-start">
                   <Link href="/courses" className="w-full sm:w-auto">
                     <Button className="w-full sm:w-auto shadow-md">
                       Browse Courses
@@ -201,7 +201,7 @@ export default function HomePage() {
                   </Link>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-foreground/80 justify-center md:justify-start">
+                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-foreground/80 justify-center lg:justify-start">
                   <span className="inline-flex items-center gap-2 rounded-full bg-white/85 text-slate-900 ring-1 ring-black/5 px-3 py-1 dark:bg-white/10 dark:text-white/85 dark:ring-white/10">
                     <MessageSquareText className="h-4 w-4" />
                     Student reviews inside
@@ -217,8 +217,8 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <Card className="p-4 sm:p-5 bg-background/95 backdrop-blur border-primary/20 shadow-2xl overflow-visible">
+              <div className="space-y-3 sm:space-y-4">
+                <Card className="p-3 sm:p-4 md:p-5 bg-background/95 backdrop-blur border-primary/20 shadow-2xl overflow-visible">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-xs text-muted-foreground">
@@ -298,7 +298,7 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
                     <div className="rounded-lg bg-muted/40 px-3 py-2">
                       <div className="text-sm font-semibold text-foreground">
                         5500+ courses
@@ -314,7 +314,7 @@ export default function HomePage() {
                   </div>
                 </Card>
 
-                <Card className="p-4 sm:p-5 bg-background/90">
+                <Card className="p-3 sm:p-4 md:p-5 bg-background/90">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm sm:text-base font-semibold">
                       Trending right now
@@ -366,7 +366,7 @@ export default function HomePage() {
           </div>
         </BlurredHero>
 
-        <section className="container mx-auto px-3 sm:px-4 py-10 sm:py-12 md:py-16">
+        <section className="container mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
               <div>
@@ -400,7 +400,7 @@ export default function HomePage() {
                 No courses available.
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                 {topCourses.map((course) => (
                   <Link
                     key={course.id}
@@ -458,7 +458,7 @@ export default function HomePage() {
 
         <section
           id="how-it-works"
-          className="container mx-auto px-3 sm:px-4 pb-10 sm:pb-12 md:pb-16"
+          className="container mx-auto px-4 sm:px-6 md:px-8 pb-8 sm:pb-12 md:pb-16"
         >
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -469,7 +469,7 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 sm:gap-4 lg:grid-cols-3">
               {[
                 {
                   title: "Search",
@@ -484,7 +484,7 @@ export default function HomePage() {
                   body: "Build a conflict-free schedule and save your picks.",
                 },
               ].map((step, index) => (
-                <Card key={step.title} className="p-5 sm:p-6 h-full">
+                <Card key={step.title} className="p-4 sm:p-6 h-full">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
                       {index + 1}
@@ -502,8 +502,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="container mx-auto px-3 sm:px-4 pb-16">
-          <div className="max-w-6xl mx-auto rounded-2xl bg-linear-to-r from-primary/15 via-primary/10 to-background p-6 sm:p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
+        <section className="container mx-auto px-4 sm:px-6 md:px-8 pb-12 sm:pb-16">
+          <div className="max-w-6xl mx-auto rounded-2xl bg-linear-to-r from-primary/15 via-primary/10 to-background p-4 sm:p-8 md:p-10 flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-6">
             <div>
               <p className="text-xs sm:text-sm uppercase tracking-widest text-primary">
                 Ready to start?
@@ -515,8 +515,8 @@ export default function HomePage() {
                 Explore courses and lock your plan in minutes.
               </p>
             </div>
-            <Link href="/courses" className="w-full md:w-auto">
-              <Button className="w-full md:w-auto shadow-md">
+            <Link href="/courses" className="w-full lg:w-auto">
+              <Button className="w-full lg:w-auto shadow-md">
                 Browse Courses
               </Button>
             </Link>
