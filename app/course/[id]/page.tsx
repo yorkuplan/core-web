@@ -1,4 +1,5 @@
 "use client"
+import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -35,6 +36,26 @@ import { BlurredHero } from "@/components/blurred-hero"
 import { ReviewStats } from "@/components/review-stats"
 import { ReviewsList } from "@/components/reviews-list"
 import { ReviewForm } from "@/components/review-form"
+
+// Animation variants
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5 },
+}
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+const cardVariant = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+}
 
 const TERM_ORDER: Record<string, number> = {
   F: 1,
@@ -324,15 +345,27 @@ export default function CoursePage() {
             >
               <div className="container mx-auto px-3 sm:px-4">
                 {/* Course Header */}
-                <div className="max-w-6xl mx-auto">
-                  <Link
-                    href="/courses"
-                    className="text-xs sm:text-sm text-white/80 hover:text-white mb-3 sm:mb-4 inline-flex items-center gap-2"
-                  >
-                    ← Back to courses
-                  </Link>
+                <motion.div
+                  className="max-w-6xl mx-auto"
+                  initial="initial"
+                  whileInView="animate"
+                  viewport={{
+                    once: false,
+                    amount: 0.05,
+                    margin: "-100px 0px -300px 0px",
+                  }}
+                  variants={staggerContainer}
+                >
+                  <motion.div variants={fadeInUp}>
+                    <Link
+                      href="/courses"
+                      className="text-xs sm:text-sm text-white/80 hover:text-white mb-3 sm:mb-4 inline-flex items-center gap-2"
+                    >
+                      ← Back to courses
+                    </Link>
+                  </motion.div>
 
-                  <div className="mb-4 sm:mb-6">
+                  <motion.div className="mb-4 sm:mb-6" variants={fadeInUp}>
                     <div className="flex items-start justify-between gap-2 sm:gap-4 mb-2 sm:mb-3">
                       <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold break-words text-white drop-shadow-sm">
                         {formatCourseCode(selectedOffering.code)}
@@ -345,7 +378,7 @@ export default function CoursePage() {
                     <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/85 line-clamp-3">
                       {selectedOffering.name}
                     </p>
-                  </div>
+                  </motion.div>
 
                   {selectedOffering.description &&
                     (() => {
@@ -355,46 +388,58 @@ export default function CoursePage() {
                       return (
                         <>
                           {description && (
-                            <Card className="p-4 sm:p-6 md:p-8 bg-background/85 backdrop-blur-md border-white/30 shadow-xl shadow-black/15">
-                              <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">
-                                {description}
-                              </p>
-                            </Card>
+                            <motion.div variants={fadeInUp}>
+                              <Card className="p-4 sm:p-6 md:p-8 bg-background/85 backdrop-blur-md border-white/30 shadow-xl shadow-black/15">
+                                <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">
+                                  {description}
+                                </p>
+                              </Card>
+                            </motion.div>
                           )}
                           {prerequisites &&
                             (() => {
                               const prerequisiteItems =
                                 parsePrerequisitesIntoList(prerequisites)
                               return (
-                                <Card className="p-4 sm:p-6 bg-background/85 backdrop-blur-md border-white/30 mt-3 sm:mt-4 shadow-lg shadow-black/10">
-                                  <h3 className="text-lg sm:text-xl font-bold text-primary mb-3">
-                                    Prerequisites
-                                  </h3>
-                                  {prerequisiteItems.length > 0 ? (
-                                    <ul className="list-disc list-outside space-y-2 text-sm sm:text-base text-foreground leading-relaxed pl-6 sm:pl-7">
-                                      {prerequisiteItems.map((item, index) => (
-                                        <li key={index}>{item}</li>
-                                      ))}
-                                    </ul>
-                                  ) : (
-                                    <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">
-                                      {prerequisites}
-                                    </p>
-                                  )}
-                                </Card>
+                                <motion.div variants={fadeInUp}>
+                                  <Card className="p-4 sm:p-6 bg-background/85 backdrop-blur-md border-white/30 mt-3 sm:mt-4 shadow-lg shadow-black/10">
+                                    <h3 className="text-lg sm:text-xl font-bold text-primary mb-3">
+                                      Prerequisites
+                                    </h3>
+                                    {prerequisiteItems.length > 0 ? (
+                                      <ul className="list-disc list-outside space-y-2 text-sm sm:text-base text-foreground leading-relaxed pl-6 sm:pl-7">
+                                        {prerequisiteItems.map(
+                                          (item, index) => (
+                                            <li key={index}>{item}</li>
+                                          ),
+                                        )}
+                                      </ul>
+                                    ) : (
+                                      <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">
+                                        {prerequisites}
+                                      </p>
+                                    )}
+                                  </Card>
+                                </motion.div>
                               )
                             })()}
                         </>
                       )
                     })()}
-                </div>
+                </motion.div>
               </div>
             </BlurredHero>
 
             {/* Sections */}
             <section className="container mx-auto px-3 sm:px-4 py-6 sm:py-10">
               <div className="max-w-6xl mx-auto">
-                <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <motion.div
+                  className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5 }}
+                >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h2 className="text-2xl sm:text-3xl font-bold">
                       Available Sections
@@ -450,237 +495,255 @@ export default function CoursePage() {
                       <span>{getFacultyName(selectedOffering.faculty)}</span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
                 {sections.length === 0 ? (
                   <div className="text-center py-8 sm:py-12 text-sm sm:text-base text-muted-foreground">
                     No sections available for this course.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4">
+                  <motion.div
+                    key={selectedTerm}
+                    className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4"
+                    initial="initial"
+                    whileInView="animate"
+                    viewport={{ once: true }}
+                    variants={staggerContainer}
+                  >
                     {sections.map((section) => {
                       return (
-                        <Card
-                          key={section.id}
-                          className="w-full p-4 sm:p-6 hover:shadow-lg transition-all hover:border-primary/50"
-                        >
-                          <div className="mb-4">
-                            <h3 className="text-xl sm:text-2xl font-bold">
-                              Section {section.letter}
-                            </h3>
-                            {instructorsBySection[section.id] ? (
-                              <div className="flex items-center justify-between gap-2 mt-1">
-                                <p className="text-xs sm:text-sm text-muted-foreground">
-                                  {instructorsBySection[section.id].first_name}{" "}
-                                  {instructorsBySection[section.id].last_name}
-                                </p>
-                                {instructorsBySection[section.id]
-                                  .rate_my_prof_link && (
-                                  <a
-                                    href={
-                                      instructorsBySection[section.id]
-                                        .rate_my_prof_link
-                                    }
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0 text-xs"
-                                    title="View on Rate My Professors"
-                                    aria-label={`View ${
+                        <motion.div key={section.id} variants={cardVariant}>
+                          <Card
+                            key={section.id}
+                            className="w-full p-4 sm:p-6 hover:shadow-lg transition-all hover:border-primary/50"
+                          >
+                            <div className="mb-4">
+                              <h3 className="text-xl sm:text-2xl font-bold">
+                                Section {section.letter}
+                              </h3>
+                              {instructorsBySection[section.id] ? (
+                                <div className="flex items-center justify-between gap-2 mt-1">
+                                  <p className="text-xs sm:text-sm text-muted-foreground">
+                                    {
                                       instructorsBySection[section.id]
                                         .first_name
-                                    } ${
-                                      instructorsBySection[section.id].last_name
-                                    } on Rate My Professors`}
-                                  >
-                                    <span className="text-xs font-medium text-primary">
-                                      ratemyprof/
-                                      {instructorsBySection[
-                                        section.id
-                                      ].last_name.toLowerCase()}
-                                    </span>
-                                    <ExternalLink className="h-3 w-3 text-primary" />
-                                  </a>
-                                )}
-                              </div>
-                            ) : (
-                              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                                No instructor assigned yet
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="space-y-3 mb-4">
-                            {section.activities &&
-                            section.activities.length > 0 ? (
-                              [...section.activities]
-                                .sort((a, b) => {
-                                  // Lect type comes first
-                                  if (
-                                    a.course_type === "LECT" &&
-                                    b.course_type !== "LECT"
-                                  )
-                                    return -1
-                                  if (
-                                    a.course_type !== "LECT" &&
-                                    b.course_type === "LECT"
-                                  )
-                                    return 1
-                                  return 0
-                                })
-                                .map((activity) => {
-                                  let times: Array<{
-                                    day: string
-                                    time: string
-                                    duration: string
-                                    campus: string
-                                    room: string
-                                  }> = []
-                                  try {
-                                    times = JSON.parse(activity.times)
-                                  } catch {
-                                    times = []
-                                  }
-
-                                  const activityType = getTypeName(
-                                    activity.course_type,
-                                  )
-                                  const activityCount =
-                                    section.activities!.filter(
-                                      (a) =>
-                                        a.course_type === activity.course_type,
-                                    ).length
-                                  const isMultiple = activityCount > 1
-
-                                  const catalogNumbers = activity.catalog_number
-                                    ? parseCatalogNumbers(
-                                        activity.catalog_number,
-                                      )
-                                    : []
-                                  const hasSingleCatalog =
-                                    catalogNumbers.length === 1
-
-                                  return (
-                                    <div
-                                      key={activity.id}
-                                      className="bg-muted/50 rounded-lg p-3 sm:p-4"
+                                    }{" "}
+                                    {instructorsBySection[section.id].last_name}
+                                  </p>
+                                  {instructorsBySection[section.id]
+                                    .rate_my_prof_link && (
+                                    <a
+                                      href={
+                                        instructorsBySection[section.id]
+                                          .rate_my_prof_link
+                                      }
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0 text-xs"
+                                      title="View on Rate My Professors"
+                                      aria-label={`View ${
+                                        instructorsBySection[section.id]
+                                          .first_name
+                                      } ${
+                                        instructorsBySection[section.id]
+                                          .last_name
+                                      } on Rate My Professors`}
                                     >
+                                      <span className="text-xs font-medium text-primary">
+                                        ratemyprof/
+                                        {instructorsBySection[
+                                          section.id
+                                        ].last_name.toLowerCase()}
+                                      </span>
+                                      <ExternalLink className="h-3 w-3 text-primary" />
+                                    </a>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                                  No instructor assigned yet
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="space-y-3 mb-4">
+                              {section.activities &&
+                              section.activities.length > 0 ? (
+                                [...section.activities]
+                                  .sort((a, b) => {
+                                    // Lect type comes first
+                                    if (
+                                      a.course_type === "LECT" &&
+                                      b.course_type !== "LECT"
+                                    )
+                                      return -1
+                                    if (
+                                      a.course_type !== "LECT" &&
+                                      b.course_type === "LECT"
+                                    )
+                                      return 1
+                                    return 0
+                                  })
+                                  .map((activity) => {
+                                    let times: Array<{
+                                      day: string
+                                      time: string
+                                      duration: string
+                                      campus: string
+                                      room: string
+                                    }> = []
+                                    try {
+                                      times = JSON.parse(activity.times)
+                                    } catch {
+                                      times = []
+                                    }
+
+                                    const activityType = getTypeName(
+                                      activity.course_type,
+                                    )
+                                    const activityCount =
+                                      section.activities!.filter(
+                                        (a) =>
+                                          a.course_type ===
+                                          activity.course_type,
+                                      ).length
+                                    const isMultiple = activityCount > 1
+
+                                    const catalogNumbers =
+                                      activity.catalog_number
+                                        ? parseCatalogNumbers(
+                                            activity.catalog_number,
+                                          )
+                                        : []
+                                    const hasSingleCatalog =
+                                      catalogNumbers.length === 1
+
+                                    return (
                                       <div
-                                        className={`flex items-start gap-2 mb-2 ${hasSingleCatalog ? "" : "justify-between"}`}
+                                        key={activity.id}
+                                        className="bg-muted/50 rounded-lg p-3 sm:p-4"
                                       >
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-1 min-w-0">
-                                          <BookOpen
-                                            className="h-3 w-3 flex-shrink-0"
-                                            aria-hidden="true"
-                                          />
-                                          <span className="flex-shrink-0 whitespace-nowrap">
-                                            {activityType}
-                                            {isMultiple &&
-                                              ` ${
-                                                section
-                                                  .activities!.filter(
-                                                    (a) =>
-                                                      a.course_type ===
-                                                      activity.course_type,
+                                        <div
+                                          className={`flex items-start gap-2 mb-2 ${hasSingleCatalog ? "" : "justify-between"}`}
+                                        >
+                                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-1 min-w-0">
+                                            <BookOpen
+                                              className="h-3 w-3 flex-shrink-0"
+                                              aria-hidden="true"
+                                            />
+                                            <span className="flex-shrink-0 whitespace-nowrap">
+                                              {activityType}
+                                              {isMultiple &&
+                                                ` ${
+                                                  section
+                                                    .activities!.filter(
+                                                      (a) =>
+                                                        a.course_type ===
+                                                        activity.course_type,
+                                                    )
+                                                    .indexOf(activity) + 1
+                                                }`}
+                                            </span>
+                                            {hasSingleCatalog && (
+                                              <button
+                                                onClick={() =>
+                                                  handleCopyCatalog(
+                                                    catalogNumbers[0].trim(),
                                                   )
-                                                  .indexOf(activity) + 1
-                                              }`}
-                                          </span>
-                                          {hasSingleCatalog && (
-                                            <button
-                                              onClick={() =>
-                                                handleCopyCatalog(
-                                                  catalogNumbers[0].trim(),
-                                                )
-                                              }
-                                              className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap shrink-0 text-xs ml-auto"
-                                              title="Click to copy catalog number"
-                                              aria-label={`Copy catalog number ${catalogNumbers[0]}`}
-                                              type="button"
-                                            >
-                                              <span className="text-xs font-mono font-medium text-primary line-clamp-1">
-                                                {catalogNumbers[0].trim()}
-                                              </span>
-                                              {copiedCatalog ===
-                                              catalogNumbers[0].trim() ? (
-                                                <Check className="h-3 w-3 text-primary flex-shrink-0" />
-                                              ) : (
-                                                <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 flex-shrink-0" />
-                                              )}
-                                            </button>
-                                          )}
-                                        </div>
-                                        {!hasSingleCatalog &&
-                                          activity.catalog_number && (
-                                            <div className="flex flex-col sm:grid sm:grid-cols-2 gap-1.5 items-end sm:justify-items-end">
-                                              {catalogNumbers.map(
-                                                (catalogNum, idx) => (
-                                                  <button
-                                                    key={idx}
-                                                    onClick={() =>
-                                                      handleCopyCatalog(
-                                                        catalogNum.trim(),
-                                                      )
-                                                    }
-                                                    className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap shrink-0 text-xs"
-                                                    title="Click to copy catalog number"
-                                                    aria-label={`Copy catalog number ${catalogNum}`}
-                                                    type="button"
-                                                  >
-                                                    <span className="text-xs font-mono font-medium text-primary line-clamp-1">
-                                                      {catalogNum.trim()}
-                                                    </span>
-                                                    {copiedCatalog ===
-                                                    catalogNum.trim() ? (
-                                                      <Check className="h-3 w-3 text-primary flex-shrink-0" />
-                                                    ) : (
-                                                      <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 flex-shrink-0" />
-                                                    )}
-                                                  </button>
-                                                ),
-                                              )}
-                                            </div>
-                                          )}
-                                      </div>
-                                      {times.length === 0 ? (
-                                        <p className="text-xs sm:text-sm font-bold">
-                                          Cancelled
-                                        </p>
-                                      ) : times.length > 0 &&
-                                        (!times[0].time ||
-                                          times[0].time === "0:00") ? (
-                                        <p className="text-xs sm:text-sm font-bold">
-                                          No Scheduled Times
-                                        </p>
-                                      ) : (
-                                        <>
-                                          <p className="text-xs sm:text-sm font-medium">
-                                            {getDayName(times[0].day)}:{" "}
-                                            {formatTime(times[0].time)} -{" "}
-                                            {calculateEndTime(
-                                              times[0].time,
-                                              times[0].duration,
+                                                }
+                                                className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap shrink-0 text-xs ml-auto"
+                                                title="Click to copy catalog number"
+                                                aria-label={`Copy catalog number ${catalogNumbers[0]}`}
+                                                type="button"
+                                              >
+                                                <span className="text-xs font-mono font-medium text-primary line-clamp-1">
+                                                  {catalogNumbers[0].trim()}
+                                                </span>
+                                                {copiedCatalog ===
+                                                catalogNumbers[0].trim() ? (
+                                                  <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                                                ) : (
+                                                  <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 flex-shrink-0" />
+                                                )}
+                                              </button>
                                             )}
+                                          </div>
+                                          {!hasSingleCatalog &&
+                                            activity.catalog_number && (
+                                              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-1.5 items-end sm:justify-items-end">
+                                                {catalogNumbers.map(
+                                                  (catalogNum, idx) => (
+                                                    <button
+                                                      key={idx}
+                                                      onClick={() =>
+                                                        handleCopyCatalog(
+                                                          catalogNum.trim(),
+                                                        )
+                                                      }
+                                                      className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap shrink-0 text-xs"
+                                                      title="Click to copy catalog number"
+                                                      aria-label={`Copy catalog number ${catalogNum}`}
+                                                      type="button"
+                                                    >
+                                                      <span className="text-xs font-mono font-medium text-primary line-clamp-1">
+                                                        {catalogNum.trim()}
+                                                      </span>
+                                                      {copiedCatalog ===
+                                                      catalogNum.trim() ? (
+                                                        <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                                                      ) : (
+                                                        <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 flex-shrink-0" />
+                                                      )}
+                                                    </button>
+                                                  ),
+                                                )}
+                                              </div>
+                                            )}
+                                        </div>
+                                        {times.length === 0 ? (
+                                          <p className="text-xs sm:text-sm font-bold">
+                                            Cancelled
                                           </p>
-                                          <p className="text-xs text-muted-foreground">
-                                            {[times[0]?.room, times[0]?.campus]
-                                              .filter(Boolean)
-                                              .join(", ")}
+                                        ) : times.length > 0 &&
+                                          (!times[0].time ||
+                                            times[0].time === "0:00") ? (
+                                          <p className="text-xs sm:text-sm font-bold">
+                                            No Scheduled Times
                                           </p>
-                                        </>
-                                      )}
-                                    </div>
-                                  )
-                                })
-                            ) : (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                No activities scheduled
-                              </p>
-                            )}
-                          </div>
-                        </Card>
+                                        ) : (
+                                          <>
+                                            <p className="text-xs sm:text-sm font-medium">
+                                              {getDayName(times[0].day)}:{" "}
+                                              {formatTime(times[0].time)} -{" "}
+                                              {calculateEndTime(
+                                                times[0].time,
+                                                times[0].duration,
+                                              )}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                              {[
+                                                times[0]?.room,
+                                                times[0]?.campus,
+                                              ]
+                                                .filter(Boolean)
+                                                .join(", ")}
+                                            </p>
+                                          </>
+                                        )}
+                                      </div>
+                                    )
+                                  })
+                              ) : (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  No activities scheduled
+                                </p>
+                              )}
+                            </div>
+                          </Card>
+                        </motion.div>
                       )
                     })}
-                  </div>
+                  </motion.div>
                 )}
               </div>
             </section>
@@ -688,7 +751,13 @@ export default function CoursePage() {
             {/* Reviews Section */}
             <section className="container mx-auto px-3 sm:px-4 py-6 sm:py-10">
               <div className="max-w-6xl mx-auto">
-                <div className="mb-4 sm:mb-6">
+                <motion.div
+                  className="mb-4 sm:mb-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5 }}
+                >
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-xl sm:text-2xl md:text-3xl font-bold">
                       Reviews
@@ -707,73 +776,80 @@ export default function CoursePage() {
                       </Button>
                     )}
                   </div>
-                </div>
+                </motion.div>
 
-                {isLoadingReviews ? (
-                  <Card className="p-8 sm:p-12 text-center border-dashed">
-                    <div className="flex flex-col items-center gap-3 sm:gap-4">
-                      <div className="animate-pulse">
-                        <Star
-                          className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50"
-                          aria-hidden="true"
-                        />
-                      </div>
-                      <p className="text-sm sm:text-base text-muted-foreground">
-                        Loading reviews...
-                      </p>
-                    </div>
-                  </Card>
-                ) : reviewsData && reviewsData.stats.total_reviews > 0 ? (
-                  <>
-                    <ReviewStats stats={reviewsData.stats} />
-                    <ReviewsList reviews={reviewsData.data} />
-                  </>
-                ) : (
-                  <Card className="relative overflow-hidden border-2 border-dashed border-primary/30 bg-linear-to-br from-background via-primary/5 to-background">
-                    <div
-                      className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"
-                      aria-hidden="true"
-                    />
-                    <div
-                      className="absolute bottom-0 left-0 w-48 h-48 sm:w-64 sm:h-64 bg-primary/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"
-                      aria-hidden="true"
-                    />
-                    <div className="relative p-8 sm:p-12 md:p-16 text-center">
-                      <div className="flex justify-center mb-4 sm:mb-6">
-                        <div className="relative">
-                          <div
-                            className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse"
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                  {isLoadingReviews ? (
+                    <Card className="p-8 sm:p-12 text-center border-dashed">
+                      <div className="flex flex-col items-center gap-3 sm:gap-4">
+                        <div className="animate-pulse">
+                          <Star
+                            className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50"
                             aria-hidden="true"
                           />
-                          <div className="relative p-3 sm:p-4 bg-background border-2 border-primary/30 rounded-full">
-                            <MessageSquare
-                              className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 text-primary"
+                        </div>
+                        <p className="text-sm sm:text-base text-muted-foreground">
+                          Loading reviews...
+                        </p>
+                      </div>
+                    </Card>
+                  ) : reviewsData && reviewsData.stats.total_reviews > 0 ? (
+                    <>
+                      <ReviewStats stats={reviewsData.stats} />
+                      <ReviewsList reviews={reviewsData.data} />
+                    </>
+                  ) : (
+                    <Card className="relative overflow-hidden border-2 border-dashed border-primary/30 bg-linear-to-br from-background via-primary/5 to-background">
+                      <div
+                        className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"
+                        aria-hidden="true"
+                      />
+                      <div
+                        className="absolute bottom-0 left-0 w-48 h-48 sm:w-64 sm:h-64 bg-primary/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"
+                        aria-hidden="true"
+                      />
+                      <div className="relative p-8 sm:p-12 md:p-16 text-center">
+                        <div className="flex justify-center mb-4 sm:mb-6">
+                          <div className="relative">
+                            <div
+                              className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse"
                               aria-hidden="true"
                             />
+                            <div className="relative p-3 sm:p-4 bg-background border-2 border-primary/30 rounded-full">
+                              <MessageSquare
+                                className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 text-primary"
+                                aria-hidden="true"
+                              />
+                            </div>
                           </div>
                         </div>
+                        <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 bg-linear-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                          No reviews yet
+                        </h3>
+                        <p className="text-xs sm:text-sm md:text-base text-muted-foreground mb-4 sm:mb-6 max-w-md mx-auto px-4">
+                          Be the first to share your experience and help future
+                          students make informed decisions!
+                        </p>
+                        <Button
+                          onClick={() => setIsReviewFormOpen(true)}
+                          size="lg"
+                          className="w-full sm:w-auto shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary group"
+                        >
+                          <Sparkles
+                            className="h-4 w-4 sm:h-5 sm:w-5 mr-2 group-hover:rotate-12 transition-transform"
+                            aria-hidden="true"
+                          />
+                          Write the first review
+                        </Button>
                       </div>
-                      <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 bg-linear-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                        No reviews yet
-                      </h3>
-                      <p className="text-xs sm:text-sm md:text-base text-muted-foreground mb-4 sm:mb-6 max-w-md mx-auto px-4">
-                        Be the first to share your experience and help future
-                        students make informed decisions!
-                      </p>
-                      <Button
-                        onClick={() => setIsReviewFormOpen(true)}
-                        size="lg"
-                        className="w-full sm:w-auto shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary group"
-                      >
-                        <Sparkles
-                          className="h-4 w-4 sm:h-5 sm:w-5 mr-2 group-hover:rotate-12 transition-transform"
-                          aria-hidden="true"
-                        />
-                        Write the first review
-                      </Button>
-                    </div>
-                  </Card>
-                )}
+                    </Card>
+                  )}
+                </motion.div>
               </div>
             </section>
           </>
