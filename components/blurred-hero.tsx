@@ -33,7 +33,6 @@ export function BlurredHero({
   imageSrc = "/background-image.webp",
   imageAlt = "Background",
   imageClassName,
-  tintClassName,
   contrastOverlayClassName,
   fadeClassName,
   priority = true,
@@ -51,15 +50,14 @@ export function BlurredHero({
           decoding="async"
           className={cn(
             // scale avoids blur edges showing transparent borders
-            "pointer-events-none select-none object-cover scale-110 blur-[10px] saturate-[1.05] brightness-[0.72]",
+            "pointer-events-none select-none object-cover scale-110",
             imageClassName,
           )}
         />
         <div
           className={cn(
-            // Combined overlay: tint, contrast, and fade in one layer
-            "absolute inset-0 bg-linear-to-b from-primary/20 via-black/10 to-background",
-            tintClassName,
+            // Combined overlay: contrast and fade in one layer
+            "absolute inset-0 bg-linear-to-b from-black/10 via-black/10 to-background",
             contrastOverlayClassName,
             fadeClassName,
           )}
