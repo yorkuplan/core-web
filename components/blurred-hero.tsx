@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import Image from "next/image"
 import { cn } from "@/lib/utils"
@@ -30,13 +30,13 @@ export function BlurredHero({
   children,
   className,
   contentClassName,
-  imageSrc = "/background-image.png",
+  imageSrc = "/background-image.webp",
   imageAlt = "Background",
   imageClassName,
   tintClassName,
   contrastOverlayClassName,
   fadeClassName,
-  priority = false,
+  priority = true,
 }: BlurredHeroProps) {
   return (
     <section className={cn("relative isolate", className)}>
@@ -48,6 +48,7 @@ export function BlurredHero({
           fill
           priority={priority}
           sizes="100vw"
+          decoding="async"
           className={cn(
             // scale avoids blur edges showing transparent borders
             "pointer-events-none select-none object-cover scale-110 blur-[10px] saturate-[1.05] brightness-[0.72]",
@@ -81,4 +82,3 @@ export function BlurredHero({
     </section>
   )
 }
-
