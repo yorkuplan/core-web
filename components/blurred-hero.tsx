@@ -40,7 +40,10 @@ export function BlurredHero({
 }: BlurredHeroProps) {
   return (
     <section
-      className={cn("relative isolate aspect-video lg:aspect-21/9", className)}
+      className={cn(
+        "relative isolate aspect-square md:aspect-4/3 lg:aspect-21/9",
+        className,
+      )}
     >
       {/* Background is clipped, content can overflow (search dropdown) */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
