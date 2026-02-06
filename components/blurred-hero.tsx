@@ -39,7 +39,12 @@ export function BlurredHero({
   priority = true,
 }: BlurredHeroProps) {
   return (
-    <section className={cn("relative isolate aspect-21/9", className)}>
+    <section
+      className={cn(
+        "relative isolate aspect-4/3 sm:aspect-video lg:aspect-21/9",
+        className,
+      )}
+    >
       {/* Background is clipped, content can overflow (search dropdown) */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <Image
@@ -51,14 +56,16 @@ export function BlurredHero({
           sizes="100vw"
           className={cn(
             // scale avoids blur edges showing transparent borders
-            "pointer-events-none select-none object-cover scale-110 blur-[10px]",
+            // Reduced blur on mobile for better performance
+            "pointer-events-none select-none object-cover scale-110 blur-[6px] sm:blur-sm lg:blur-[10px]",
             imageClassName,
           )}
         />
         <div
           className={cn(
             // Combined overlay: contrast and fade in one layer
-            "absolute inset-0 bg-linear-to-b from-black/10 via-black/10 to-background",
+            // Slightly stronger overlay on mobile for better text contrast
+            "absolute inset-0 bg-linear-to-b from-black/20 via-black/15 to-background sm:from-black/10 sm:via-black/10",
             contrastOverlayClassName,
             fadeClassName,
           )}
