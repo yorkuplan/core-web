@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import {
   coursesApi,
   formatCourseCode,
@@ -76,6 +77,9 @@ const COURSE_LEVEL_TO_RANGE: Record<string, string> = {
 }
 
 export default function CoursesContent() {
+  const searchParams = useSearchParams()
+  const initialQuery = searchParams.get("q") || ""
+
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedFaculty, setSelectedFaculty] = useState("all")
   const [selectedCourseLevel, setSelectedCourseLevel] = useState<string[]>([])
@@ -86,9 +90,9 @@ export default function CoursesContent() {
   const [totalItems, setTotalItems] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [isSearching, setIsSearching] = useState(false)
-  const [isSearchMode, setIsSearchMode] = useState(false)
+  const [isSearchMode, setIsSearchMode] = useState(!!initialQuery)
   const coursesPerPage = 20
 
   const normalizeCourseCodeKey = (code: string) =>

@@ -3,6 +3,7 @@ import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Users,
   BookOpen,
@@ -12,6 +13,7 @@ import {
   Star,
   MessageSquare,
   Sparkles,
+  Search,
 } from "lucide-react"
 import Link from "next/link"
 import {
@@ -28,8 +30,8 @@ import {
   getSemesterName,
   formatCourseCode,
 } from "@/lib/api/courses"
-import { useParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { useEffect, useState, useRef } from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { BlurredHero } from "@/components/blurred-hero"
@@ -72,7 +74,13 @@ const formatTermLabel = (term: string): string => {
 
 export default function CoursePage() {
   const params = useParams()
+  const router = useRouter()
   const courseCode = getIDFromParams({ id: params.id as string })
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<CourseOffering[]>([])
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false)
+  const [isSearchingHeader, setIsSearchingHeader] = useState(false)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
   const [offerings, setOfferings] = useState<CourseOffering[]>([])
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -225,6 +233,62 @@ export default function CoursePage() {
       }
     }
   }
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      setIsSearchDropdownOpen(false)
+      router.push(`/courses?q=${encodeURIComponent(searchQuery.trim())}`)
+    }
+  }
+
+  // Live search for header dropdown
+  useEffect(() => {
+    if (searchQuery.trim().length === 0) {
+      setSearchResults([])
+      setIsSearchDropdownOpen(false)
+      return
+    }
+
+    const delaySearch = setTimeout(async () => {
+      setIsSearchingHeader(true)
+      try {
+        const results = await coursesApi.searchCourses(searchQuery)
+        const deduped: CourseOffering[] = []
+        const seen = new Set<string>()
+        for (const c of Array.isArray(results) ? results : []) {
+          const key = (c.code || "").replace(/\s+/g, "").toUpperCase()
+          if (!key || seen.has(key)) continue
+          seen.add(key)
+          deduped.push(c)
+        }
+        setSearchResults(deduped.slice(0, 8))
+        setIsSearchDropdownOpen(deduped.length > 0)
+      } catch {
+        setSearchResults([])
+        setIsSearchDropdownOpen(false)
+      } finally {
+        setIsSearchingHeader(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(delaySearch)
+  }, [searchQuery])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setIsSearchDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
   useEffect(() => {
     async function fetchCourseData() {
       try {
@@ -312,7 +376,70 @@ export default function CoursePage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header subtitle="Course selection, de-cluttered." />
+      <Header
+        subtitle={
+          <div ref={searchContainerRef} className="relative w-full max-w-lg">
+            <form onSubmit={handleSearchSubmit}>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search courses..."
+                className="pl-9 pr-4 h-9 bg-card text-sm w-full border-2"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => {
+                  if (searchResults.length > 0) setIsSearchDropdownOpen(true)
+                }}
+              />
+            </form>
+            {isSearchDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-[100] max-h-[400px] overflow-y-auto">
+                {isSearchingHeader ? (
+                  <div className="px-4 py-3 text-sm text-muted-foreground text-center">
+                    Searching...
+                  </div>
+                ) : (
+                  <>
+                    {searchResults.map((course) => (
+                      <button
+                        key={course.code}
+                        type="button"
+                        className="w-full text-left px-4 py-2.5 hover:bg-accent transition-colors flex flex-col gap-0.5 border-b border-border/50 last:border-b-0"
+                        onClick={() => {
+                          setIsSearchDropdownOpen(false)
+                          setSearchQuery("")
+                          router.push(
+                            `/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`
+                          )
+                        }}
+                      >
+                        <span className="text-sm font-medium">
+                          {formatCourseCode(course.code)}
+                        </span>
+                        <span className="text-xs text-muted-foreground line-clamp-1">
+                          {course.name}
+                        </span>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className="w-full text-center px-4 py-2.5 text-xs text-primary hover:bg-accent transition-colors font-medium"
+                      onClick={() => {
+                        setIsSearchDropdownOpen(false)
+                        router.push(
+                          `/courses?q=${encodeURIComponent(searchQuery.trim())}`
+                        )
+                      }}
+                    >
+                      View all results →
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        }
+      />
 
       <div className="flex-grow">
         {isLoading ? (

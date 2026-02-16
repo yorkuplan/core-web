@@ -1,5 +1,6 @@
 import { Menu } from "lucide-react"
 import Link from "next/link"
+import { ReactNode } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,16 +13,16 @@ import {
 import Logo from "@/public/logo.webp"
 
 interface HeaderProps {
-  subtitle?: string
+  subtitle?: ReactNode
 }
 
 export function Header({ subtitle }: HeaderProps) {
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 sm:px-6 md:px-8 py-3 sm:py-4 flex items-center justify-between md:grid md:grid-cols-3 gap-2 sm:gap-4">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
         <Link
           href="/"
-          className="flex items-center gap-1.5 sm:gap-2 justify-self-start shrink-0"
+          className="flex items-center gap-1.5 sm:gap-2 shrink-0"
         >
           <img
             src={Logo.src}
@@ -30,11 +31,11 @@ export function Header({ subtitle }: HeaderProps) {
           />
         </Link>
         {subtitle && (
-          <p className="text-xs sm:text-sm text-muted-foreground text-center justify-self-center hidden md:block">
+          <div className="hidden md:flex flex-1 justify-center min-w-0 mx-4">
             {subtitle}
-          </p>
+          </div>
         )}
-        <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4 justify-self-end shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4 shrink-0">
           <nav className="hidden lg:flex items-center gap-4 text-sm">
             <Link
               href="/about"
