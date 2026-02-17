@@ -1,40 +1,61 @@
-import { Menu } from "lucide-react"
-import Link from "next/link"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Button } from "@/components/ui/button"
+import { Menu } from "lucide-react";
+import Link from "next/link";
+import { ReactNode } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet"
-import Logo from "@/public/logo.webp"
+} from "@/components/ui/sheet";
+import Logo from "@/public/logo.webp";
 
 interface HeaderProps {
-  subtitle?: string
+  subtitle?: string;
+  centerContent?: React.ReactNode;
+  /** Rendered in the right group on mobile only (e.g. search icon). When set, center is hidden on mobile. */
+  rightSlotMobile?: React.ReactNode;
 }
 
-export function Header({ subtitle }: HeaderProps) {
+export function Header({
+  subtitle,
+  centerContent,
+  rightSlotMobile,
+}: HeaderProps) {
+  const center =
+    centerContent ??
+    (subtitle ? (
+      <p className="text-xs sm:text-sm text-muted-foreground text-center hidden md:block">
+        {subtitle}
+      </p>
+    ) : null);
+  const showCenterOnMobile = Boolean(centerContent && !rightSlotMobile);
+
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 sm:px-6 md:px-8 py-3 sm:py-4 flex items-center justify-between md:grid md:grid-cols-3 gap-2 sm:gap-4">
-        <Link
-          href="/"
-          className="flex items-center gap-1.5 sm:gap-2 justify-self-start shrink-0"
-        >
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
+        <Link href="/" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <img
             src={Logo.src}
             alt="YUPlan - York University Course Planner"
             className="w-auto h-5 sm:h-6 lg:h-7 object-contain"
           />
         </Link>
-        {subtitle && (
-          <p className="text-xs sm:text-sm text-muted-foreground text-center justify-self-center hidden md:block">
-            {subtitle}
-          </p>
+        {center && (
+          <div
+            className={`justify-self-center min-w-0 flex items-center justify-center w-full max-w-xl ${!showCenterOnMobile ? "hidden md:flex" : ""}`}
+          >
+            {center}
+          </div>
         )}
         <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4 justify-self-end shrink-0">
+          {rightSlotMobile && (
+            <div className="md:hidden flex items-center shrink-0">
+              {rightSlotMobile}
+            </div>
+          )}
           <nav className="hidden lg:flex items-center gap-4 text-sm">
             <Link
               href="/about"
@@ -98,5 +119,5 @@ export function Header({ subtitle }: HeaderProps) {
         </div>
       </div>
     </header>
-  )
+  );
 }

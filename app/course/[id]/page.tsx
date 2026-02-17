@@ -1,8 +1,9 @@
-"use client"
-import { motion } from "framer-motion"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+"use client";
+import { motion } from "framer-motion";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Users,
   BookOpen,
@@ -12,14 +13,18 @@ import {
   Star,
   MessageSquare,
   Sparkles,
-} from "lucide-react"
-import Link from "next/link"
+  Search,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   coursesApi,
   type Section,
   type Instructor,
   type CourseOffering,
   type ReviewsResponse,
+  type Course,
   getDayName,
   getFacultyName,
   getTypeName,
@@ -27,22 +32,369 @@ import {
   formatTime,
   getSemesterName,
   formatCourseCode,
-} from "@/lib/api/courses"
-import { useParams } from "next/navigation"
-import { useEffect, useState } from "react"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
-import { BlurredHero } from "@/components/blurred-hero"
-import { ReviewStats } from "@/components/review-stats"
-import { ReviewsList } from "@/components/reviews-list"
-import { ReviewForm } from "@/components/review-form"
+} from "@/lib/api/courses";
+import { useParams } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
+import { BlurredHero } from "@/components/blurred-hero";
+import { ReviewStats } from "@/components/review-stats";
+import { ReviewsList } from "@/components/reviews-list";
+import { ReviewForm } from "@/components/review-form";
+import { createContext, useContext, useCallback, useMemo } from "react";
+
+const normalizeCode = (code: string) => code.replace(/\s+/g, "").toUpperCase();
+const dedupeCourses = (items: Course[]) => {
+  const seen = new Set<string>();
+  return items.filter((c) => {
+    const key = normalizeCode(c.code || "");
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+type SearchContextValue = {
+  query: string;
+  setQuery: (q: string) => void;
+  results: Course[];
+  isSearching: boolean;
+  mobileOpen: boolean;
+  setMobileOpen: (v: boolean) => void;
+  showDropdown: boolean;
+  setShowDropdown: (v: boolean) => void;
+  goToCourse: (course: Course) => void;
+  goToSearchPage: (q: string) => void;
+};
+
+const CourseHeaderSearchContext = createContext<SearchContextValue | null>(
+  null,
+);
+
+function CourseHeaderSearchProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Course[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      setShowDropdown(false);
+      return;
+    }
+    const t = setTimeout(async () => {
+      setShowDropdown(true);
+      setIsSearching(true);
+      setResults([]);
+      try {
+        const list = await coursesApi.searchCourses(query);
+        setResults(Array.isArray(list) ? dedupeCourses(list) : []);
+      } catch {
+        setResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const goToCourse = useCallback(
+    (course: Course) => {
+      const slug = course.code?.replace(/\s+/g, "").toLowerCase();
+      if (slug) router.push(`/course/${slug}`);
+      setQuery("");
+      setResults([]);
+      setShowDropdown(false);
+      setMobileOpen(false);
+    },
+    [router],
+  );
+
+  const goToSearchPage = useCallback(
+    (q: string) => {
+      const trimmed = q.trim();
+      if (trimmed) router.push(`/courses?q=${encodeURIComponent(trimmed)}`);
+      setQuery("");
+      setResults([]);
+      setMobileOpen(false);
+    },
+    [router],
+  );
+
+  const value = useMemo<SearchContextValue>(
+    () => ({
+      query,
+      setQuery,
+      results,
+      isSearching,
+      mobileOpen,
+      setMobileOpen,
+      showDropdown,
+      setShowDropdown,
+      goToCourse,
+      goToSearchPage,
+    }),
+    [
+      query,
+      results,
+      isSearching,
+      mobileOpen,
+      showDropdown,
+      goToCourse,
+      goToSearchPage,
+    ],
+  );
+
+  return (
+    <CourseHeaderSearchContext.Provider value={value}>
+      {children}
+    </CourseHeaderSearchContext.Provider>
+  );
+}
+
+function useCourseHeaderSearch() {
+  const ctx = useContext(CourseHeaderSearchContext);
+  if (!ctx) throw new Error("CourseHeaderSearch used outside Provider");
+  return ctx;
+}
+
+function SearchResultsDropdown({ className }: { className?: string }) {
+  const { results, isSearching, query, goToCourse, showDropdown } =
+    useCourseHeaderSearch();
+  if (!showDropdown || !query.trim()) return null;
+  return (
+    <Card
+      className={`absolute top-full left-0 right-0 z-50 mt-2 max-h-[min(50vh,320px)] overflow-y-auto shadow-xl border-border bg-card text-left ${className ?? ""}`}
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      {isSearching ? (
+        <div className="p-4 text-muted-foreground text-sm">Searching...</div>
+      ) : results.length === 0 ? (
+        <div className="p-4 text-muted-foreground text-sm">
+          No courses found for &quot;{query}&quot;
+        </div>
+      ) : (
+        <div className="divide-y divide-border">
+          {results.map((course) => (
+            <Link
+              key={course.id}
+              href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
+              className="block p-3 sm:p-4 hover:bg-muted/70 transition-colors text-left"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => goToCourse(course)}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-semibold text-foreground text-sm">
+                    {formatCourseCode(course.code)}
+                  </h4>
+                  <p className="text-xs text-muted-foreground line-clamp-1">
+                    {course.name}
+                  </p>
+                </div>
+                <Badge variant="secondary" className="shrink-0 text-xs">
+                  {course.credits} credit{course.credits === 1 ? "" : "s"}
+                </Badge>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function CourseHeaderSearchDesktop() {
+  const { query, setQuery, setShowDropdown } = useCourseHeaderSearch();
+  return (
+    <div className="relative flex-1 w-full min-w-0 max-w-md mx-auto hidden md:block">
+      <div className="relative">
+        <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-4 sm:h-5 w-4 sm:w-5 text-muted-foreground pointer-events-none" />
+        <Input
+          type="text"
+          placeholder="Search courses..."
+          className="pl-9 sm:pl-12 pr-8 sm:pr-10 h-9 sm:h-10 bg-card text-sm w-full"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => query.trim() && setShowDropdown(true)}
+          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+            aria-label="Clear search"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      <SearchResultsDropdown />
+    </div>
+  );
+}
+
+function CourseHeaderSearchMobile() {
+  const {
+    query,
+    setQuery,
+    mobileOpen,
+    setMobileOpen,
+    goToCourse,
+    results,
+    isSearching,
+    showDropdown,
+    setShowDropdown,
+  } = useCourseHeaderSearch();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current?.contains(e.target as Node)) return;
+      setMobileOpen(false);
+    };
+    const t = setTimeout(
+      () => document.addEventListener("click", handleClickOutside),
+      0,
+    );
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [mobileOpen, setMobileOpen]);
+
+  useEffect(() => {
+    if (mobileOpen) {
+      const id = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(id);
+    }
+  }, [mobileOpen]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative flex items-center justify-end min-w-0"
+    >
+      <motion.div
+        className="flex items-center overflow-hidden rounded-md border border-input bg-card shadow-md shadow-primary"
+        initial={false}
+        animate={{
+          width: mobileOpen ? "min(200px, 55vw)" : 32,
+        }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        style={{ height: 32 }}
+      >
+        <motion.div
+          className={`flex flex-1 min-w-0 h-full items-center ${!mobileOpen ? "pointer-events-none" : ""}`}
+          initial={false}
+          animate={{
+            opacity: mobileOpen ? 1 : 0,
+            width: mobileOpen ? "auto" : 0,
+          }}
+          transition={{ duration: 0.2 }}
+        >
+          <Input
+            type="text"
+            placeholder="Search courses..."
+            className="h-8 border-0 bg-transparent px-3 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => query.trim() && setShowDropdown(true)}
+            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+            ref={inputRef}
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setQuery("");
+              }}
+              className="mr-1 p-1 text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </motion.div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setMobileOpen(!mobileOpen);
+          }}
+          className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
+          aria-label="Search courses"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+      </motion.div>
+      {mobileOpen && showDropdown && query.trim() && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute top-full right-0 z-50 mt-2 w-[min(200px,55vw)]"
+        >
+          <Card className="max-h-[40vh] overflow-y-auto border border-border bg-card shadow-xl">
+            {isSearching ? (
+              <div className="p-3 text-muted-foreground text-sm">
+                Searching...
+              </div>
+            ) : results.length === 0 ? (
+              <div className="p-3 text-muted-foreground text-sm">
+                No courses found.
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {results.map((course) => (
+                  <button
+                    key={course.id}
+                    type="button"
+                    className="block w-full p-3 text-left hover:bg-muted/70 transition-colors"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => goToCourse(course)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-semibold text-sm">
+                          {formatCourseCode(course.code)}
+                        </h4>
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {course.name}
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="shrink-0 text-xs">
+                        {course.credits}c
+                      </Badge>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </Card>
+        </motion.div>
+      )}
+    </div>
+  );
+}
 
 // Animation variants
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.5 },
-}
+};
 
 const staggerContainer = {
   animate: {
@@ -50,120 +402,126 @@ const staggerContainer = {
       staggerChildren: 0.1,
     },
   },
-}
+};
 
 const cardVariant = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-}
+};
 
 const TERM_ORDER: Record<string, number> = {
   F: 1,
   W: 2,
   S: 3,
   Y: 4,
-}
+};
 
 const formatTermLabel = (term: string): string => {
   // getSemesterName returns e.g. "Fall (F)" -> prefer "Fall"
-  const name = getSemesterName(term)
-  return name.replace(/\s*\([^)]+\)\s*$/, "").trim() || term
-}
+  const name = getSemesterName(term);
+  return name.replace(/\s*\([^)]+\)\s*$/, "").trim() || term;
+};
 
 export default function CoursePage() {
-  const params = useParams()
-  const courseCode = getIDFromParams({ id: params.id as string })
-  const [offerings, setOfferings] = useState<CourseOffering[]>([])
-  const [selectedTerm, setSelectedTerm] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const params = useParams();
+  const router = useRouter();
+  const courseCode = getIDFromParams({ id: params.id as string });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Course[]>([]);
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+  const [isSearchingHeader, setIsSearchingHeader] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [offerings, setOfferings] = useState<CourseOffering[]>([]);
+  const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [instructorsBySection, setInstructorsBySection] = useState<
     Record<string, Instructor>
-  >({})
-  const [copiedCatalog, setCopiedCatalog] = useState<string | null>(null)
-  const [reviewsData, setReviewsData] = useState<ReviewsResponse | null>(null)
-  const [isLoadingReviews, setIsLoadingReviews] = useState(false)
-  const [isReviewFormOpen, setIsReviewFormOpen] = useState(false)
+  >({});
+  const [copiedCatalog, setCopiedCatalog] = useState<string | null>(null);
+  const [reviewsData, setReviewsData] = useState<ReviewsResponse | null>(null);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
 
   const selectedOffering =
-    offerings.find((o) => o.term === selectedTerm) || offerings[0] || null
-  const sections: Section[] = selectedOffering?.sections || []
+    offerings.find((o) => o.term === selectedTerm) || offerings[0] || null;
+  const sections: Section[] = selectedOffering?.sections || [];
 
   const parseCatalogNumbers = (catalogNumber: string): string[] => {
-    if (!catalogNumber) return []
+    if (!catalogNumber) return [];
 
     // Pattern to match catalog numbers like "K28B01 (HH NRSC)" or "D75K01 (SC NRSC)"
     // This regex matches: alphanumeric code, optional space, (faculty info), followed by space or end
-    const catalogPattern = /([A-Z0-9]+)\s*\([^)]+\)/g
-    const matches: string[] = []
-    let match
+    const catalogPattern = /([A-Z0-9]+)\s*\([^)]+\)/g;
+    const matches: string[] = [];
+    let match;
 
     // Reset regex lastIndex to ensure we start from the beginning
-    catalogPattern.lastIndex = 0
+    catalogPattern.lastIndex = 0;
 
     while ((match = catalogPattern.exec(catalogNumber)) !== null) {
-      matches.push(match[0].trim())
+      matches.push(match[0].trim());
     }
 
     if (matches.length > 1) {
-      return matches
+      return matches;
     }
 
     // If no pattern matches, try splitting by multiple spaces (2+ spaces)
-    const parts = catalogNumber.split(/\s{2,}/).filter(Boolean)
+    const parts = catalogNumber.split(/\s{2,}/).filter(Boolean);
     if (parts.length > 1) {
-      return parts.map((p) => p.trim())
+      return parts.map((p) => p.trim());
     }
 
     // Fallback: return as single item
-    return [catalogNumber.trim()]
-  }
+    return [catalogNumber.trim()];
+  };
 
   const parseDescription = (
     description: string | undefined,
   ): { description: string; prerequisites: string | null } => {
     if (!description) {
-      return { description: "", prerequisites: null }
+      return { description: "", prerequisites: null };
     }
 
     // Look for "Prerequisite" or "Prerequisites" (case-insensitive)
-    const prerequisiteRegex = /\b(Prerequisite[s]?)\s*:?\s*/i
-    const match = description.search(prerequisiteRegex)
+    const prerequisiteRegex = /\b(Prerequisite[s]?)\s*:?\s*/i;
+    const match = description.search(prerequisiteRegex);
 
     if (match === -1) {
       // No prerequisites found, return full description
-      return { description: description.trim(), prerequisites: null }
+      return { description: description.trim(), prerequisites: null };
     }
 
     // Split at the prerequisite marker
-    const mainDescription = description.substring(0, match).trim()
-    const prerequisitesText = description.substring(match).trim()
+    const mainDescription = description.substring(0, match).trim();
+    const prerequisitesText = description.substring(match).trim();
 
     // Remove the "Prerequisite(s):" prefix from the prerequisites text
     const cleanedPrerequisites = prerequisitesText
       .replace(prerequisiteRegex, "")
-      .trim()
+      .trim();
 
     return {
       description: mainDescription,
       prerequisites: cleanedPrerequisites || null,
-    }
-  }
+    };
+  };
 
   const parsePrerequisitesIntoList = (prerequisites: string): string[] => {
-    if (!prerequisites) return []
+    if (!prerequisites) return [];
 
     // Split by semicolons first (common separator for prerequisites)
-    const items: string[] = []
+    const items: string[] = [];
 
     // Handle special sections like "Course credit exclusions:" and "Previously offered as:"
     const sections = prerequisites.split(
       /(?=Course credit exclusions:|Previously offered as:)/i,
-    )
+    );
 
     sections.forEach((section) => {
-      const trimmed = section.trim()
-      if (!trimmed) return
+      const trimmed = section.trim();
+      if (!trimmed) return;
 
       // Check if this is a special section
       if (
@@ -172,147 +530,208 @@ export default function CoursePage() {
         // Add the section header as a separate item
         const match = trimmed.match(
           /^(Course credit exclusions|Previously offered as):\s*(.+)/i,
-        )
+        );
         if (match) {
-          items.push(`${match[1]}: ${match[2].trim()}`)
+          items.push(`${match[1]}: ${match[2].trim()}`);
         }
       } else {
         // Split by semicolons for regular prerequisites
         const parts = trimmed
           .split(";")
           .map((p) => p.trim())
-          .filter((p) => p)
-        items.push(...parts)
+          .filter((p) => p);
+        items.push(...parts);
       }
-    })
+    });
 
-    return items.filter((item) => item.length > 0)
-  }
+    return items.filter((item) => item.length > 0);
+  };
 
   const handleCopyCatalog = async (catalogNumber: string) => {
     try {
       // Try modern Clipboard API first
       if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(catalogNumber)
-        setCopiedCatalog(catalogNumber)
-        setTimeout(() => setCopiedCatalog(null), 2000)
-        return
+        await navigator.clipboard.writeText(catalogNumber);
+        setCopiedCatalog(catalogNumber);
+        setTimeout(() => setCopiedCatalog(null), 2000);
+        return;
       }
 
       // Fallback for older browsers and Safari
-      const textArea = document.createElement("textarea")
-      textArea.value = catalogNumber
-      textArea.style.position = "fixed"
-      textArea.style.left = "-999999px"
-      textArea.style.top = "-999999px"
-      document.body.appendChild(textArea)
-      textArea.focus()
-      textArea.select()
+      const textArea = document.createElement("textarea");
+      textArea.value = catalogNumber;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
 
-      const successful = document.execCommand("copy")
-      document.body.removeChild(textArea)
+      const successful = document.execCommand("copy");
+      document.body.removeChild(textArea);
 
       if (successful) {
-        setCopiedCatalog(catalogNumber)
-        setTimeout(() => setCopiedCatalog(null), 2000)
+        setCopiedCatalog(catalogNumber);
+        setTimeout(() => setCopiedCatalog(null), 2000);
       } else {
-        throw new Error("execCommand copy failed")
+        throw new Error("execCommand copy failed");
       }
     } catch (err) {
-      console.error("Failed to copy catalog number to clipboard:", err)
+      console.error("Failed to copy catalog number to clipboard:", err);
       if (typeof window !== "undefined" && typeof window.alert === "function") {
-        window.alert("Failed to copy to clipboard. Please try again.")
+        window.alert("Failed to copy to clipboard. Please try again.");
       }
     }
-  }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setIsSearchDropdownOpen(false);
+      router.push(`/courses?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  // Live search for header dropdown
+  useEffect(() => {
+    if (searchQuery.trim().length === 0) {
+      setSearchResults([]);
+      setIsSearchDropdownOpen(false);
+      return;
+    }
+
+    const delaySearch = setTimeout(async () => {
+      setIsSearchingHeader(true);
+      try {
+        const results = await coursesApi.searchCourses(searchQuery);
+        const deduped: Course[] = [];
+        const seen = new Set<string>();
+        for (const c of Array.isArray(results) ? results : []) {
+          const key = (c.code || "").replace(/\s+/g, "").toUpperCase();
+          if (!key || seen.has(key)) continue;
+          seen.add(key);
+          deduped.push(c);
+        }
+        setSearchResults(deduped.slice(0, 8));
+        setIsSearchDropdownOpen(deduped.length > 0);
+      } catch {
+        setSearchResults([]);
+        setIsSearchDropdownOpen(false);
+      } finally {
+        setIsSearchingHeader(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delaySearch);
+  }, [searchQuery]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setIsSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     async function fetchCourseData() {
       try {
-        setIsLoading(true)
-        const data = await coursesApi.getCoursesByCode(courseCode)
+        setIsLoading(true);
+        const data = await coursesApi.getCoursesByCode(courseCode);
         const sorted = [...data].sort((a, b) => {
-          const ao = TERM_ORDER[a.term?.toUpperCase?.() || ""] ?? 999
-          const bo = TERM_ORDER[b.term?.toUpperCase?.() || ""] ?? 999
-          if (ao !== bo) return ao - bo
-          return (a.term || "").localeCompare(b.term || "")
-        })
-        setOfferings(sorted)
+          const ao = TERM_ORDER[a.term?.toUpperCase?.() || ""] ?? 999;
+          const bo = TERM_ORDER[b.term?.toUpperCase?.() || ""] ?? 999;
+          if (ao !== bo) return ao - bo;
+          return (a.term || "").localeCompare(b.term || "");
+        });
+        setOfferings(sorted);
 
-        const initialTerm = sorted[0]?.term ?? null
-        setSelectedTerm(initialTerm)
+        const initialTerm = sorted[0]?.term ?? null;
+        setSelectedTerm(initialTerm);
       } catch (err) {
-        console.error("Failed to fetch course data:", err)
-        setError("Failed to load course. Please try again later.")
+        console.error("Failed to fetch course data:", err);
+        setError("Failed to load course. Please try again later.");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
-    fetchCourseData()
-  }, [courseCode])
+    fetchCourseData();
+  }, [courseCode]);
 
   useEffect(() => {
     async function fetchInstructors() {
-      if (!selectedOffering?.id) return
+      if (!selectedOffering?.id) return;
       try {
         const instructorsData = await coursesApi.getInstructorsByCourseId(
           selectedOffering.id,
-        )
-        const instructorsMap: Record<string, Instructor> = {}
+        );
+        const instructorsMap: Record<string, Instructor> = {};
         instructorsData.forEach((instructor) => {
-          instructorsMap[instructor.section_id] = instructor
-        })
-        setInstructorsBySection(instructorsMap)
+          instructorsMap[instructor.section_id] = instructor;
+        });
+        setInstructorsBySection(instructorsMap);
       } catch (err) {
-        console.error("Failed to fetch instructors:", err)
-        setInstructorsBySection({})
+        console.error("Failed to fetch instructors:", err);
+        setInstructorsBySection({});
       }
     }
 
-    fetchInstructors()
-  }, [selectedOffering?.id])
+    fetchInstructors();
+  }, [selectedOffering?.id]);
 
   useEffect(() => {
     async function fetchReviews() {
       try {
-        setIsLoadingReviews(true)
+        setIsLoadingReviews(true);
         const data = await coursesApi.getReviews(courseCode, {
           sort: "recent",
           limit: 10,
           offset: 0,
-        })
-        setReviewsData(data)
+        });
+        setReviewsData(data);
       } catch (err) {
-        console.error("Failed to fetch reviews:", err)
-        setReviewsData(null)
+        console.error("Failed to fetch reviews:", err);
+        setReviewsData(null);
       } finally {
-        setIsLoadingReviews(false)
+        setIsLoadingReviews(false);
       }
     }
 
-    fetchReviews()
-  }, [courseCode])
+    fetchReviews();
+  }, [courseCode]);
 
   const refetchReviews = async () => {
     try {
-      setIsLoadingReviews(true)
+      setIsLoadingReviews(true);
       const data = await coursesApi.getReviews(courseCode, {
         sort: "recent",
         limit: 10,
         offset: 0,
-      })
-      setReviewsData(data)
+      });
+      setReviewsData(data);
     } catch (err) {
-      console.error("Failed to fetch reviews:", err)
-      setReviewsData(null)
+      console.error("Failed to fetch reviews:", err);
+      setReviewsData(null);
     } finally {
-      setIsLoadingReviews(false)
+      setIsLoadingReviews(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header subtitle="Course selection, de-cluttered." />
+      <CourseHeaderSearchProvider>
+        <Header
+          centerContent={<CourseHeaderSearchDesktop />}
+          rightSlotMobile={<CourseHeaderSearchMobile />}
+        />
+      </CourseHeaderSearchProvider>
 
       <div className="flex-grow">
         {isLoading ? (
@@ -384,7 +803,7 @@ export default function CoursePage() {
                     (() => {
                       const { description, prerequisites } = parseDescription(
                         selectedOffering.description,
-                      )
+                      );
                       return (
                         <>
                           {description && (
@@ -399,7 +818,7 @@ export default function CoursePage() {
                           {prerequisites &&
                             (() => {
                               const prerequisiteItems =
-                                parsePrerequisitesIntoList(prerequisites)
+                                parsePrerequisitesIntoList(prerequisites);
                               return (
                                 <motion.div variants={fadeInUp}>
                                   <Card className="p-4 sm:p-6 bg-background/85 backdrop-blur-md border-white/30 mt-3 sm:mt-4 shadow-lg shadow-black/10">
@@ -421,10 +840,10 @@ export default function CoursePage() {
                                     )}
                                   </Card>
                                 </motion.div>
-                              )
+                              );
                             })()}
                         </>
-                      )
+                      );
                     })()}
                 </motion.div>
               </div>
@@ -453,7 +872,7 @@ export default function CoursePage() {
                         aria-label="Select term"
                       >
                         {offerings.map((o) => {
-                          const isActive = o.term === selectedTerm
+                          const isActive = o.term === selectedTerm;
                           return (
                             <button
                               key={o.id}
@@ -469,7 +888,7 @@ export default function CoursePage() {
                             >
                               {formatTermLabel(o.term)}
                             </button>
-                          )
+                          );
                         })}
                       </div>
                     </div>
@@ -576,47 +995,47 @@ export default function CoursePage() {
                                       a.course_type === "LECT" &&
                                       b.course_type !== "LECT"
                                     )
-                                      return -1
+                                      return -1;
                                     if (
                                       a.course_type !== "LECT" &&
                                       b.course_type === "LECT"
                                     )
-                                      return 1
-                                    return 0
+                                      return 1;
+                                    return 0;
                                   })
                                   .map((activity) => {
                                     let times: Array<{
-                                      day: string
-                                      time: string
-                                      duration: string
-                                      campus: string
-                                      room: string
-                                    }> = []
+                                      day: string;
+                                      time: string;
+                                      duration: string;
+                                      campus: string;
+                                      room: string;
+                                    }> = [];
                                     try {
-                                      times = JSON.parse(activity.times)
+                                      times = JSON.parse(activity.times);
                                     } catch {
-                                      times = []
+                                      times = [];
                                     }
 
                                     const activityType = getTypeName(
                                       activity.course_type,
-                                    )
+                                    );
                                     const activityCount =
                                       section.activities!.filter(
                                         (a) =>
                                           a.course_type ===
                                           activity.course_type,
-                                      ).length
-                                    const isMultiple = activityCount > 1
+                                      ).length;
+                                    const isMultiple = activityCount > 1;
 
                                     const catalogNumbers =
                                       activity.catalog_number
                                         ? parseCatalogNumbers(
                                             activity.catalog_number,
                                           )
-                                        : []
+                                        : [];
                                     const hasSingleCatalog =
-                                      catalogNumbers.length === 1
+                                      catalogNumbers.length === 1;
 
                                     return (
                                       <div
@@ -731,7 +1150,7 @@ export default function CoursePage() {
                                           </>
                                         )}
                                       </div>
-                                    )
+                                    );
                                   })
                               ) : (
                                 <p className="text-xs text-muted-foreground mt-1">
@@ -741,7 +1160,7 @@ export default function CoursePage() {
                             </div>
                           </Card>
                         </motion.div>
-                      )
+                      );
                     })}
                   </motion.div>
                 )}
@@ -869,13 +1288,13 @@ export default function CoursePage() {
         />
       )}
     </div>
-  )
+  );
 }
 
 function getIDFromParams(params: { id?: string }) {
-  const { id } = params
+  const { id } = params;
   if (!id || Array.isArray(id)) {
-    throw new Error("Invalid or missing course ID")
+    throw new Error("Invalid or missing course ID");
   }
-  return id
+  return id;
 }
