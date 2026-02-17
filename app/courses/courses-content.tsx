@@ -92,7 +92,9 @@ export default function CoursesContent() {
     () => searchParams.get("q") ?? "",
   );
   const [isSearching, setIsSearching] = useState(false);
-  const [isSearchMode, setIsSearchMode] = useState(!!initialQuery);
+  const [isSearchMode, setIsSearchMode] = useState(() =>
+    Boolean(searchParams.get("q")),
+  );
   const coursesPerPage = 20;
   const lastUrlQ = useRef<string | null>(searchParams.get("q"));
 
