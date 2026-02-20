@@ -934,7 +934,7 @@ export default function CoursePage() {
                         <motion.div key={section.id} variants={cardVariant}>
                           <Card
                             key={section.id}
-                            className="w-full p-4 sm:p-6 hover:shadow-lg transition-all hover:border-primary/50"
+                            className="w-full h-full p-4 sm:p-6 hover:shadow-lg transition-all hover:border-primary/50 flex flex-col"
                           >
                             <div className="mb-4">
                               <h3 className="text-xl sm:text-2xl font-bold">
@@ -985,7 +985,7 @@ export default function CoursePage() {
                               )}
                             </div>
 
-                            <div className="space-y-3 mb-4">
+                            <div className="space-y-3 mb-4 flex-1">
                               {section.activities &&
                               section.activities.length > 0 ? (
                                 [...section.activities]
@@ -1123,31 +1123,37 @@ export default function CoursePage() {
                                           <p className="text-xs sm:text-sm font-bold">
                                             Cancelled
                                           </p>
-                                        ) : times.length > 0 &&
-                                          (!times[0].time ||
-                                            times[0].time === "0:00") ? (
+                                        ) : times.every(
+                                            (t) => !t.time || t.time === "0:00",
+                                          ) ? (
                                           <p className="text-xs sm:text-sm font-bold">
                                             No Scheduled Times
                                           </p>
                                         ) : (
-                                          <>
-                                            <p className="text-xs sm:text-sm font-medium">
-                                              {getDayName(times[0].day)}:{" "}
-                                              {formatTime(times[0].time)} -{" "}
-                                              {calculateEndTime(
-                                                times[0].time,
-                                                times[0].duration,
-                                              )}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                              {[
-                                                times[0]?.room,
-                                                times[0]?.campus,
-                                              ]
-                                                .filter(Boolean)
-                                                .join(", ")}
-                                            </p>
-                                          </>
+                                          <div className="space-y-1">
+                                            {times
+                                              .filter(
+                                                (t) =>
+                                                  t.time && t.time !== "0:00",
+                                              )
+                                              .map((t, idx) => (
+                                                <div key={idx}>
+                                                  <p className="text-xs sm:text-sm font-medium">
+                                                    {getDayName(t.day)}: {" "}
+                                                    {formatTime(t.time)} -{" "}
+                                                    {calculateEndTime(
+                                                      t.time,
+                                                      t.duration,
+                                                    )}
+                                                  </p>
+                                                  <p className="text-xs text-muted-foreground">
+                                                    {[t.room, t.campus]
+                                                      .filter(Boolean)
+                                                      .join(", ")}
+                                                  </p>
+                                                </div>
+                                              ))}
+                                          </div>
                                         )}
                                       </div>
                                     );
