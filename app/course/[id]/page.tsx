@@ -423,7 +423,7 @@ function CourseHeaderSearchMobile() {
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
-        className="flex h-8 w-8 items-center justify-center rounded-md border border-input bg-card text-muted-foreground hover:text-foreground hover:bg-accent transition-colors md:hidden"
+        className="flex h-8 w-8 items-center justify-center rounded-md border border-input bg-card text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shadow-md shadow-primary md:hidden"
         aria-label="Search courses"
       >
         <Search className="h-4 w-4" />
