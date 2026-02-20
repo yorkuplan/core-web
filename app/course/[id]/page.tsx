@@ -42,6 +42,7 @@ import { ReviewStats } from "@/components/review-stats";
 import { ReviewsList } from "@/components/reviews-list";
 import { ReviewForm } from "@/components/review-form";
 import { createContext, useContext, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 
 const normalizeCode = (code: string) => code.replace(/\s+/g, "").toUpperCase();
 const dedupeCourses = (items: Course[]) => {
@@ -93,10 +94,14 @@ function CourseHeaderSearchProvider({
       setShowDropdown(true);
       setIsSearching(true);
       setResults([]);
+      
       try {
         const list = await coursesApi.searchCourses(query);
-        setResults(Array.isArray(list) ? dedupeCourses(list) : []);
-      } catch {
+        const deduped = Array.isArray(list) ? dedupeCourses(list) : [];
+        
+        setResults(deduped);
+      } catch (error) {
+        
         setResults([]);
       } finally {
         setIsSearching(false);
@@ -251,141 +256,182 @@ function CourseHeaderSearchMobile() {
     goToCourse,
     results,
     isSearching,
-    showDropdown,
-    setShowDropdown,
   } = useCourseHeaderSearch();
-  const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+
 
   useEffect(() => {
-    if (!mobileOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current?.contains(e.target as Node)) return;
-      setMobileOpen(false);
-    };
-    const t = setTimeout(
-      () => document.addEventListener("click", handleClickOutside),
-      0,
-    );
-    return () => {
-      clearTimeout(t);
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [mobileOpen, setMobileOpen]);
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (mobileOpen) {
+      document.body.style.overflow = "hidden";
       const id = setTimeout(() => inputRef.current?.focus(), 100);
-      return () => clearTimeout(id);
+      return () => {
+        document.body.style.overflow = "";
+        clearTimeout(id);
+      };
     }
   }, [mobileOpen]);
 
-  return (
-    <div
-      ref={containerRef}
-      className="relative flex items-center justify-end min-w-0"
+  const searchOverlay = mobileOpen && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] md:hidden"
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+      onClick={() => {
+        setMobileOpen(false);
+        setQuery("");
+      }}
     >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+      
+      {/* Slide-down panel */}
       <motion.div
-        className="flex items-center overflow-hidden rounded-md border border-input bg-card shadow-md shadow-primary"
-        initial={false}
-        animate={{
-          width: mobileOpen ? "min(200px, 55vw)" : 32,
-        }}
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        style={{ height: 32 }}
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: -20, opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="absolute top-0 left-0 right-0 bg-background border-b border-border shadow-2xl max-h-[70vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
       >
-        <motion.div
-          className={`flex flex-1 min-w-0 h-full items-center ${!mobileOpen ? "pointer-events-none" : ""}`}
-          initial={false}
-          animate={{
-            opacity: mobileOpen ? 1 : 0,
-            width: mobileOpen ? "auto" : 0,
-          }}
-          transition={{ duration: 0.2 }}
-        >
-          <Input
-            type="text"
-            placeholder="Search courses..."
-            className="h-8 border-0 bg-transparent px-3 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => query.trim() && setShowDropdown(true)}
-            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-            ref={inputRef}
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setQuery("");
-              }}
-              className="mr-1 p-1 text-muted-foreground hover:text-foreground"
-              aria-label="Clear search"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </motion.div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setMobileOpen(!mobileOpen);
-          }}
-          className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
-          aria-label="Search courses"
-        >
-          <Search className="h-4 w-4" />
-        </button>
-      </motion.div>
-      {mobileOpen && showDropdown && query.trim() && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="absolute top-full right-0 z-50 mt-2 w-[min(200px,55vw)]"
-        >
-          <Card className="max-h-[40vh] overflow-y-auto border border-border bg-card shadow-xl">
-            {isSearching ? (
-              <div className="p-3 text-muted-foreground text-sm">
-                Searching...
-              </div>
-            ) : results.length === 0 ? (
-              <div className="p-3 text-muted-foreground text-sm">
-                No courses found.
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {results.map((course) => (
-                  <button
-                    key={course.id}
-                    type="button"
-                    className="block w-full p-3 text-left hover:bg-muted/70 transition-colors"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => goToCourse(course)}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-semibold text-sm">
-                          {formatCourseCode(course.code)}
-                        </h4>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
-                          {course.name}
-                        </p>
-                      </div>
-                      <Badge variant="secondary" className="shrink-0 text-xs">
-                        {course.credits}c
-                      </Badge>
-                    </div>
-                  </button>
-                ))}
-              </div>
+        {/* Search Header */}
+        <div className="flex items-center gap-3 p-4 border-b border-border flex-shrink-0">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              ref={inputRef}
+              type="text"
+              placeholder="Search courses..."
+              className="pl-10 pr-10 h-10 bg-muted border-0 shadow-none focus-visible:ring-2 focus-visible:ring-ring w-full text-base"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQuery("");
+                  inputRef.current?.focus();
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
             )}
-          </Card>
-        </motion.div>
-      )}
-    </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setMobileOpen(false);
+              setQuery("");
+            }}
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
+            aria-label="Close search"
+          >
+            Done
+          </button>
+        </div>
+
+        {/* Search Results */}
+        <div className="flex-1 overflow-y-auto min-h-0 w-full">
+          {(() => {
+            if (isSearching && query.trim()) {
+              
+              return (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="animate-pulse p-4 rounded-full bg-muted/50 mb-4">
+                    <Search className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Searching...</p>
+                </div>
+              );
+            }
+            if (query.trim() === "") {
+            
+              return (
+                <div className="flex flex-col items-center justify-center text-center px-6 py-12">
+                  <div className="p-4 rounded-full bg-muted/50 mb-4">
+                    <Search className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Search for courses by code or name
+                  </p>
+                </div>
+              );
+            }
+            if (results.length === 0) {
+         
+              return (
+                <div className="flex flex-col items-center justify-center text-center px-6 py-12">
+                  <div className="p-4 rounded-full bg-muted/50 mb-4">
+                    <Search className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium mb-1">No courses found</p>
+                  <p className="text-xs text-muted-foreground">
+                    Try searching with a different term
+                  </p>
+                </div>
+              );
+            }
+          
+            return (
+              <div className="w-full">
+                <div className="divide-y divide-border">
+                  {results.map((course) => (
+                    <button
+                      key={course.id}
+                      type="button"
+                      className="block w-full p-4 text-left hover:bg-muted/50 active:bg-muted transition-colors"
+                      onClick={() => goToCourse(course)}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold text-sm mb-1">
+                            {formatCourseCode(course.code)}
+                          </h4>
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {course.name}
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="shrink-0 text-xs mt-0.5">
+                          {course.credits}c
+                        </Badge>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
+  return (
+    <>
+      {/* Search Icon Button */}
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        className="flex h-8 w-8 items-center justify-center rounded-md border border-input bg-card text-muted-foreground hover:text-foreground hover:bg-accent transition-colors md:hidden"
+        aria-label="Search courses"
+      >
+        <Search className="h-4 w-4" />
+      </button>
+
+      {/* Portal the overlay to document.body */}
+      {mounted && typeof document !== 'undefined' && searchOverlay && createPortal(searchOverlay, document.body)}
+    </>
   );
 }
 
