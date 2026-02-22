@@ -34,13 +34,15 @@ export function Header({
   const showCenterOnMobile = Boolean(centerContent && !rightSlotMobile);
 
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 sm:px-6 md:px-8 py-3 sm:py-4 relative">
+    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50 min-h-[3.25rem] sm:min-h-[3.5rem]">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 py-3 sm:py-4 relative min-h-[3.25rem] sm:min-h-[3.5rem] flex flex-col justify-center">
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           <Link href="/" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <img
               src={Logo.src}
               alt="YUPlan - York University Course Planner"
+              width={Logo.width}
+              height={Logo.height}
               className="w-auto h-5 sm:h-6 lg:h-7 object-contain"
             />
           </Link>

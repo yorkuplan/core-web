@@ -39,7 +39,13 @@ export function BlurredHero({
   priority = true,
 }: BlurredHeroProps) {
   return (
-    <section className={cn("relative isolate", className)}>
+    <section
+      className={cn(
+        "relative isolate",
+        priority && "min-h-[min(70vh,640px)]",
+        className,
+      )}
+    >
       {/* Background is clipped, content can overflow (search dropdown) */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <Image
@@ -47,6 +53,7 @@ export function BlurredHero({
           alt={imageAlt}
           fill
           priority={priority}
+          fetchPriority={priority ? "high" : undefined}
           decoding="async"
           sizes="100vw"
           className={cn(
