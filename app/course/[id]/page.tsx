@@ -302,7 +302,7 @@ function CourseHeaderSearchMobile() {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-border flex-shrink-0">
+        <div className="flex items-center gap-3 p-4 border-b border-border shrink-0">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -779,7 +779,7 @@ export default function CoursePage() {
         />
       </CourseHeaderSearchProvider>
 
-      <div className="flex-grow">
+      <div className="grow">
         {isLoading ? (
           <div className="container mx-auto px-3 sm:px-4">
             <div className="max-w-6xl mx-auto text-center py-8 sm:py-12">
@@ -832,7 +832,7 @@ export default function CoursePage() {
 
                   <motion.div className="mb-4 sm:mb-6" variants={fadeInUp}>
                     <div className="flex items-start justify-between gap-2 sm:gap-4 mb-2 sm:mb-3">
-                      <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold break-words text-white drop-shadow-sm">
+                      <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold wrap-break-word text-white drop-shadow-sm">
                         {formatCourseCode(selectedOffering.code)}
                       </h1>
                       <Badge className="bg-primary text-primary-foreground text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 shrink-0 mt-0.5 shadow-md">
@@ -943,7 +943,7 @@ export default function CoursePage() {
                   <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-6 text-xs sm:text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Users
-                        className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0"
+                        className="h-3 sm:h-4 w-3 sm:w-4 shrink-0"
                         aria-hidden="true"
                       />
                       <span>
@@ -954,7 +954,7 @@ export default function CoursePage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <BookOpen
-                        className="h-3 sm:h-4 w-3 sm:w-4 flex-shrink-0"
+                        className="h-3 sm:h-4 w-3 sm:w-4 shrink-0"
                         aria-hidden="true"
                       />
                       <span>{getFacultyName(selectedOffering.faculty)}</span>
@@ -1004,7 +1004,7 @@ export default function CoursePage() {
                                       }
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap flex-shrink-0 text-xs"
+                                      className="flex items-center gap-1 px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap shrink-0 text-xs"
                                       title="View on Rate My Professors"
                                       aria-label={`View ${
                                         instructorsBySection[section.id]
@@ -1093,10 +1093,10 @@ export default function CoursePage() {
                                         >
                                           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-1 min-w-0">
                                             <BookOpen
-                                              className="h-3 w-3 flex-shrink-0"
+                                              className="h-3 w-3 shrink-0"
                                               aria-hidden="true"
                                             />
-                                            <span className="flex-shrink-0 whitespace-nowrap">
+                                            <span className="shrink-0 whitespace-nowrap">
                                               {activityType}
                                               {isMultiple &&
                                                 ` ${
@@ -1126,9 +1126,9 @@ export default function CoursePage() {
                                                 </span>
                                                 {copiedCatalog ===
                                                 catalogNumbers[0].trim() ? (
-                                                  <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                                                  <Check className="h-3 w-3 text-primary shrink-0" />
                                                 ) : (
-                                                  <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 flex-shrink-0" />
+                                                  <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 shrink-0" />
                                                 )}
                                               </button>
                                             )}
@@ -1155,9 +1155,9 @@ export default function CoursePage() {
                                                       </span>
                                                       {copiedCatalog ===
                                                       catalogNum.trim() ? (
-                                                        <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                                                        <Check className="h-3 w-3 text-primary shrink-0" />
                                                       ) : (
-                                                        <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 flex-shrink-0" />
+                                                        <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 shrink-0" />
                                                       )}
                                                     </button>
                                                   ),
