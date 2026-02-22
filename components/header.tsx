@@ -2,6 +2,7 @@ import { Menu } from "lucide-react";
 import Link from "next/link";
 import { ReactNode } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CartButton } from "@/components/cart-button";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -81,6 +82,7 @@ export function Header({
                 All Courses
               </Button>
             </Link>
+            <CartButton />
             <ThemeToggle />
             <Sheet>
               <SheetTrigger asChild>
