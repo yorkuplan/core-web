@@ -52,6 +52,9 @@ const cardVariant = {
 
 export default function HomePage() {
   const [topCourses, setTopCourses] = useState<Course[]>([])
+  const [trendingCycleIndex, setTrendingCycleIndex] = useState(0)
+  const [trendingFadeOut, setTrendingFadeOut] = useState(false)
+  const [trendingListVisible, setTrendingListVisible] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -61,6 +64,11 @@ export default function HomePage() {
   const [isFocused, setIsFocused] = useState(false)
   const heroText = "Plan your perfect semester."
   const [typedHeroText, setTypedHeroText] = useState("")
+  const [heroMounted, setHeroMounted] = useState(false)
+
+  useEffect(() => {
+    setHeroMounted(true)
+  }, [])
 
   useEffect(() => {
     async function fetchCourses() {
@@ -81,8 +89,35 @@ export default function HomePage() {
     fetchCourses()
   }, [])
 
+  // Fade in Trending list when data is ready
   useEffect(() => {
-    if (typeof window === "undefined") return
+    if (topCourses.length > 0 && !isLoading) {
+      const id = requestAnimationFrame(() => setTrendingListVisible(true))
+      return () => cancelAnimationFrame(id)
+    } else {
+      setTrendingListVisible(false)
+    }
+  }, [topCourses.length, isLoading])
+
+  // Cycle Trending list (2 sets of 3) with fade when we have 6 courses
+  useEffect(() => {
+    if (topCourses.length < 6) return
+    let timeoutId: ReturnType<typeof setTimeout>
+    const t = setInterval(() => {
+      setTrendingFadeOut(true)
+      timeoutId = setTimeout(() => {
+        setTrendingCycleIndex((i) => (i + 1) % 2)
+        setTrendingFadeOut(false)
+      }, 280)
+    }, 5000)
+    return () => {
+      clearInterval(t)
+      clearTimeout(timeoutId!)
+    }
+  }, [topCourses.length])
+
+  useEffect(() => {
+    if (!heroMounted || typeof window === "undefined") return
     const media = window.matchMedia?.("(prefers-reduced-motion: reduce)")
     if (media?.matches) {
       setTypedHeroText(heroText)
@@ -100,7 +135,7 @@ export default function HomePage() {
     }, 45)
 
     return () => window.clearInterval(interval)
-  }, [heroText])
+  }, [heroMounted, heroText])
 
   useEffect(() => {
     const delaySearch = setTimeout(async () => {
@@ -382,27 +417,39 @@ export default function HomePage() {
                       No courses available.
                     </p>
                   ) : (
-                    <div className="space-y-2">
-                      {topCourses.slice(0, 3).map((course) => (
-                        <Link
-                          key={course.id}
-                          href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
-                          className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2 hover:bg-muted/40 transition-colors"
-                        >
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold text-foreground">
-                              {formatCourseCode(course.code)}
+                    <div
+                      className="space-y-2 transition-opacity duration-300 ease-in-out min-h-[7.5rem]"
+                      style={{
+                        opacity: trendingFadeOut ? 0 : trendingListVisible ? 1 : 0,
+                      }}
+                    >
+                      {topCourses
+                        .slice(
+                          topCourses.length >= 6 ? trendingCycleIndex * 3 : 0,
+                          topCourses.length >= 6
+                            ? trendingCycleIndex * 3 + 3
+                            : 3,
+                        )
+                        .map((course) => (
+                          <Link
+                            key={course.id}
+                            href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
+                            className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2 hover:bg-muted/40 transition-colors"
+                          >
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-foreground">
+                                {formatCourseCode(course.code)}
+                              </div>
+                              <div className="text-xs text-muted-foreground line-clamp-1">
+                                {course.name}
+                              </div>
                             </div>
-                            <div className="text-xs text-muted-foreground line-clamp-1">
-                              {course.name}
-                            </div>
-                          </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {course.credits} credit
-                            {course.credits === 1 ? "" : "s"}
-                          </Badge>
-                        </Link>
-                      ))}
+                            <Badge variant="secondary" className="text-xs">
+                              {course.credits} credit
+                              {course.credits === 1 ? "" : "s"}
+                            </Badge>
+                          </Link>
+                        ))}
                     </div>
                   )}
                 </Card>
