@@ -15,16 +15,19 @@ import {
   Sparkles,
   Search,
   X,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   coursesApi,
+  type Activity,
   type Section,
   type Instructor,
   type CourseOffering,
   type ReviewsResponse,
   type Course,
+  type TimeSlot,
   getDayName,
   getFacultyName,
   getTypeName,
@@ -33,6 +36,7 @@ import {
   getSemesterName,
   formatCourseCode,
 } from "@/lib/api/courses";
+import { useCart } from "@/components/cart-context";
 import { useParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { Header } from "@/components/header";
@@ -282,7 +286,7 @@ function CourseHeaderSearchMobile() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9999] md:hidden"
+      className="fixed inset-0 z-9999 md:hidden"
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
       onClick={() => {
         setMobileOpen(false);
@@ -468,10 +472,25 @@ const formatTermLabel = (term: string): string => {
   return name.replace(/\s*\([^)]+\)\s*$/, "").trim() || term;
 };
 
+const PRIMARY_COURSE_TYPES = new Set(["LECT", "SEMR", "BLEN", "ONLN"]);
+
+const isPrimaryCourseType = (courseType: string): boolean =>
+  PRIMARY_COURSE_TYPES.has(courseType.toUpperCase());
+
+const parseActivityTimes = (rawTimes: string): TimeSlot[] => {
+  try {
+    const parsed = JSON.parse(rawTimes);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 export default function CoursePage() {
   const params = useParams();
   const router = useRouter();
   const courseCode = getIDFromParams({ id: params.id as string });
+  const { addItem, removeItem, isInCart } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Course[]>([]);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
@@ -492,6 +511,117 @@ export default function CoursePage() {
   const selectedOffering =
     offerings.find((o) => o.term === selectedTerm) || offerings[0] || null;
   const sections: Section[] = selectedOffering?.sections || [];
+  const courseCodeCompact = normalizeCode(selectedOffering?.code ?? courseCode);
+  const courseDisplayCode = formatCourseCode(selectedOffering?.code ?? courseCode);
+
+  const getInstructorName = (sectionId: string): string => {
+    const instructor = instructorsBySection[sectionId];
+    return instructor
+      ? `${instructor.first_name} ${instructor.last_name}`
+      : "TBA";
+  };
+
+  const getActivityTypeLabel = (
+    section: Section,
+    activity: Activity,
+    activityTypeLabel: string,
+  ): string => {
+    const activityGroup =
+      section.activities?.filter(
+        (a) => a.course_type === activity.course_type,
+      ) ?? [];
+    if (activityGroup.length <= 1) return activityTypeLabel;
+
+    const activityIndex = activityGroup.findIndex((a) => a.id === activity.id);
+    return `${activityTypeLabel} ${activityIndex + 1}`;
+  };
+
+  const buildActivityCartItems = (
+    section: Section,
+    activity: Activity,
+    typeLabel: string,
+  ) => {
+    const timeSlots = parseActivityTimes(activity.times).filter(
+      (slot) => slot.time && slot.time !== "0:00",
+    );
+
+    if (timeSlots.length === 0) return [];
+
+    const grouped = new Map<
+      string,
+      { days: Set<string>; locations: Set<string> }
+    >();
+
+    for (const slot of timeSlots) {
+      const start = formatTime(slot.time);
+      const end = calculateEndTime(slot.time, slot.duration);
+      const timeRange = `${start} - ${end}`;
+      const dayName = getDayName(slot.day);
+      const location = [slot.room, slot.campus].filter(Boolean).join(", ");
+
+      if (!grouped.has(timeRange)) {
+        grouped.set(timeRange, {
+          days: new Set<string>(),
+          locations: new Set<string>(),
+        });
+      }
+
+      const entry = grouped.get(timeRange);
+      if (entry) {
+        entry.days.add(dayName);
+        if (location) entry.locations.add(location);
+      }
+    }
+
+    const groupedEntries = Array.from(grouped.entries()).sort(([a], [b]) =>
+      a.localeCompare(b),
+    );
+
+    return groupedEntries.map(([timeRange, meta], idx) => ({
+      id: `${courseCodeCompact}-${section.id}-${activity.id}-${idx + 1}`,
+      courseCode: courseDisplayCode,
+      courseName: selectedOffering?.name ?? "",
+      section: section.letter,
+      instructor: getInstructorName(section.id),
+      type: activity.course_type,
+      typeLabel,
+      day: Array.from(meta.days).join("/"),
+      time: timeRange,
+      location:
+        meta.locations.size > 0
+          ? Array.from(meta.locations).join(" / ")
+          : "TBA",
+      term: selectedOffering?.term ?? "",
+    }));
+  };
+
+  const getSectionPrimaryActivities = (section: Section): Activity[] =>
+    section.activities?.filter((activity) =>
+      isPrimaryCourseType(activity.course_type),
+    ) ?? [];
+
+  const getSectionSecondaryActivities = (section: Section): Activity[] =>
+    section.activities?.filter(
+      (activity) => !isPrimaryCourseType(activity.course_type),
+    ) ?? [];
+
+  const getActivityCartItems = (section: Section, activity: Activity) => {
+    const activityType = getTypeName(activity.course_type);
+    const typeLabel = getActivityTypeLabel(section, activity, activityType);
+    return buildActivityCartItems(section, activity, typeLabel);
+  };
+
+  const hasAnySecondaryInCart = (section: Section, excludeId?: string) => {
+    const secondaryActivities = getSectionSecondaryActivities(section).filter(
+      (activity) => activity.id !== excludeId,
+    );
+
+    for (const activity of secondaryActivities) {
+      const items = getActivityCartItems(section, activity);
+      if (items.some((item) => isInCart(item.id))) return true;
+    }
+    return false;
+  };
 
   const parseCatalogNumbers = (catalogNumber: string): string[] => {
     if (!catalogNumber) return [];
@@ -1050,29 +1180,44 @@ export default function CoursePage() {
                                     return 0;
                                   })
                                   .map((activity) => {
-                                    let times: Array<{
-                                      day: string;
-                                      time: string;
-                                      duration: string;
-                                      campus: string;
-                                      room: string;
-                                    }> = [];
-                                    try {
-                                      times = JSON.parse(activity.times);
-                                    } catch {
-                                      times = [];
-                                    }
+                                    const times = parseActivityTimes(
+                                      activity.times,
+                                    );
 
                                     const activityType = getTypeName(
                                       activity.course_type,
                                     );
-                                    const activityCount =
-                                      section.activities!.filter(
+                                    const typeLabel = getActivityTypeLabel(
+                                      section,
+                                      activity,
+                                      activityType,
+                                    );
+                                    const activityGroup =
+                                      section.activities?.filter(
                                         (a) =>
                                           a.course_type ===
                                           activity.course_type,
-                                      ).length;
-                                    const isMultiple = activityCount > 1;
+                                      ) ?? [];
+                                    const isMultiple = activityGroup.length > 1;
+                                    const activityCartItems =
+                                      buildActivityCartItems(
+                                        section,
+                                        activity,
+                                        typeLabel,
+                                      );
+                                    const isActivityInCart =
+                                      activityCartItems.length > 0 &&
+                                      activityCartItems.some((item) =>
+                                        isInCart(item.id),
+                                      );
+                                    const canAddActivity =
+                                      activityCartItems.length > 0;
+                                    const hasSecondaryComponents =
+                                      getSectionSecondaryActivities(section)
+                                        .length > 0;
+                                    const showAddButton =
+                                      !hasSecondaryComponents ||
+                                      !isPrimaryCourseType(activity.course_type);
 
                                     const catalogNumbers =
                                       activity.catalog_number
@@ -1088,9 +1233,7 @@ export default function CoursePage() {
                                         key={activity.id}
                                         className="bg-muted/50 rounded-lg p-3 sm:p-4"
                                       >
-                                        <div
-                                          className={`flex items-start gap-2 mb-2 ${hasSingleCatalog ? "" : "justify-between"}`}
-                                        >
+                                        <div className="flex items-center justify-between gap-2 mb-2">
                                           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-1 min-w-0">
                                             <BookOpen
                                               className="h-3 w-3 shrink-0"
@@ -1109,61 +1252,91 @@ export default function CoursePage() {
                                                     .indexOf(activity) + 1
                                                 }`}
                                             </span>
-                                            {hasSingleCatalog && (
-                                              <button
-                                                onClick={() =>
-                                                  handleCopyCatalog(
-                                                    catalogNumbers[0].trim(),
-                                                  )
-                                                }
-                                                className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap shrink-0 text-xs ml-auto"
-                                                title="Click to copy catalog number"
-                                                aria-label={`Copy catalog number ${catalogNumbers[0]}`}
-                                                type="button"
-                                              >
-                                                <span className="text-xs font-mono font-medium text-primary line-clamp-1">
-                                                  {catalogNumbers[0].trim()}
-                                                </span>
-                                                {copiedCatalog ===
-                                                catalogNumbers[0].trim() ? (
-                                                  <Check className="h-3 w-3 text-primary shrink-0" />
-                                                ) : (
-                                                  <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 shrink-0" />
-                                                )}
-                                              </button>
-                                            )}
                                           </div>
-                                          {!hasSingleCatalog &&
-                                            activity.catalog_number && (
-                                              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-1.5 items-end sm:justify-items-end">
-                                                {catalogNumbers.map(
-                                                  (catalogNum, idx) => (
-                                                    <button
-                                                      key={idx}
-                                                      onClick={() =>
-                                                        handleCopyCatalog(
-                                                          catalogNum.trim(),
-                                                        )
-                                                      }
-                                                      className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap shrink-0 text-xs"
-                                                      title="Click to copy catalog number"
-                                                      aria-label={`Copy catalog number ${catalogNum}`}
-                                                      type="button"
-                                                    >
-                                                      <span className="text-xs font-mono font-medium text-primary line-clamp-1">
-                                                        {catalogNum.trim()}
-                                                      </span>
-                                                      {copiedCatalog ===
-                                                      catalogNum.trim() ? (
-                                                        <Check className="h-3 w-3 text-primary shrink-0" />
-                                                      ) : (
-                                                        <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 shrink-0" />
-                                                      )}
-                                                    </button>
-                                                  ),
-                                                )}
-                                              </div>
-                                            )}
+                                          {showAddButton && (
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              variant={
+                                                isActivityInCart
+                                                  ? "default"
+                                                  : "outline"
+                                              }
+                                              disabled={!canAddActivity}
+                                              className={`rounded-lg shrink-0 text-xs h-7 px-2 ${
+                                                isActivityInCart
+                                               
+                                              }`}
+                                              onClick={() => {
+                                                if (!canAddActivity) return;
+
+                                                if (isActivityInCart) {
+                                                  activityCartItems.forEach(
+                                                    (item) =>
+                                                      removeItem(item.id),
+                                                  );
+
+                                                  if (
+                                                    !isPrimaryCourseType(
+                                                      activity.course_type,
+                                                    ) &&
+                                                    !hasAnySecondaryInCart(
+                                                      section,
+                                                      activity.id,
+                                                    )
+                                                  ) {
+                                                    getSectionPrimaryActivities(
+                                                      section,
+                                                    ).forEach((primary) => {
+                                                      getActivityCartItems(
+                                                        section,
+                                                        primary,
+                                                      ).forEach((item) =>
+                                                        removeItem(item.id),
+                                                      );
+                                                    });
+                                                  }
+                                                } else {
+                                                  activityCartItems.forEach(
+                                                    (item) => addItem(item),
+                                                  );
+
+                                                  if (
+                                                    !isPrimaryCourseType(
+                                                      activity.course_type,
+                                                    )
+                                                  ) {
+                                                    getSectionPrimaryActivities(
+                                                      section,
+                                                    ).forEach((primary) => {
+                                                      getActivityCartItems(
+                                                        section,
+                                                        primary,
+                                                      ).forEach((item) => {
+                                                        if (!isInCart(item.id)) {
+                                                          addItem(item);
+                                                        }
+                                                      });
+                                                    });
+                                                  }
+                                                }
+                                              }}
+                                            >
+                                              {!canAddActivity ? (
+                                                <span>Unavailable</span>
+                                              ) : isActivityInCart ? (
+                                                <>
+                                                  <Check className="h-3 w-3 mr-1" />
+                                                  <span>Added</span>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Plus className="h-3 w-3 mr-1" />
+                                                  <span>Add</span>
+                                                </>
+                                              )}
+                                            </Button>
+                                          )}
                                         </div>
                                         {times.length === 0 ? (
                                           <p className="text-xs sm:text-sm font-bold">
@@ -1199,6 +1372,63 @@ export default function CoursePage() {
                                                   </p>
                                                 </div>
                                               ))}
+                                          </div>
+                                        )}
+                                        {showAddButton && (
+                                          <div className="pt-4 border-t border-border flex justify-start gap-2">
+                                            {hasSingleCatalog && activity.catalog_number ? (
+                                              <button
+                                                onClick={() =>
+                                                  handleCopyCatalog(
+                                                    catalogNumbers[0].trim(),
+                                                  )
+                                                }
+                                                className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap shrink-0 text-xs"
+                                                title="Click to copy catalog number"
+                                                aria-label={`Copy catalog number ${catalogNumbers[0]}`}
+                                                type="button"
+                                              >
+                                                <span className="text-xs font-mono font-medium text-primary line-clamp-1">
+                                                  {catalogNumbers[0].trim()}
+                                                </span>
+                                                {copiedCatalog ===
+                                                catalogNumbers[0].trim() ? (
+                                                  <Check className="h-3 w-3 text-primary shrink-0" />
+                                                ) : (
+                                                  <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 shrink-0" />
+                                                )}
+                                              </button>
+                                            ) : !hasSingleCatalog &&
+                                              activity.catalog_number ? (
+                                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-3 gap-1.5 items-start">
+                                                {catalogNumbers.map(
+                                                  (catalogNum, idx) => (
+                                                    <button
+                                                      key={idx}
+                                                      onClick={() =>
+                                                        handleCopyCatalog(
+                                                          catalogNum.trim(),
+                                                        )
+                                                      }
+                                                      className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors group whitespace-nowrap shrink-0 text-xs"
+                                                      title="Click to copy catalog number"
+                                                      aria-label={`Copy catalog number ${catalogNum}`}
+                                                      type="button"
+                                                    >
+                                                      <span className="text-xs font-mono font-medium text-primary line-clamp-1">
+                                                        {catalogNum.trim()}
+                                                      </span>
+                                                      {copiedCatalog ===
+                                                      catalogNum.trim() ? (
+                                                        <Check className="h-3 w-3 text-primary shrink-0" />
+                                                      ) : (
+                                                        <Copy className="h-3 w-3 text-primary opacity-60 group-hover:opacity-100 shrink-0" />
+                                                      )}
+                                                    </button>
+                                                  ),
+                                                )}
+                                              </div>
+                                            ) : null}
                                           </div>
                                         )}
                                       </div>
