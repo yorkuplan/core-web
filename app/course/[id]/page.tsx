@@ -1263,7 +1263,7 @@ export default function CoursePage() {
                                                   : "outline"
                                               }
                                               disabled={!canAddActivity}
-                                              className={`rounded-lg shrink-0 text-xs h-7 px-2 ${
+                                              className={`rounded-lg shrink-0 text-xs h-7 px-2 shadow-sm shadow-primary ${
                                                 isActivityInCart
                                                
                                               }`}
