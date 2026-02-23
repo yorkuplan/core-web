@@ -58,6 +58,7 @@ const SEM_MAP: Record<string, string> = {
   F: "Fall (F)",
   W: "Winter (W)",
   Y: "Year (Y)",
+  SU: "Summer (SU)",
 }
 
 export const getDayName = (dayCode: string): string => {
