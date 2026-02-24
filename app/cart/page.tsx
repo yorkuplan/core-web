@@ -50,7 +50,27 @@ function toTitleCase(value: string): string {
 }
 
 function normalizeTerm(value: string): string {
-  return value.trim().toLowerCase()
+  const normalized = value.trim().toLowerCase()
+  const termMap: Record<string, string> = {
+    f: "fall",
+    fall: "fall",
+    w: "winter",
+    winter: "winter",
+    s: "summer",
+    summer: "summer",
+    su: "summer",
+    s1: "summer",
+    "summer 1": "summer",
+    "summer-1": "summer",
+    s2: "summer",
+    "summer 2": "summer",
+    "summer-2": "summer",
+    y: "year",
+    year: "year",
+    "full year": "year",
+    "full-year": "year",
+  }
+  return termMap[normalized] ?? normalized
 }
 
 function getTermDisplayInfo(termKey: string): { label: string; period: string } {
@@ -172,12 +192,17 @@ function detectConflicts(blocks: ScheduleBlock[]): Set<string> {
 }
 
 function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { termItems: CartItem[]; termKey: string; conflicts: Set<string>; globalColorMap: Record<string, number> }) {
+  const isCompactTerm = termKey === "fall" || termKey === "winter"
+  const compactSlotHeight = 32
   const blocks = buildScheduleBlocks(termItems, globalColorMap)
   const termInfo = getTermDisplayInfo(termKey)
   const days = orderDays(blocks.map((block) => block.day))
-  const dayColumns = days.length > 0 ? days : [...DAY_DISPLAY_ORDER.slice(0, 5)]
-  const { startHour, endHour } = getScheduleHours(blocks)
+  const baseDays = [...DAY_DISPLAY_ORDER.slice(0, 5)]
+  const dayColumns = orderDays([...baseDays, ...days])
+  const startHour = 8
+  const endHour = 21
   const halfHourRows = (endHour - startHour) * 2
+  const slotHeight = isCompactTerm ? compactSlotHeight : SLOT_HEIGHT
 
   // Build term-specific legend from the global map
   const termCourses = new Set(termItems.map(i => i.courseCode))
@@ -188,31 +213,31 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
 
   return (
     <div data-term-schedule={termKey} className="bg-card border border-border rounded-lg overflow-hidden p-4">
-      <div className="text-center mb-4 pb-3 border-b border-border">
-        <h3 className="text-xl font-bold">{termInfo.label} Schedule</h3>
+      <div className={`${isCompactTerm ? "mb-2 pb-2" : "mb-4 pb-3"} border-b border-border`}>
+        <h3 className={`${isCompactTerm ? "text-lg" : "text-xl"} font-bold`}>{termInfo.label}</h3>
         <p className="text-sm text-muted-foreground">{termInfo.period}</p>
       </div>
 
       <div className="overflow-x-auto">
-        <div className="min-w-175" style={{ minWidth: `${Math.max(dayColumns.length, 5) * 140}px` }}>
-          <div className="grid gap-0" style={{ gridTemplateColumns: `60px repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
-            <div className="h-10" />
+        <div className="min-w-175" style={{ minWidth: `${Math.max(dayColumns.length, 5) * (isCompactTerm ? 80 : 140)}px` }}>
+          <div className="grid gap-0" style={{ gridTemplateColumns: `${isCompactTerm ? "40px" : "60px"} repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
+            <div className={isCompactTerm ? "h-8" : "h-10"} />
             {dayColumns.map((day) => (
-              <div key={day} className="h-10 flex items-center justify-center font-semibold text-sm border-b border-border bg-muted/50">
+              <div key={day} className={`flex items-center justify-center font-semibold border-b border-border bg-muted/50 ${isCompactTerm ? "h-8 text-xs" : "h-10 text-sm"}`}>
                 {day}
               </div>
             ))}
           </div>
 
-          <div className="grid gap-0 relative" style={{ gridTemplateColumns: `60px repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
+          <div className="grid gap-0 relative" style={{ gridTemplateColumns: `${isCompactTerm ? "40px" : "60px"} repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
             <div>
               {Array.from({ length: halfHourRows }, (_, i) => {
                 const hour = startHour + Math.floor(i / 2)
                 const isHour = i % 2 === 0
                 return (
-                  <div key={i} className="flex items-start justify-end pr-2 text-xs text-muted-foreground" style={{ height: SLOT_HEIGHT }}>
+                  <div key={i} className={`flex items-start justify-end ${isCompactTerm ? "pr-1 text-xs" : "pr-2 text-xs"} text-muted-foreground`} style={{ height: slotHeight }}>
                     {isHour && (
-                      <span className="-mt-2">
+                      <span className={isCompactTerm ? "-mt-1 text-xs" : "-mt-2"}>
                         {hour > 12 ? `${hour - 12}PM` : hour === 12 ? "12PM" : `${hour}AM`}
                       </span>
                     )}
@@ -224,24 +249,24 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
             {dayColumns.map((day) => {
               const dayBlocks = blocks.filter((b) => b.day === day)
               return (
-                <div key={day} className="relative border-l border-border" style={{ height: halfHourRows * SLOT_HEIGHT }}>
+                <div key={day} className="relative border-l border-border" style={{ height: halfHourRows * slotHeight }}>
                   {Array.from({ length: halfHourRows }, (_, i) => (
-                    <div key={i} className={`absolute left-0 right-0 border-b ${i % 2 === 0 ? "border-border" : "border-border/30"}`} style={{ top: i * SLOT_HEIGHT }} />
+                    <div key={i} className={`absolute left-0 right-0 border-b ${i % 2 === 0 ? "border-border" : "border-border/30"}`} style={{ top: i * slotHeight }} />
                   ))}
                   {dayBlocks.map((block, idx) => {
-                    const top = (block.startTime - startHour) * 2 * SLOT_HEIGHT
-                    const height = (block.endTime - block.startTime) * 2 * SLOT_HEIGHT
+                    const topCompact = (block.startTime - startHour) * 2 * slotHeight
+                    const heightCompact = (block.endTime - block.startTime) * 2 * slotHeight
                     const color = COURSE_COLORS[block.colorIndex]
                     const hasConflict = conflicts.has(block.item.id)
                     return (
                       <div
                         key={`${block.item.id}-${idx}`}
-                        className={`absolute left-1 right-1 rounded-md border px-2 py-1 overflow-hidden ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""}`}
-                        style={{ top, height }}
+                        className={`absolute left-1 right-1 rounded-md border overflow-hidden ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${isCompactTerm ? "px-1 py-0.5" : "px-2 py-1"}`}
+                        style={{ top: topCompact, height: heightCompact }}
                       >
-                        <p className="text-xs font-bold truncate">{block.item.courseCode}</p>
-                        <p className="text-xs truncate">{block.item.typeLabel}</p>
-                        {height > 60 && <p className="text-xs truncate opacity-75">{block.item.location}</p>}
+                        <p className={`font-bold truncate ${isCompactTerm ? "text-xs" : "text-xs"}`}>{block.item.courseCode}</p>
+                        <p style={{ fontSize: "0.625rem" }} className="truncate">{block.item.typeLabel}</p>
+                        {heightCompact > 50 && <p style={{ fontSize: "0.625rem" }} className="truncate opacity-75">{block.item.location}</p>}
                       </div>
                     )
                   })}
@@ -252,10 +277,10 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
         </div>
       </div>
 
-      <div className="mt-4 pt-3 border-t border-border flex flex-wrap gap-3">
+      <div className={`${isCompactTerm ? "mt-2 pt-2" : "mt-4 pt-3"} border-t border-border flex flex-wrap gap-3`}>
         {Object.entries(courseColorMap).map(([code, colorIdx]) => (
-          <div key={code} className="flex items-center gap-2">
-            <div className={`w-4 h-4 rounded ${COURSE_COLORS[colorIdx].bg} ${COURSE_COLORS[colorIdx].border} border`} />
+          <div key={code} className={`flex items-center ${isCompactTerm ? "gap-1" : "gap-2"}`}>
+            <div className={`rounded border ${COURSE_COLORS[colorIdx].bg} ${COURSE_COLORS[colorIdx].border} ${isCompactTerm ? "w-3 h-3" : "w-4 h-4"}`} />
             <span className="text-xs font-medium">{code}</span>
           </div>
         ))}
@@ -315,7 +340,7 @@ export default function CartPage() {
   }
 
   // Order terms with known terms first, then any additional terms alphabetically
-  const knownTermOrder = ["fall", "winter", "summer"]
+  const knownTermOrder = ["fall", "winter", "summer", "summer1", "summer2"]
   const presentTerms = Object.keys(itemsByTerm).filter((term) => itemsByTerm[term]?.length > 0)
   const orderedTerms = [
     ...knownTermOrder.filter((term) => presentTerms.includes(term)),
@@ -346,10 +371,6 @@ export default function CartPage() {
     const { default: html2canvas } = await import("html2canvas-pro")
     const { jsPDF } = await import("jspdf")
 
-    // Find each individual term timetable inside the ref
-    const termElements = scheduleRef.current.querySelectorAll<HTMLElement>("[data-term-schedule]")
-    if (termElements.length === 0) return
-
     // Create PDF in landscape A4
     const pdf = new jsPDF({
       orientation: "landscape",
@@ -360,19 +381,19 @@ export default function CartPage() {
     const pageHeight = pdf.internal.pageSize.getHeight()
     const margin = 8
 
-    for (let i = 0; i < termElements.length; i++) {
-      if (i > 0) pdf.addPage()
+    // Check if fall and winter are displayed side-by-side
+    const fallWinterGrid = scheduleRef.current.querySelector<HTMLElement>(".grid.grid-cols-2")
+    let pageCount = 0
 
-      const canvas = await html2canvas(termElements[i], {
+    // If fall/winter grid exists, render it as one page
+    if (fallWinterGrid) {
+      if (pageCount > 0) pdf.addPage()
+      const canvas = await html2canvas(fallWinterGrid, {
         scale: 1.5,
         useCORS: true,
         backgroundColor: "#ffffff",
       })
-
-      // Convert to JPEG at 80% quality for smaller file size
       const imgData = canvas.toDataURL("image/jpeg", 0.8)
-
-      // Fit image within page margins while preserving aspect ratio
       const availableW = pageWidth - margin * 2
       const availableH = pageHeight - margin * 2
       const imgRatio = canvas.width / canvas.height
@@ -384,8 +405,36 @@ export default function CartPage() {
       }
       const offsetX = margin + (availableW - drawW) / 2
       const offsetY = margin + (availableH - drawH) / 2
-
       pdf.addImage(imgData, "JPEG", offsetX, offsetY, drawW, drawH)
+      pageCount++
+    }
+
+    // Find all other term schedules (not fall/winter)
+    const allTermElements = scheduleRef.current.querySelectorAll<HTMLElement>("[data-term-schedule]")
+    for (const termEl of allTermElements) {
+      const termKey = termEl.getAttribute("data-term-schedule")
+      if (termKey === "fall" || termKey === "winter") continue // Skip fall/winter if already rendered
+
+      if (pageCount > 0) pdf.addPage()
+      const canvas = await html2canvas(termEl, {
+        scale: 1.5,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      })
+      const imgData = canvas.toDataURL("image/jpeg", 0.8)
+      const availableW = pageWidth - margin * 2
+      const availableH = pageHeight - margin * 2
+      const imgRatio = canvas.width / canvas.height
+      let drawW = availableW
+      let drawH = drawW / imgRatio
+      if (drawH > availableH) {
+        drawH = availableH
+        drawW = drawH * imgRatio
+      }
+      const offsetX = margin + (availableW - drawW) / 2
+      const offsetY = margin + (availableH - drawH) / 2
+      pdf.addImage(imgData, "JPEG", offsetX, offsetY, drawW, drawH)
+      pageCount++
     }
 
     pdf.save("YorkUPlan-Schedule.pdf")
@@ -472,7 +521,7 @@ export default function CartPage() {
                               <div className="flex items-center justify-between">
                                 <div>
                                   <Link
-                                    href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "-")}`}
+                                    href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`}
                                     className="text-lg font-bold text-primary hover:underline"
                                   >
                                     {courseCode}
@@ -560,15 +609,40 @@ export default function CartPage() {
               </div>
 
               <div ref={scheduleRef} className="space-y-8">
-                {orderedTerms.map((term) => (
-                  <ScheduleTimetable
-                    key={term}
-                    termItems={itemsByTerm[term]}
-                    termKey={term}
-                    conflicts={conflictsByTerm[term]}
-                    globalColorMap={globalColorMap}
-                  />
-                ))}
+                {/* Fall and Winter side-by-side if both exist */}
+                {orderedTerms.includes("fall") && orderedTerms.includes("winter") && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <ScheduleTimetable
+                      termItems={itemsByTerm["fall"]}
+                      termKey="fall"
+                      conflicts={conflictsByTerm["fall"]}
+                      globalColorMap={globalColorMap}
+                    />
+                    <ScheduleTimetable
+                      termItems={itemsByTerm["winter"]}
+                      termKey="winter"
+                      conflicts={conflictsByTerm["winter"]}
+                      globalColorMap={globalColorMap}
+                    />
+                  </div>
+                )}
+
+                {/* Individual schedules for standalone or other terms */}
+                {orderedTerms.map((term) => {
+                  // Skip if we already rendered fall/winter together
+                  if ((term === "fall" || term === "winter") && orderedTerms.includes("fall") && orderedTerms.includes("winter")) {
+                    return null
+                  }
+                  return (
+                    <ScheduleTimetable
+                      key={term}
+                      termItems={itemsByTerm[term]}
+                      termKey={term}
+                      conflicts={conflictsByTerm[term]}
+                      globalColorMap={globalColorMap}
+                    />
+                  )
+                })}
               </div>
             </div>
           )}
