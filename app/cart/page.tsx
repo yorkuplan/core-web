@@ -14,6 +14,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useCart, type CartItem } from "@/components/cart-context"
 import {
@@ -528,7 +535,8 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
   const isTabletOrBelow = useIsTabletOrBelow()
   const isSummerTerm = termKey === "summer" || termKey === "summer1" || termKey === "summer2"
   const isCompactTerm = termKey === "fall" || termKey === "winter" || (isTabletOrBelow && isSummerTerm)
-  const compactSlotHeight = 32
+  const compactSlotHeight = isMobile ? 36 : isTabletOrBelow ? 34 : 32
+  const [activeBlock, setActiveBlock] = useState<ScheduleBlock | null>(null)
   const blocks = buildScheduleBlocks(termItems, globalColorMap)
   const termInfo = getTermDisplayInfo(termKey)
   const days = orderDays(blocks.map((block) => block.day))
@@ -542,7 +550,8 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
   const runRowHeight = isCompactTerm ? 24 : (isMobile ? 24 : 28)
   const runBubbleHeight = isCompactTerm ? 18 : (isMobile ? 18 : 22)
   const timeColumnWidth = isCompactTerm ? 40 : (isMobile ? 48 : 60)
-  const dayColumnMinWidth = isCompactTerm ? (isMobile ? 72 : 80) : (isMobile ? 100 : 140)
+  const dayColumnMinWidth = isCompactTerm ? (isMobile ? 92 : isTabletOrBelow ? 88 : 80) : (isMobile ? 100 : 140)
+  const showTapDetails = isTabletOrBelow
 
   // Build term-specific legend from the global map
   const termCourses = new Set(termItems.map(i => i.courseCode))
@@ -638,6 +647,12 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
         </div>
       )}
 
+      {showTapDetails && (
+        <p className="mb-2 text-xs text-muted-foreground">
+          Tap a class block to view full details.
+        </p>
+      )}
+
       <div className="overflow-x-auto">
         <div className="min-w-175" style={{ minWidth: `${Math.max(dayColumns.length, 5) * dayColumnMinWidth}px` }}>
           <div className="grid gap-0" style={{ gridTemplateColumns: `${timeColumnWidth}px repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
@@ -681,12 +696,22 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
                     return (
                       <div
                         key={`${block.item.id}-${idx}`}
-                        className={`absolute left-1 right-1 rounded-md border overflow-hidden ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${isCompactTerm ? "px-1 py-0.5" : "px-2 py-1"}`}
+                        className={`absolute left-1 right-1 rounded-md border overflow-hidden ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${isCompactTerm ? "px-1.5 py-1" : "px-2 py-1"} ${showTapDetails ? "cursor-pointer" : ""}`}
                         style={{ top: topCompact, height: heightCompact }}
+                        role={showTapDetails ? "button" : undefined}
+                        tabIndex={showTapDetails ? 0 : undefined}
+                        aria-label={showTapDetails ? `View details for ${block.item.courseCode}` : undefined}
+                        onClick={showTapDetails ? () => setActiveBlock(block) : undefined}
+                        onKeyDown={showTapDetails ? (event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            setActiveBlock(block)
+                          }
+                        } : undefined}
                       >
                         <p className={`font-bold truncate ${isCompactTerm ? "text-xs" : "text-xs"}`}>{block.item.courseCode}</p>
-                        <p style={{ fontSize: "0.625rem" }} className="truncate">{block.item.typeLabel}</p>
-                        {heightCompact > 50 && <p style={{ fontSize: "0.625rem" }} className="truncate opacity-75">{block.item.location}</p>}
+                        <p className={`truncate ${isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]"}`}>{block.item.typeLabel}</p>
+                        {heightCompact > 50 && <p className={`truncate opacity-75 ${isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]"}`}>{block.item.location}</p>}
                       </div>
                     )
                   })}
@@ -705,6 +730,27 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
           </div>
         ))}
       </div>
+
+      <Dialog open={activeBlock !== null} onOpenChange={(open) => !open && setActiveBlock(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{activeBlock?.item.courseCode}</DialogTitle>
+            <DialogDescription>
+              Full class details
+            </DialogDescription>
+          </DialogHeader>
+          {activeBlock && (
+            <div className="space-y-2 text-sm">
+              <p><span className="font-medium">Component:</span> {activeBlock.item.typeLabel}</p>
+              <p><span className="font-medium">Section:</span> {activeBlock.item.section}</p>
+              <p><span className="font-medium">Day:</span> {activeBlock.item.day}</p>
+              <p><span className="font-medium">Time:</span> {activeBlock.item.time}</p>
+              <p><span className="font-medium">Location:</span> {activeBlock.item.location}</p>
+              <p><span className="font-medium">Instructor:</span> {activeBlock.item.instructor}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
