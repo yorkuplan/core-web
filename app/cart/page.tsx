@@ -3,6 +3,17 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useCart, type CartItem } from "@/components/cart-context"
 import {
@@ -301,7 +312,7 @@ function MonthRangeBar({ termLabel, compact = false, showLabel = true, activeCla
     <div className={compact ? "mt-2" : "mt-0"}>
       {showLabel && (
         <div className={`flex items-center justify-between ${compact ? "text-[0.65rem]" : "text-xs"} text-muted-foreground mb-1`}>
-          <span>Course run</span>
+          <span>Course Duration</span>
           <span>{termDuration.start} – {termDuration.end}</span>
         </div>
       )}
@@ -540,7 +551,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
       {courseRuns.length > 0 && (
         <div className={`${isCompactTerm ? "mb-2" : "mb-4"}`}>
           <p className={`mb-2 ${isCompactTerm ? "text-[0.65rem]" : "text-xs"} text-muted-foreground`}>
-            Course runs
+            Course Duration
           </p>
           <div className="rounded-md border border-border overflow-hidden">
             <div className="grid border-b border-border bg-muted/30" style={{ gridTemplateColumns: `repeat(${visibleMonthWindow.length}, minmax(0, 1fr))` }}>
@@ -938,18 +949,62 @@ export default function CartPage() {
 
                         return (
                           <AccordionItem key={courseCode} value={`${term}-${courseCode}`}>
-                            <div className="pt-4 pb-1 min-w-0">
-                              <Link
-                                href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`}
-                                className="text-base font-semibold text-primary hover:underline truncate block"
-                              >
-                                {courseCode}
-                              </Link>
-                              <p className="text-sm text-muted-foreground truncate">{first.courseName}</p>
+                            <div className="pt-4 pb-1 min-w-0 flex items-start gap-3">
+                              <div className="min-w-0 flex-1">
+                                <Link
+                                  href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`}
+                                  className="text-base font-semibold text-primary hover:underline truncate block"
+                                >
+                                  {courseCode}
+                                </Link>
+                                <p className="text-sm text-muted-foreground truncate">{first.courseName}</p>
+                                {first.term && (
+                                  <div className="mt-2">
+                                    <MonthRangeBar
+                                      termLabel={first.term}
+                                      compact
+                                      showLabel
+                                      activeClassName={`${COURSE_COLORS[globalColorMap[courseCode] ?? 0].bg} ${COURSE_COLORS[globalColorMap[courseCode] ?? 0].text}`}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Remove {courseCode}</span>
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remove {courseCode}?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will remove all selected components for this course from your cart.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => {
+                                        for (const courseItem of courseItems) {
+                                          removeItem(courseItem.id)
+                                        }
+                                      }}
+                                    >
+                                      Remove course
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
 
                             <AccordionTrigger className="hover:no-underline py-2 text-xs text-muted-foreground">
-                              Show selected components
+                              Show course components
                             </AccordionTrigger>
 
                             <AccordionContent>
@@ -982,14 +1037,6 @@ export default function CartPage() {
                                           <BookOpen className="h-3.5 w-3.5" />{item.instructor}
                                         </span>
                                       </div>
-                                      {item.term && (
-                                        <MonthRangeBar
-                                          termLabel={item.term}
-                                          compact
-                                          showLabel
-                                          activeClassName={`${COURSE_COLORS[globalColorMap[item.courseCode] ?? 0].bg} ${COURSE_COLORS[globalColorMap[item.courseCode] ?? 0].text}`}
-                                        />
-                                      )}
                                     </div>
 
                                     {(() => {
