@@ -38,6 +38,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { useIsMobile } from "@/hooks/use-mobile"
+import Logo from "@/public/logo.webp"
 
 const COURSE_COLORS = [
   { bg: "bg-red-100 dark:bg-red-900/40", border: "border-red-300 dark:border-red-700", text: "text-red-800 dark:text-red-200", print: "#fee2e2" },
@@ -863,6 +864,74 @@ export default function CartPage() {
     const pageWidth = pdf.internal.pageSize.getWidth()
     const pageHeight = pdf.internal.pageSize.getHeight()
     const margin = 8
+    const headerHeight = 12
+    const websiteText = "yuplan.ca"
+    const websiteUrl = "https://yuplan.ca"
+
+    const logoDataUrl = await new Promise<string | null>((resolve) => {
+      const image = new Image()
+      image.crossOrigin = "anonymous"
+      image.onload = () => {
+        const canvas = document.createElement("canvas")
+        canvas.width = image.naturalWidth
+        canvas.height = image.naturalHeight
+        const context = canvas.getContext("2d")
+        if (!context) {
+          resolve(null)
+          return
+        }
+        context.drawImage(image, 0, 0)
+        resolve(canvas.toDataURL("image/png"))
+      }
+      image.onerror = () => resolve(null)
+      image.src = Logo.src
+    })
+
+    const drawPdfHeader = () => {
+      if (logoDataUrl) {
+        const logoHeight = 5.5
+        const logoWidth = 20
+        pdf.addImage(logoDataUrl, "PNG", margin, margin, logoWidth, logoHeight)
+      }
+
+      pdf.setFontSize(10)
+      pdf.setTextColor(37, 99, 235)
+      const websiteX = pageWidth - margin - pdf.getTextWidth(websiteText)
+      pdf.textWithLink(websiteText, websiteX, margin + 4.5, { url: websiteUrl })
+      pdf.setDrawColor(220, 220, 220)
+      pdf.line(margin, margin + headerHeight - 2, pageWidth - margin, margin + headerHeight - 2)
+      pdf.setTextColor(0, 0, 0)
+    }
+
+    const renderSchedulePage = async (element: HTMLElement) => {
+      if (pageCount > 0) pdf.addPage()
+
+      const canvas = await html2canvas(element, {
+        scale: 1.5,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      })
+
+      drawPdfHeader()
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.8)
+      const availableW = pageWidth - margin * 2
+      const contentTop = margin + headerHeight
+      const availableH = pageHeight - contentTop - margin
+      const imgRatio = canvas.width / canvas.height
+      let drawW = availableW
+      let drawH = drawW / imgRatio
+
+      if (drawH > availableH) {
+        drawH = availableH
+        drawW = drawH * imgRatio
+      }
+
+      const offsetX = margin + (availableW - drawW) / 2
+      const offsetY = contentTop + (availableH - drawH) / 2
+      pdf.addImage(imgData, "JPEG", offsetX, offsetY, drawW, drawH)
+      pageCount++
+    }
 
     // Check if fall and winter are displayed side-by-side
     const fallWinterGrid = scheduleRef.current.querySelector<HTMLElement>(".fall-winter-grid")
@@ -870,54 +939,16 @@ export default function CartPage() {
 
     // If fall/winter grid exists, render it as one page
     if (fallWinterGrid) {
-      if (pageCount > 0) pdf.addPage()
-      const canvas = await html2canvas(fallWinterGrid, {
-        scale: 1.5,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      })
-      const imgData = canvas.toDataURL("image/jpeg", 0.8)
-      const availableW = pageWidth - margin * 2
-      const availableH = pageHeight - margin * 2
-      const imgRatio = canvas.width / canvas.height
-      let drawW = availableW
-      let drawH = drawW / imgRatio
-      if (drawH > availableH) {
-        drawH = availableH
-        drawW = drawH * imgRatio
-      }
-      const offsetX = margin + (availableW - drawW) / 2
-      const offsetY = margin + (availableH - drawH) / 2
-      pdf.addImage(imgData, "JPEG", offsetX, offsetY, drawW, drawH)
-      pageCount++
+      await renderSchedulePage(fallWinterGrid)
     }
 
     // Find all other term schedules (not fall/winter)
     const allTermElements = scheduleRef.current.querySelectorAll<HTMLElement>("[data-term-schedule]")
     for (const termEl of allTermElements) {
       const termKey = termEl.getAttribute("data-term-schedule")
-      if (termKey === "fall" || termKey === "winter") continue // Skip fall/winter if already rendered
+      if (fallWinterGrid && (termKey === "fall" || termKey === "winter")) continue // Skip only when fall/winter combined grid was rendered
 
-      if (pageCount > 0) pdf.addPage()
-      const canvas = await html2canvas(termEl, {
-        scale: 1.5,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      })
-      const imgData = canvas.toDataURL("image/jpeg", 0.8)
-      const availableW = pageWidth - margin * 2
-      const availableH = pageHeight - margin * 2
-      const imgRatio = canvas.width / canvas.height
-      let drawW = availableW
-      let drawH = drawW / imgRatio
-      if (drawH > availableH) {
-        drawH = availableH
-        drawW = drawH * imgRatio
-      }
-      const offsetX = margin + (availableW - drawW) / 2
-      const offsetY = margin + (availableH - drawH) / 2
-      pdf.addImage(imgData, "JPEG", offsetX, offsetY, drawW, drawH)
-      pageCount++
+      await renderSchedulePage(termEl)
     }
 
     pdf.save("YorkUPlan-Schedule.pdf")
