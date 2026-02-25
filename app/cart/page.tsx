@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useCart, type CartItem } from "@/components/cart-context"
 import {
   Trash2,
@@ -40,6 +41,304 @@ const TERM_DISPLAY_MAP: Record<string, { label: string; period: string }> = {
 }
 
 const DAY_DISPLAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri"] as const
+const PRIMARY_COMPONENT_TYPES = new Set(["LECT", "SEMR", "ONLN", "BLEN"])
+const SECONDARY_COMPONENT_TYPES = new Set(["LAB", "TUTR", "TUT", "STDO"])
+const MONTH_LABELS = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"]
+const MONTH_INDEX: Record<string, number> = {
+  sep: 0,
+  oct: 1,
+  nov: 2,
+  dec: 3,
+  jan: 4,
+  feb: 5,
+  mar: 6,
+  apr: 7,
+  may: 8,
+  jun: 9,
+  jul: 10,
+  aug: 11,
+}
+
+function normalizeComponentType(value: string): string {
+  return (value || "").trim().toUpperCase()
+}
+
+function normalizeMonthName(value: string): string {
+  const trimmed = value.trim().toLowerCase()
+  if (trimmed.length <= 3) return trimmed
+  return trimmed.slice(0, 3)
+}
+
+type TermDuration = { start: string; end: string }
+
+const TERM_CODE_DURATION: Record<string, TermDuration> = {
+  ES: { start: "April", end: "May" },
+  LS: { start: "April", end: "May" },
+  NW: { start: "April", end: "May" },
+  NV: { start: "April", end: "June" },
+  Q5: { start: "April", end: "June" },
+  Q6: { start: "April", end: "June" },
+  ET: { start: "April", end: "October" },
+  I1: { start: "May", end: "May" },
+  S4: { start: "May", end: "May" },
+  C1: { start: "May", end: "June" },
+  E: { start: "May", end: "June" },
+  H1: { start: "May", end: "June" },
+  I2: { start: "May", end: "June" },
+  J1: { start: "May", end: "June" },
+  O1: { start: "May", end: "June" },
+  OE: { start: "May", end: "June" },
+  Q8: { start: "May", end: "June" },
+  S1: { start: "May", end: "June" },
+  BS: { start: "May", end: "July" },
+  C3: { start: "May", end: "July" },
+  S: { start: "May", end: "July" },
+  S3: { start: "May", end: "July" },
+  SA: { start: "May", end: "July" },
+  SP: { start: "May", end: "July" },
+  SU: { start: "May", end: "August" },
+  Z3: { start: "May", end: "December" },
+  Z4: { start: "May", end: "April" },
+  J2: { start: "June", end: "June" },
+  K: { start: "June", end: "June" },
+  L2: { start: "June", end: "June" },
+  C2: { start: "June", end: "July" },
+  G: { start: "June", end: "July" },
+  H2: { start: "June", end: "July" },
+  I3: { start: "June", end: "July" },
+  J3: { start: "June", end: "July" },
+  J8: { start: "June", end: "July" },
+  O2: { start: "June", end: "July" },
+  OB: { start: "June", end: "July" },
+  Q7: { start: "June", end: "July" },
+  L3: { start: "June", end: "August" },
+  NT: { start: "June", end: "August" },
+  S2: { start: "June", end: "August" },
+  C4: { start: "July", end: "July" },
+  D2: { start: "July", end: "July" },
+  NX: { start: "July", end: "August" },
+  OA: { start: "July", end: "August" },
+  EM: { start: "August", end: "November" },
+  F: { start: "September", end: "December" },
+  W: { start: "January", end: "April" },
+  Y: { start: "September", end: "April" },
+  Z1: { start: "September", end: "April" },
+  E1: { start: "August", end: "August" },
+  B1: { start: "August", end: "September" },
+  FO: { start: "August", end: "November" },
+  NQ: { start: "August", end: "April" },
+  FW: { start: "August", end: "May" },
+  F4: { start: "September", end: "September" },
+  LA: { start: "September", end: "September" },
+  M3: { start: "September", end: "September" },
+  A: { start: "September", end: "October" },
+  FA: { start: "September", end: "October" },
+  LB: { start: "September", end: "October" },
+  M1: { start: "September", end: "October" },
+  M4: { start: "September", end: "October" },
+  FP: { start: "September", end: "November" },
+  B2: { start: "September", end: "December" },
+  EF: { start: "September", end: "December" },
+  F2: { start: "September", end: "December" },
+  F3: { start: "September", end: "December" },
+  B3: { start: "September", end: "May" },
+  FS: { start: "September", end: "August" },
+  GY: { start: "September", end: "August" },
+  LC: { start: "October", end: "November" },
+  FB: { start: "October", end: "December" },
+  M: { start: "October", end: "December" },
+  M2: { start: "October", end: "December" },
+  M5: { start: "November", end: "November" },
+  LD: { start: "November", end: "December" },
+  M6: { start: "November", end: "December" },
+  ER: { start: "January", end: "January" },
+  W4: { start: "January", end: "January" },
+  C: { start: "January", end: "February" },
+  M7: { start: "January", end: "February" },
+  WA: { start: "January", end: "February" },
+  NU: { start: "January", end: "March" },
+  B4: { start: "January", end: "April" },
+  EW: { start: "January", end: "April" },
+  W2: { start: "January", end: "April" },
+  W3: { start: "January", end: "April" },
+  WL: { start: "January", end: "April" },
+  WO: { start: "January", end: "April" },
+  E4: { start: "January", end: "October" },
+  WS: { start: "January", end: "August" },
+  WP: { start: "January", end: "May" },
+  RW: { start: "February", end: "February" },
+  O3: { start: "February", end: "March" },
+  N: { start: "February", end: "April" },
+  WB: { start: "February", end: "April" },
+  GH: { start: "April", end: "April" },
+}
+
+const TERM_CODE_KEYS = Object.keys(TERM_CODE_DURATION).sort((a, b) => b.length - a.length)
+
+function extractTermCode(value: string): string | null {
+  const normalized = value.toUpperCase()
+  for (const code of TERM_CODE_KEYS) {
+    const matcher = new RegExp(`\\b${code}\\b`)
+    if (matcher.test(normalized)) return code
+  }
+  return null
+}
+
+function getTermDuration(termKey: string): TermDuration | null {
+  const normalized = termKey.toLowerCase()
+  const hasEducation = /education|educ/.test(normalized)
+  const hasSchulich = /schulich|business/.test(normalized)
+  const hasGrad = /grad|graduate/.test(normalized)
+  const hasHealth = /health/.test(normalized)
+
+  if (/full\s*year/.test(normalized)) return TERM_CODE_DURATION.Y
+  if (/\bfall\b/.test(normalized)) return TERM_CODE_DURATION.F
+  if (/\bwinter\b/.test(normalized)) return TERM_CODE_DURATION.W
+  if (/\bsummer\b/.test(normalized)) return { start: "May", end: "August" }
+
+  const extractedCode = extractTermCode(termKey)
+
+  if (extractedCode === "WP") {
+    if (hasEducation) return { start: "January", end: "May" }
+    if (hasSchulich) return { start: "January", end: "March" }
+  }
+
+  if (extractedCode === "RW") {
+    if (hasHealth) return { start: "February", end: "March" }
+    if (hasEducation || hasGrad) return { start: "February", end: "February" }
+  }
+
+  if (extractedCode && TERM_CODE_DURATION[extractedCode]) {
+    return TERM_CODE_DURATION[extractedCode]
+  }
+
+  return null
+}
+
+function getMonthRangeIndices(startLabel: string, endLabel: string): { active: Set<number>; startIdx: number; endIdx: number } | null {
+  const startIdx = MONTH_INDEX[normalizeMonthName(startLabel)]
+  const endIdx = MONTH_INDEX[normalizeMonthName(endLabel)]
+  if (startIdx === undefined || endIdx === undefined) return null
+
+  const active = new Set<number>()
+  if (startIdx <= endIdx) {
+    for (let i = startIdx; i <= endIdx; i++) active.add(i)
+  } else {
+    for (let i = startIdx; i < MONTH_LABELS.length; i++) active.add(i)
+    for (let i = 0; i <= endIdx; i++) active.add(i)
+  }
+
+  return { active, startIdx, endIdx }
+}
+
+function getActiveMonthSegments(active: Set<number>): Array<{ start: number; length: number }> {
+  const segments: Array<{ start: number; length: number }> = []
+  let currentStart: number | null = null
+
+  for (let i = 0; i < MONTH_LABELS.length; i++) {
+    const isActive = active.has(i)
+    if (isActive && currentStart === null) {
+      currentStart = i
+    }
+    const isSegmentEnd = !isActive && currentStart !== null
+    const isLastActiveAtEnd = isActive && currentStart !== null && i === MONTH_LABELS.length - 1
+
+    if (isSegmentEnd && currentStart !== null) {
+      const segmentStart = currentStart
+      segments.push({ start: segmentStart, length: i - segmentStart })
+      currentStart = null
+    } else if (isLastActiveAtEnd && currentStart !== null) {
+      const segmentStart = currentStart
+      segments.push({ start: segmentStart, length: i - segmentStart + 1 })
+      currentStart = null
+    }
+  }
+
+  return segments
+}
+
+function getVisibleMonthWindow(termKey: string): Array<{ label: string; index: number }> {
+  const normalized = normalizeTerm(termKey)
+
+  if (normalized === "fall") {
+    return [
+      
+      { label: "Sep", index: 0 },
+      { label: "Oct", index: 1 },
+      { label: "Nov", index: 2 },
+      { label: "Dec", index: 3 },
+    ]
+  }
+
+  if (normalized === "winter") {
+    return [
+      { label: "Jan", index: 4 },
+      { label: "Feb", index: 5 },
+      { label: "Mar", index: 6 },
+      { label: "Apr", index: 7 },
+    ]
+  }
+
+  if (normalized === "summer") {
+    return [
+      { label: "May", index: 8 },
+      { label: "Jun", index: 9 },
+      { label: "Jul", index: 10 },
+      { label: "Aug", index: 11 },
+    ]
+  }
+
+  return MONTH_LABELS.map((label, idx) => ({ label, index: idx }))
+}
+
+function MonthRangeBar({ termLabel, compact = false, showLabel = true, activeClassName }: { termLabel: string; compact?: boolean; showLabel?: boolean; activeClassName?: string }) {
+  const termDuration = getTermDuration(termLabel)
+  if (!termDuration) return null
+  const monthRange = getMonthRangeIndices(termDuration.start, termDuration.end)
+  if (!monthRange) return null
+
+  return (
+    <div className={compact ? "mt-2" : "mt-0"}>
+      {showLabel && (
+        <div className={`flex items-center justify-between ${compact ? "text-[0.65rem]" : "text-xs"} text-muted-foreground mb-1`}>
+          <span>Course run</span>
+          <span>{termDuration.start} – {termDuration.end}</span>
+        </div>
+      )}
+      <div className="grid grid-cols-12 gap-0 overflow-hidden rounded-md border border-border">
+        {MONTH_LABELS.map((monthLabel, idx) => {
+          const isActive = monthRange.active.has(idx)
+          const isStart = idx === monthRange.startIdx
+          const isEnd = idx === monthRange.endIdx
+          const rounding = isActive
+            ? isStart
+              ? "rounded-l-md"
+              : isEnd
+                ? "rounded-r-md"
+                : "rounded-none"
+            : "rounded-none"
+
+          return (
+            <div
+              key={monthLabel}
+              className={`border-r border-border last:border-r-0 px-1 ${compact ? "py-0.5 text-[0.6rem]" : "py-1 text-[0.65rem]"} text-center font-medium ${rounding} ${
+                isActive
+                  ? activeClassName || "bg-primary/15 text-foreground"
+                  : "bg-muted/30 text-muted-foreground"
+              }`}
+            >
+              {monthLabel}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function getComponentSortRank(type: string): number {
+  return PRIMARY_COMPONENT_TYPES.has(normalizeComponentType(type)) ? 0 : 1
+}
 
 function toTitleCase(value: string): string {
   return value
@@ -102,6 +401,12 @@ function normalizeDayToken(value: string): string {
     f: "Fri",
     fri: "Fri",
     friday: "Fri",
+    s: "Sat",
+    sat: "Sat",
+    saturday: "Sat",
+    u: "Sun",
+    sun: "Sun",
+    sunday: "Sun",
   }
   return dayMap[normalized] ?? value.trim()
 }
@@ -203,6 +508,9 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
   const endHour = 21
   const halfHourRows = (endHour - startHour) * 2
   const slotHeight = isCompactTerm ? compactSlotHeight : SLOT_HEIGHT
+  const visibleMonthWindow = getVisibleMonthWindow(termKey)
+  const runRowHeight = isCompactTerm ? 24 : 28
+  const runBubbleHeight = isCompactTerm ? 18 : 22
 
   // Build term-specific legend from the global map
   const termCourses = new Set(termItems.map(i => i.courseCode))
@@ -211,12 +519,92 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
     courseColorMap[code] = globalColorMap[code] ?? 0
   }
 
+  const courseRuns = Array.from(termCourses)
+    .map((courseCode) => {
+      const courseItems = termItems.filter((item) => item.courseCode === courseCode)
+      const termLabel = courseItems.find((item) => item.term)?.term || termKey
+      const duration = getTermDuration(termLabel) || getTermDuration(termKey)
+      const monthRange = duration ? getMonthRangeIndices(duration.start, duration.end) : null
+      const colorIndex = courseColorMap[courseCode] ?? 0
+      return duration && monthRange ? { courseCode, monthRange, colorIndex } : null
+    })
+    .filter((entry): entry is { courseCode: string; monthRange: { active: Set<number>; startIdx: number; endIdx: number }; colorIndex: number } => Boolean(entry))
+
   return (
     <div data-term-schedule={termKey} className="bg-card border border-border rounded-lg overflow-hidden p-4">
       <div className={`${isCompactTerm ? "mb-2 pb-2" : "mb-4 pb-3"} border-b border-border`}>
         <h3 className={`${isCompactTerm ? "text-lg" : "text-xl"} font-bold`}>{termInfo.label}</h3>
         <p className="text-sm text-muted-foreground">{termInfo.period}</p>
       </div>
+
+      {courseRuns.length > 0 && (
+        <div className={`${isCompactTerm ? "mb-2" : "mb-4"}`}>
+          <p className={`mb-2 ${isCompactTerm ? "text-[0.65rem]" : "text-xs"} text-muted-foreground`}>
+            Course runs
+          </p>
+          <div className="rounded-md border border-border overflow-hidden">
+            <div className="grid border-b border-border bg-muted/30" style={{ gridTemplateColumns: `repeat(${visibleMonthWindow.length}, minmax(0, 1fr))` }}>
+              {visibleMonthWindow.map((month) => (
+                <div
+                  key={month.label}
+                  className={`px-1 text-center font-medium text-muted-foreground border-r border-border last:border-r-0 ${isCompactTerm ? "py-0.5 text-[0.6rem]" : "py-1 text-[0.65rem]"}`}
+                >
+                  {month.label}
+                </div>
+              ))}
+            </div>
+
+            {courseRuns.map((run) => (
+              <div
+                key={run.courseCode}
+                className="relative grid border-b border-border last:border-b-0"
+                style={{
+                  gridTemplateColumns: `repeat(${visibleMonthWindow.length}, minmax(0, 1fr))`,
+                  height: `${runRowHeight}px`,
+                }}
+              >
+                {visibleMonthWindow.map((month) => (
+                  <div
+                    key={`${run.courseCode}-${month.label}`}
+                    className="border-r border-border/70 last:border-r-0 h-full"
+                  />
+                ))}
+
+                {(() => {
+                  const visibleActive = new Set<number>()
+                  for (let i = 0; i < visibleMonthWindow.length; i++) {
+                    if (run.monthRange.active.has(visibleMonthWindow[i].index)) {
+                      visibleActive.add(i)
+                    }
+                  }
+
+                  return getActiveMonthSegments(visibleActive).map((segment, idx) => {
+                    const color = COURSE_COLORS[run.colorIndex]
+                    return (
+                      <div
+                        key={`${run.courseCode}-${idx}`}
+                        className={`row-start-1 z-10 self-center mx-0.5 rounded-md border ${color.bg} ${color.border} ${color.text} flex items-center px-1.5`}
+                        style={{
+                          gridColumn: `${segment.start + 1} / span ${segment.length}`,
+                          height: `${runBubbleHeight}px`,
+                        }}
+                      >
+                        <span className={`font-semibold truncate ${isCompactTerm ? "text-[0.6rem]" : "text-[0.65rem]"}`}>
+                          {run.courseCode}
+                        </span>
+                      </div>
+                    )
+                  })
+                })()}
+
+                <div className="sr-only">
+                  {run.courseCode}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <div className="min-w-175" style={{ minWidth: `${Math.max(dayColumns.length, 5) * (isCompactTerm ? 80 : 140)}px` }}>
@@ -307,7 +695,24 @@ export default function CartPage() {
   // Group items by term
   const itemsByTerm: Record<string, CartItem[]> = {}
   for (const item of items) {
-    const term = normalizeTerm(item.term || "") || "unspecified"
+    const rawTerm = item.term || ""
+    const normalizedTerm = normalizeTerm(rawTerm) || "unspecified"
+    const duration = getTermDuration(rawTerm) ?? getTermDuration(normalizedTerm)
+    let term = normalizedTerm
+
+    if (normalizedTerm !== "year" && duration) {
+      const startMonth = normalizeMonthName(duration.start)
+      const endMonth = normalizeMonthName(duration.end)
+      if (startMonth === "sep" && endMonth === "apr") {
+        term = "year"
+      } else if (["sep", "oct", "nov", "dec"].includes(startMonth)) {
+        term = "fall"
+      } else if (["jan", "feb", "mar", "apr"].includes(startMonth)) {
+        term = "winter"
+      } else if (["may", "jun", "jul", "aug"].includes(startMonth)) {
+        term = "summer"
+      }
+    }
     if (!itemsByTerm[term]) {
       itemsByTerm[term] = []
     }
@@ -456,7 +861,7 @@ export default function CartPage() {
                 <p className="text-muted-foreground">
                   {items.length === 0
                     ? "Your cart is empty. Add sections from a course page."
-                    : `${items.length} item${items.length === 1 ? "" : "s"} across ${courseList.length} course${courseList.length === 1 ? "" : "s"}`}
+                    : `${courseList.length} course${courseList.length === 1 ? "" : "s"} across ${orderedTerms.length} term${orderedTerms.length === 1 ? "" : "s"}`}
                 </p>
               </div>
               {items.length > 0 && (
@@ -480,7 +885,7 @@ export default function CartPage() {
               <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <ShoppingCart className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h2 className="text-xl font-semibold mb-2">No items in your cart</h2>
+              <h2 className="text-xl font-semibold mb-2">No courses in your cart</h2>
               <p className="text-muted-foreground mb-6">
                 Browse courses and add them to cart to start building your schedule.
               </p>
@@ -490,9 +895,9 @@ export default function CartPage() {
             </Card>
           )}
 
-          {/* Cart Items grouped by term then course */}
+          {/* Selection Review (before schedule generation) */}
           {orderedTerms.length > 0 && (
-            <div className="space-y-8 mb-8">
+            <div className="space-y-6 mb-8">
               {orderedTerms.map((term) => {
                 const termItems = itemsByTerm[term]
                 const termInfo = getTermDisplayInfo(term)
@@ -501,82 +906,124 @@ export default function CartPage() {
                   if (!termGrouped[item.courseCode]) termGrouped[item.courseCode] = []
                   termGrouped[item.courseCode].push(item)
                 }
-                const termCourseList = Object.keys(termGrouped)
+                const termCourseList = Object.keys(termGrouped).sort((a, b) => a.localeCompare(b))
+                const termConflictCount = termItems.filter((item) => allConflicts.has(item.id)).length
 
                 return (
-                  <div key={term}>
-                    <div className="flex items-center gap-3 mb-4">
-                      <h2 className="text-xl font-bold">{termInfo.label}</h2>
-                      <Badge variant="secondary">{termInfo.period}</Badge>
-                      <Badge variant="outline">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
+                  <Card key={term} className="overflow-hidden">
+                    <div className="p-4 md:p-5 bg-muted/40 border-b border-border">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-lg md:text-xl font-bold">{termInfo.label}</h2>
+                        {termInfo.period && <Badge variant="secondary">{termInfo.period}</Badge>}
+                        <Badge variant="outline">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
+                        {termConflictCount > 0 && (
+                          <Badge variant="destructive" className="ml-auto">
+                            <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+                            {termConflictCount} conflict{termConflictCount !== 1 && "s"}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <Accordion type="multiple" className="px-4 md:px-5">
                       {termCourseList.map((courseCode) => {
                         const courseItems = termGrouped[courseCode]
                         const first = courseItems[0]
+                        const sortedCourseItems = [...courseItems].sort((a, b) => {
+                          const rankDiff = getComponentSortRank(a.type) - getComponentSortRank(b.type)
+                          if (rankDiff !== 0) return rankDiff
+                          if (a.section !== b.section) return a.section.localeCompare(b.section)
+                          return a.typeLabel.localeCompare(b.typeLabel)
+                        })
+
                         return (
-                          <Card key={courseCode} className="overflow-hidden">
-                            <div className="p-4 bg-muted/50 border-b border-border">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <Link
-                                    href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`}
-                                    className="text-lg font-bold text-primary hover:underline"
-                                  >
-                                    {courseCode}
-                                  </Link>
-                                  <p className="text-sm text-muted-foreground">{first.courseName}</p>
-                                </div>
-                                <Badge variant="secondary">{courseItems.length} item{courseItems.length !== 1 && "s"}</Badge>
-                              </div>
+                          <AccordionItem key={courseCode} value={`${term}-${courseCode}`}>
+                            <div className="pt-4 pb-1 min-w-0">
+                              <Link
+                                href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`}
+                                className="text-base font-semibold text-primary hover:underline truncate block"
+                              >
+                                {courseCode}
+                              </Link>
+                              <p className="text-sm text-muted-foreground truncate">{first.courseName}</p>
                             </div>
-                            <div className="divide-y divide-border">
-                              {courseItems.map((item) => (
-                                <div key={item.id} className="p-4 flex items-center gap-4">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <Badge variant="outline" className="text-xs">Section {item.section}</Badge>
-                                      <Badge variant="secondary" className="text-xs">{item.typeLabel}</Badge>
-                                      {allConflicts.has(item.id) && (
-                                        <Badge variant="destructive" className="text-xs">
-                                          <AlertTriangle className="h-3 w-3 mr-1" />
-                                          Conflict
-                                        </Badge>
+
+                            <AccordionTrigger className="hover:no-underline py-2 text-xs text-muted-foreground">
+                              Show selected components
+                            </AccordionTrigger>
+
+                            <AccordionContent>
+                              <div className="space-y-2">
+                                {sortedCourseItems.map((item) => (
+                                  <div key={item.id} className="p-3 rounded-md border border-border bg-background flex items-start gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                        <Badge variant="outline" className="text-xs">Section {item.section}</Badge>
+                                        <Badge variant="secondary" className="text-xs">{item.typeLabel}</Badge>
+                                        {allConflicts.has(item.id) && (
+                                          <Badge variant="destructive" className="text-xs">
+                                            <AlertTriangle className="h-3 w-3 mr-1" />
+                                            Conflict
+                                          </Badge>
+                                        )}
+                                      </div>
+
+                                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                        <span className="flex items-center gap-1">
+                                          <Calendar className="h-3.5 w-3.5" />{item.day}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <Clock className="h-3.5 w-3.5" />{item.time}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <MapPin className="h-3.5 w-3.5" />{item.location}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <BookOpen className="h-3.5 w-3.5" />{item.instructor}
+                                        </span>
+                                      </div>
+                                      {item.term && (
+                                        <MonthRangeBar
+                                          termLabel={item.term}
+                                          compact
+                                          showLabel
+                                          activeClassName={`${COURSE_COLORS[globalColorMap[item.courseCode] ?? 0].bg} ${COURSE_COLORS[globalColorMap[item.courseCode] ?? 0].text}`}
+                                        />
                                       )}
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mt-1">
-                                      <span className="flex items-center gap-1">
-                                        <Calendar className="h-3.5 w-3.5" />{item.day}
-                                      </span>
-                                      <span className="flex items-center gap-1">
-                                        <Clock className="h-3.5 w-3.5" />{item.time}
-                                      </span>
-                                      <span className="flex items-center gap-1">
-                                        <MapPin className="h-3.5 w-3.5" />{item.location}
-                                      </span>
-                                      <span className="flex items-center gap-1">
-                                        <BookOpen className="h-3.5 w-3.5" />{item.instructor}
-                                      </span>
-                                    </div>
+
+                                    {(() => {
+                                      const isPrimaryComponent = PRIMARY_COMPONENT_TYPES.has(normalizeComponentType(item.type))
+                                      const hasSecondaryInSameSection = courseItems.some(
+                                        (entry) =>
+                                          entry.section === item.section &&
+                                          SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(entry.type)),
+                                      )
+                                      const canRemove = !(isPrimaryComponent && hasSecondaryInSameSection)
+
+                                      if (!canRemove) return null
+
+                                      return (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                          onClick={() => removeItem(item.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                          <span className="sr-only">Remove {item.typeLabel}</span>
+                                        </Button>
+                                      )
+                                    })()}
                                   </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                    onClick={() => removeItem(item.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Remove {item.typeLabel}</span>
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </Card>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
                         )
                       })}
-                    </div>
-                  </div>
+                    </Accordion>
+                  </Card>
                 )
               })}
             </div>
