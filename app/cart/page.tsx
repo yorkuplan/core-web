@@ -951,7 +951,7 @@ export default function CartPage() {
       await renderSchedulePage(termEl)
     }
 
-    pdf.save("YorkUPlan-Schedule.pdf")
+    pdf.save("YUPlan-Schedule.pdf")
   }
 
   return (
