@@ -27,9 +27,10 @@ import {
   ShoppingCart,
 } from "lucide-react"
 import Link from "next/link"
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const COURSE_COLORS = [
   { bg: "bg-red-100 dark:bg-red-900/40", border: "border-red-300 dark:border-red-700", text: "text-red-800 dark:text-red-200", print: "#fee2e2" },
@@ -43,6 +44,21 @@ const COURSE_COLORS = [
 ]
 
 const SLOT_HEIGHT = 48
+const TABLET_BREAKPOINT = 1024
+
+function useIsTabletOrBelow() {
+  const [isTabletOrBelow, setIsTabletOrBelow] = useState<boolean | undefined>(undefined)
+
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${TABLET_BREAKPOINT - 1}px)`)
+    const onChange = () => setIsTabletOrBelow(window.innerWidth < TABLET_BREAKPOINT)
+    mql.addEventListener("change", onChange)
+    onChange()
+    return () => mql.removeEventListener("change", onChange)
+  }, [])
+
+  return !!isTabletOrBelow
+}
 
 const TERM_DISPLAY_MAP: Record<string, { label: string; period: string }> = {
   fall: { label: "Fall Semester", period: "September - December" },
@@ -508,7 +524,10 @@ function detectConflicts(blocks: ScheduleBlock[]): Set<string> {
 }
 
 function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { termItems: CartItem[]; termKey: string; conflicts: Set<string>; globalColorMap: Record<string, number> }) {
-  const isCompactTerm = termKey === "fall" || termKey === "winter"
+  const isMobile = useIsMobile()
+  const isTabletOrBelow = useIsTabletOrBelow()
+  const isSummerTerm = termKey === "summer" || termKey === "summer1" || termKey === "summer2"
+  const isCompactTerm = termKey === "fall" || termKey === "winter" || (isTabletOrBelow && isSummerTerm)
   const compactSlotHeight = 32
   const blocks = buildScheduleBlocks(termItems, globalColorMap)
   const termInfo = getTermDisplayInfo(termKey)
@@ -518,10 +537,12 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
   const startHour = 8
   const endHour = 21
   const halfHourRows = (endHour - startHour) * 2
-  const slotHeight = isCompactTerm ? compactSlotHeight : SLOT_HEIGHT
+  const slotHeight = isCompactTerm ? compactSlotHeight : (isMobile ? 40 : SLOT_HEIGHT)
   const visibleMonthWindow = getVisibleMonthWindow(termKey)
-  const runRowHeight = isCompactTerm ? 24 : 28
-  const runBubbleHeight = isCompactTerm ? 18 : 22
+  const runRowHeight = isCompactTerm ? 24 : (isMobile ? 24 : 28)
+  const runBubbleHeight = isCompactTerm ? 18 : (isMobile ? 18 : 22)
+  const timeColumnWidth = isCompactTerm ? 40 : (isMobile ? 48 : 60)
+  const dayColumnMinWidth = isCompactTerm ? (isMobile ? 72 : 80) : (isMobile ? 100 : 140)
 
   // Build term-specific legend from the global map
   const termCourses = new Set(termItems.map(i => i.courseCode))
@@ -542,7 +563,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
     .filter((entry): entry is { courseCode: string; monthRange: { active: Set<number>; startIdx: number; endIdx: number }; colorIndex: number } => Boolean(entry))
 
   return (
-    <div data-term-schedule={termKey} className="bg-card border border-border rounded-lg overflow-hidden p-4">
+    <div data-term-schedule={termKey} className="bg-card border border-border rounded-lg overflow-hidden p-3 sm:p-4">
       <div className={`${isCompactTerm ? "mb-2 pb-2" : "mb-4 pb-3"} border-b border-border`}>
         <h3 className={`${isCompactTerm ? "text-lg" : "text-xl"} font-bold`}>{termInfo.label}</h3>
         <p className="text-sm text-muted-foreground">{termInfo.period}</p>
@@ -618,8 +639,8 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
       )}
 
       <div className="overflow-x-auto">
-        <div className="min-w-175" style={{ minWidth: `${Math.max(dayColumns.length, 5) * (isCompactTerm ? 80 : 140)}px` }}>
-          <div className="grid gap-0" style={{ gridTemplateColumns: `${isCompactTerm ? "40px" : "60px"} repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
+        <div className="min-w-175" style={{ minWidth: `${Math.max(dayColumns.length, 5) * dayColumnMinWidth}px` }}>
+          <div className="grid gap-0" style={{ gridTemplateColumns: `${timeColumnWidth}px repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
             <div className={isCompactTerm ? "h-8" : "h-10"} />
             {dayColumns.map((day) => (
               <div key={day} className={`flex items-center justify-center font-semibold border-b border-border bg-muted/50 ${isCompactTerm ? "h-8 text-xs" : "h-10 text-sm"}`}>
@@ -628,7 +649,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
             ))}
           </div>
 
-          <div className="grid gap-0 relative" style={{ gridTemplateColumns: `${isCompactTerm ? "40px" : "60px"} repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
+          <div className="grid gap-0 relative" style={{ gridTemplateColumns: `${timeColumnWidth}px repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
             <div>
               {Array.from({ length: halfHourRows }, (_, i) => {
                 const hour = startHour + Math.floor(i / 2)
@@ -798,7 +819,7 @@ export default function CartPage() {
     const margin = 8
 
     // Check if fall and winter are displayed side-by-side
-    const fallWinterGrid = scheduleRef.current.querySelector<HTMLElement>(".grid.grid-cols-2")
+    const fallWinterGrid = scheduleRef.current.querySelector<HTMLElement>(".fall-winter-grid")
     let pageCount = 0
 
     // If fall/winter grid exists, render it as one page
@@ -859,16 +880,16 @@ export default function CartPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header subtitle="Course selection, de-cluttered."/>
-      <div className="container mx-auto px-4 py-8 flex-1 w-full">
+      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 flex-1 w-full">
         <div className="max-w-6xl mx-auto">
           {/* Page Header */}
           <div className="mb-8">
             <Link href="/courses" className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block">
               ← Back to courses
             </Link>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="text-4xl font-bold mb-2">Your Cart</h1>
+                <h1 className="text-3xl sm:text-4xl font-bold mb-2">Your Cart</h1>
                 <p className="text-muted-foreground">
                   {items.length === 0
                     ? "Your cart is empty. Add sections from a course page."
@@ -876,12 +897,12 @@ export default function CartPage() {
                 </p>
               </div>
               {items.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" size="sm" onClick={clearCart}>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                  <Button variant="outline" size="sm" onClick={clearCart} className="w-full sm:w-auto">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Clear Cart
                   </Button>
-                  <Button size="sm" onClick={handleGenerateSchedule}>
+                  <Button size="sm" onClick={handleGenerateSchedule} className="w-full sm:w-auto">
                     <Calendar className="h-4 w-4 mr-2" />
                     Generate Schedule
                   </Button>
@@ -892,7 +913,7 @@ export default function CartPage() {
 
           {/* Empty State */}
           {items.length === 0 && (
-            <Card className="p-12 text-center">
+            <Card className="p-6 sm:p-12 text-center">
               <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <ShoppingCart className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -1094,9 +1115,9 @@ export default function CartPage() {
           {/* Schedule Timetables - one per term */}
           {showSchedule && items.length > 0 && (
             <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">Your Schedule</h2>
-                <Button variant="outline" size="sm" onClick={handleSaveAsPdf}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold">Your Schedule</h2>
+                <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="w-full sm:w-auto shadow-md shadow-primary">
                   <Download className="h-4 w-4 mr-2" />
                   Save as PDF
                 </Button>
@@ -1105,7 +1126,7 @@ export default function CartPage() {
               <div ref={scheduleRef} className="space-y-8">
                 {/* Fall and Winter side-by-side if both exist */}
                 {orderedTerms.includes("fall") && orderedTerms.includes("winter") && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <ScheduleTimetable
                       termItems={itemsByTerm["fall"]}
                       termKey="fall"
