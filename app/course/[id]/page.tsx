@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Users,
   BookOpen,
@@ -13,12 +12,9 @@ import {
   Star,
   MessageSquare,
   Sparkles,
-  Search,
-  X,
   Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   coursesApi,
   type Activity,
@@ -26,7 +22,6 @@ import {
   type Instructor,
   type CourseOffering,
   type ReviewsResponse,
-  type Course,
   type TimeSlot,
   getDayName,
   getFacultyName,
@@ -38,406 +33,16 @@ import {
 } from "@/lib/api/courses";
 import { useCart } from "@/components/cart-context";
 import { useParams } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { BlurredHero } from "@/components/blurred-hero";
 import { ReviewStats } from "@/components/review-stats";
 import { ReviewsList } from "@/components/reviews-list";
 import { ReviewForm } from "@/components/review-form";
-import { createContext, useContext, useCallback, useMemo } from "react";
-import { createPortal } from "react-dom";
+
 
 const normalizeCode = (code: string) => code.replace(/\s+/g, "").toUpperCase();
-const dedupeCourses = (items: Course[]) => {
-  const seen = new Set<string>();
-  return items.filter((c) => {
-    const key = normalizeCode(c.code || "");
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-};
-
-type SearchContextValue = {
-  query: string;
-  setQuery: (q: string) => void;
-  results: Course[];
-  isSearching: boolean;
-  mobileOpen: boolean;
-  setMobileOpen: (v: boolean) => void;
-  showDropdown: boolean;
-  setShowDropdown: (v: boolean) => void;
-  goToCourse: (course: Course) => void;
-  goToSearchPage: (q: string) => void;
-};
-
-const CourseHeaderSearchContext = createContext<SearchContextValue | null>(
-  null,
-);
-
-function CourseHeaderSearchProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Course[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      setShowDropdown(false);
-      return;
-    }
-    const t = setTimeout(async () => {
-      setShowDropdown(true);
-      setIsSearching(true);
-      setResults([]);
-      
-      try {
-        const list = await coursesApi.searchCourses(query);
-        const deduped = Array.isArray(list) ? dedupeCourses(list) : [];
-        
-        setResults(deduped);
-      } catch (error) {
-        
-        setResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [query]);
-
-  const goToCourse = useCallback(
-    (course: Course) => {
-      const slug = course.code?.replace(/\s+/g, "").toLowerCase();
-      if (slug) router.push(`/course/${slug}`);
-      setQuery("");
-      setResults([]);
-      setShowDropdown(false);
-      setMobileOpen(false);
-    },
-    [router],
-  );
-
-  const goToSearchPage = useCallback(
-    (q: string) => {
-      const trimmed = q.trim();
-      if (trimmed) router.push(`/courses?q=${encodeURIComponent(trimmed)}`);
-      setQuery("");
-      setResults([]);
-      setMobileOpen(false);
-    },
-    [router],
-  );
-
-  const value = useMemo<SearchContextValue>(
-    () => ({
-      query,
-      setQuery,
-      results,
-      isSearching,
-      mobileOpen,
-      setMobileOpen,
-      showDropdown,
-      setShowDropdown,
-      goToCourse,
-      goToSearchPage,
-    }),
-    [
-      query,
-      results,
-      isSearching,
-      mobileOpen,
-      showDropdown,
-      goToCourse,
-      goToSearchPage,
-    ],
-  );
-
-  return (
-    <CourseHeaderSearchContext.Provider value={value}>
-      {children}
-    </CourseHeaderSearchContext.Provider>
-  );
-}
-
-function useCourseHeaderSearch() {
-  const ctx = useContext(CourseHeaderSearchContext);
-  if (!ctx) throw new Error("CourseHeaderSearch used outside Provider");
-  return ctx;
-}
-
-function SearchResultsDropdown({ className }: { className?: string }) {
-  const { results, isSearching, query, goToCourse, showDropdown } =
-    useCourseHeaderSearch();
-  if (!showDropdown || !query.trim()) return null;
-  return (
-    <Card
-      className={`absolute top-full left-0 right-0 z-50 mt-2 max-h-[min(50vh,320px)] overflow-y-auto shadow-xl border-border bg-card text-left ${className ?? ""}`}
-      onMouseDown={(e) => e.preventDefault()}
-    >
-      {isSearching ? (
-        <div className="p-4 text-muted-foreground text-sm">Searching...</div>
-      ) : results.length === 0 ? (
-        <div className="p-4 text-muted-foreground text-sm">
-          No courses found for &quot;{query}&quot;
-        </div>
-      ) : (
-        <div className="divide-y divide-border">
-          {results.map((course) => (
-            <Link
-              key={course.id}
-              href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
-              className="block p-3 sm:p-4 hover:bg-muted/70 transition-colors text-left"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => goToCourse(course)}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <h4 className="font-semibold text-foreground text-sm">
-                    {formatCourseCode(course.code)}
-                  </h4>
-                  <p className="text-xs text-muted-foreground line-clamp-1">
-                    {course.name}
-                  </p>
-                </div>
-                <Badge variant="secondary" className="shrink-0 text-xs">
-                  {course.credits} credit{course.credits === 1 ? "" : "s"}
-                </Badge>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function CourseHeaderSearchDesktop() {
-  const { query, setQuery, setShowDropdown } = useCourseHeaderSearch();
-  return (
-    <div className="relative flex-1 w-full min-w-0 max-w-md mx-auto hidden md:block">
-      <div className="relative">
-        <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-4 sm:h-5 w-4 sm:w-5 text-muted-foreground pointer-events-none" />
-        <Input
-          type="text"
-          placeholder="Search courses..."
-          className="pl-9 sm:pl-12 pr-8 sm:pr-10 h-9 sm:h-10 bg-card text-sm w-full"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => query.trim() && setShowDropdown(true)}
-          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => setQuery("")}
-            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
-            aria-label="Clear search"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-      <SearchResultsDropdown />
-    </div>
-  );
-}
-
-function CourseHeaderSearchMobile() {
-  const {
-    query,
-    setQuery,
-    mobileOpen,
-    setMobileOpen,
-    goToCourse,
-    results,
-    isSearching,
-  } = useCourseHeaderSearch();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [mounted, setMounted] = useState(false);
-
-
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = "hidden";
-      const id = setTimeout(() => inputRef.current?.focus(), 100);
-      return () => {
-        document.body.style.overflow = "";
-        clearTimeout(id);
-      };
-    }
-  }, [mobileOpen]);
-
-  const searchOverlay = mobileOpen && (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-9999 md:hidden"
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-      onClick={() => {
-        setMobileOpen(false);
-        setQuery("");
-      }}
-    >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
-      
-      {/* Slide-down panel */}
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: -20, opacity: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="absolute top-0 left-0 right-0 bg-background border-b border-border shadow-2xl max-h-[70vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Search Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-border shrink-0">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              ref={inputRef}
-              type="text"
-              placeholder="Search courses..."
-              className="pl-10 pr-10 h-10 bg-muted border-0 shadow-none focus-visible:ring-2 focus-visible:ring-ring w-full text-base"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setQuery("");
-                  inputRef.current?.focus();
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Clear search"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setMobileOpen(false);
-              setQuery("");
-            }}
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
-            aria-label="Close search"
-          >
-            Done
-          </button>
-        </div>
-
-        {/* Search Results */}
-        <div className="flex-1 overflow-y-auto min-h-0 w-full">
-          {(() => {
-            if (isSearching && query.trim()) {
-              
-              return (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="animate-pulse p-4 rounded-full bg-muted/50 mb-4">
-                    <Search className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">Searching...</p>
-                </div>
-              );
-            }
-            if (query.trim() === "") {
-            
-              return (
-                <div className="flex flex-col items-center justify-center text-center px-6 py-12">
-                  <div className="p-4 rounded-full bg-muted/50 mb-4">
-                    <Search className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Search for courses by code or name
-                  </p>
-                </div>
-              );
-            }
-            if (results.length === 0) {
-         
-              return (
-                <div className="flex flex-col items-center justify-center text-center px-6 py-12">
-                  <div className="p-4 rounded-full bg-muted/50 mb-4">
-                    <Search className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-sm font-medium mb-1">No courses found</p>
-                  <p className="text-xs text-muted-foreground">
-                    Try searching with a different term
-                  </p>
-                </div>
-              );
-            }
-          
-            return (
-              <div className="w-full">
-                <div className="divide-y divide-border">
-                  {results.map((course) => (
-                    <button
-                      key={course.id}
-                      type="button"
-                      className="block w-full p-4 text-left hover:bg-muted/50 active:bg-muted transition-colors"
-                      onClick={() => goToCourse(course)}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-semibold text-sm mb-1">
-                            {formatCourseCode(course.code)}
-                          </h4>
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {course.name}
-                          </p>
-                        </div>
-                        <Badge variant="secondary" className="shrink-0 text-xs mt-0.5">
-                          {course.credits} credit{course.credits === 1 ? "" : "s"}
-                        </Badge>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-
-  return (
-    <>
-      {/* Search Icon Button */}
-      <button
-        type="button"
-        onClick={() => setMobileOpen(true)}
-        className="flex h-8 w-8 items-center justify-center rounded-md border border-input bg-card text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shadow-md shadow-primary md:hidden"
-        aria-label="Search courses"
-      >
-        <Search className="h-4 w-4" />
-      </button>
-
-      {/* Portal the overlay to document.body */}
-      {mounted && typeof document !== 'undefined' && searchOverlay && createPortal(searchOverlay, document.body)}
-    </>
-  );
-}
 
 // Animation variants
 const fadeInUp = {
@@ -488,14 +93,8 @@ const parseActivityTimes = (rawTimes: string): TimeSlot[] => {
 
 export default function CoursePage() {
   const params = useParams();
-  const router = useRouter();
   const courseCode = getIDFromParams({ id: params.id as string });
   const { addItem, removeItem, isInCart } = useCart();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Course[]>([]);
-  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
-  const [isSearchingHeader, setIsSearchingHeader] = useState(false);
-  const searchContainerRef = useRef<HTMLDivElement>(null);
   const [offerings, setOfferings] = useState<CourseOffering[]>([]);
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -760,61 +359,6 @@ export default function CoursePage() {
     }
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      setIsSearchDropdownOpen(false);
-      router.push(`/courses?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
-  // Live search for header dropdown
-  useEffect(() => {
-    if (searchQuery.trim().length === 0) {
-      setSearchResults([]);
-      setIsSearchDropdownOpen(false);
-      return;
-    }
-
-    const delaySearch = setTimeout(async () => {
-      setIsSearchingHeader(true);
-      try {
-        const results = await coursesApi.searchCourses(searchQuery);
-        const deduped: Course[] = [];
-        const seen = new Set<string>();
-        for (const c of Array.isArray(results) ? results : []) {
-          const key = (c.code || "").replace(/\s+/g, "").toUpperCase();
-          if (!key || seen.has(key)) continue;
-          seen.add(key);
-          deduped.push(c);
-        }
-        setSearchResults(deduped.slice(0, 8));
-        setIsSearchDropdownOpen(deduped.length > 0);
-      } catch {
-        setSearchResults([]);
-        setIsSearchDropdownOpen(false);
-      } finally {
-        setIsSearchingHeader(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(delaySearch);
-  }, [searchQuery]);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        searchContainerRef.current &&
-        !searchContainerRef.current.contains(e.target as Node)
-      ) {
-        setIsSearchDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   useEffect(() => {
     async function fetchCourseData() {
       try {
@@ -902,12 +446,7 @@ export default function CoursePage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <CourseHeaderSearchProvider>
-        <Header
-          centerContent={<CourseHeaderSearchDesktop />}
-          rightSlotMobile={<CourseHeaderSearchMobile />}
-        />
-      </CourseHeaderSearchProvider>
+      <Header showSearch />
 
       <div className="grow">
         {isLoading ? (
