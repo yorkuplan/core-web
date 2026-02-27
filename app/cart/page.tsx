@@ -956,7 +956,7 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header subtitle="Course selection, de-cluttered."/>
+      <Header showSearch />
       <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 flex-1 w-full">
         <div className="max-w-6xl mx-auto">
           {/* Page Header */}
