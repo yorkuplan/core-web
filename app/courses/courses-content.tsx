@@ -520,7 +520,7 @@ export default function CoursesContent() {
                             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                                  <h3 className="font-bold text-base sm:text-lg md:text-xl group-hover:text-primary transition-colors break-words">
+                                  <h3 className="font-bold text-base sm:text-lg md:text-xl group-hover:text-primary transition-colors wrap-break-word">
                                     {courseCode}
                                   </h3>
                                   <Badge
@@ -543,7 +543,7 @@ export default function CoursesContent() {
                                   {course.faculty && (
                                     <span className="flex items-start gap-1 min-w-0">
                                       <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 shrink-0 mt-0.5" />
-                                      <span className="min-w-0 leading-snug whitespace-normal break-words">
+                                      <span className="min-w-0 leading-snug whitespace-normal wrap-break-word">
                                         {getFacultyName(course.faculty)}
                                       </span>
                                     </span>

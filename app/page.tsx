@@ -346,7 +346,7 @@ export default function HomePage() {
                   <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
                     <div className="rounded-lg bg-muted/40 px-3 py-2">
                       <div className="text-sm font-semibold text-foreground">
-                        5500+ courses
+                        5800+ courses
                       </div>
                       10 faculties
                     </div>
