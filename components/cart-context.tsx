@@ -1,6 +1,8 @@
 "use client"
 
-import React, { createContext, useContext, useReducer, useEffect } from "react"
+import React, { createContext, useContext, useReducer, useEffect, useRef, useState } from "react"
+
+const CART_STORAGE_KEY = "yorkuplan-cart"
 
 export interface CartItem {
   id: string
@@ -58,11 +60,25 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [] })
+  const [hasHydrated, setHasHydrated] = useState(false)
+  const itemsRef = useRef<CartItem[]>([])
+
+  useEffect(() => {
+    itemsRef.current = state.items
+  }, [state.items])
+
+  const areSameItems = (a: CartItem[], b: CartItem[]) => {
+    if (a.length !== b.length) return false
+    for (let index = 0; index < a.length; index++) {
+      if (a[index].id !== b[index].id) return false
+    }
+    return true
+  }
 
   // Load cart from localStorage on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("yorkuplan-cart")
+      const saved = localStorage.getItem(CART_STORAGE_KEY)
       if (saved) {
         const parsed = JSON.parse(saved)
         if (Array.isArray(parsed)) {
@@ -71,13 +87,45 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {
       // ignore parse errors
+    } finally {
+      setHasHydrated(true)
     }
+  }, [])
+
+  // Sync cart when changed from other tabs/windows/iframes
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.storageArea !== localStorage) return
+      if (event.key !== CART_STORAGE_KEY) return
+
+      try {
+        if (!event.newValue) {
+          if (itemsRef.current.length > 0) {
+            dispatch({ type: "LOAD_CART", payload: [] })
+          }
+          return
+        }
+
+        const parsed = JSON.parse(event.newValue)
+        if (Array.isArray(parsed)) {
+          if (!areSameItems(itemsRef.current, parsed)) {
+            dispatch({ type: "LOAD_CART", payload: parsed })
+          }
+        }
+      } catch {
+        // ignore parse errors from external writers
+      }
+    }
+
+    window.addEventListener("storage", handleStorage)
+    return () => window.removeEventListener("storage", handleStorage)
   }, [])
 
   // Persist cart to localStorage on change
   useEffect(() => {
-    localStorage.setItem("yorkuplan-cart", JSON.stringify(state.items))
-  }, [state.items])
+    if (!hasHydrated) return
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.items))
+  }, [state.items, hasHydrated])
 
   const addItem = (item: CartItem) => dispatch({ type: "ADD_ITEM", payload: item })
   const removeItem = (id: string) => dispatch({ type: "REMOVE_ITEM", payload: id })
