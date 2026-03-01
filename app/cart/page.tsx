@@ -34,7 +34,8 @@ import {
   ShoppingCart,
 } from "lucide-react"
 import Link from "next/link"
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
+import { useState, useRef, useEffect } from "react"
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -697,6 +698,8 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
                     return (
                       <div
                         key={`${block.item.id}-${idx}`}
+                        data-schedule-item-id={block.item.id}
+                        data-schedule-course-code={block.item.courseCode}
                         className={`absolute left-1 right-1 rounded-md border overflow-hidden ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${isCompactTerm ? "px-1.5 py-1" : "px-2 py-1"} ${showTapDetails ? "cursor-pointer" : ""}`}
                         style={{ top: topCompact, height: heightCompact }}
                         role={showTapDetails ? "button" : undefined}
@@ -757,9 +760,12 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
 }
 
 export default function CartPage() {
+  const searchParams = useSearchParams()
+  const isEmbeddedPreview = searchParams.get("embed") === "1"
   const { items, removeItem, clearCart } = useCart()
-  const [showSchedule, setShowSchedule] = useState(false)
   const scheduleRef = useRef<HTMLDivElement>(null)
+  const previousItemsRef = useRef<CartItem[]>([])
+  const hasInitializedChangeTrackingRef = useRef(false)
 
   // Group items by course code
   const groupedItems: Record<string, CartItem[]> = {}
@@ -841,13 +847,6 @@ export default function CartPage() {
   const allConflicts = new Set<string>()
   for (const s of Object.values(conflictsByTerm)) {
     for (const id of s) allConflicts.add(id)
-  }
-
-  const handleGenerateSchedule = () => {
-    setShowSchedule(true)
-    setTimeout(() => {
-      scheduleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-    }, 100)
   }
 
   const handleSaveAsPdf = async () => {
@@ -954,39 +953,91 @@ export default function CartPage() {
     pdf.save("YUPlan-Schedule.pdf")
   }
 
+  useEffect(() => {
+    if (!isEmbeddedPreview) {
+      previousItemsRef.current = items
+      return
+    }
+
+    if (!hasInitializedChangeTrackingRef.current) {
+      hasInitializedChangeTrackingRef.current = true
+      previousItemsRef.current = items
+      return
+    }
+
+    const previousItems = previousItemsRef.current
+    const previousIds = new Set(previousItems.map((item) => item.id))
+    const currentIds = new Set(items.map((item) => item.id))
+
+    const addedItems = items.filter((item) => !previousIds.has(item.id))
+    const removedItems = previousItems.filter((item) => !currentIds.has(item.id))
+
+    const scheduleElement = scheduleRef.current
+    if (!scheduleElement) {
+      previousItemsRef.current = items
+      return
+    }
+
+    const scheduleBlocks = Array.from(scheduleElement.querySelectorAll<HTMLElement>("[data-schedule-item-id]"))
+
+    const findBlockByItemId = (itemId: string) =>
+      scheduleBlocks.find((element) => element.getAttribute("data-schedule-item-id") === itemId) ?? null
+
+    const findBlockByCourseCode = (courseCode: string) =>
+      scheduleBlocks.find((element) => element.getAttribute("data-schedule-course-code") === courseCode) ?? null
+
+    let targetBlock: HTMLElement | null = null
+
+    for (const item of addedItems) {
+      const match = findBlockByItemId(item.id)
+      if (match) {
+        targetBlock = match
+        break
+      }
+    }
+
+    if (!targetBlock && removedItems.length > 0) {
+      targetBlock = findBlockByCourseCode(removedItems[0].courseCode)
+    }
+
+    if (targetBlock) {
+      targetBlock.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" })
+    }
+
+    previousItemsRef.current = items
+  }, [items, isEmbeddedPreview])
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header showSearch />
+      {!isEmbeddedPreview && <Header showSearch />}
       <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 flex-1 w-full">
         <div className="max-w-6xl mx-auto">
           {/* Page Header */}
-          <div className="mb-8">
-            <Link href="/courses" className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block">
-              ← Back to courses
-            </Link>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-3xl sm:text-4xl font-bold mb-2">Your Cart</h1>
-                <p className="text-muted-foreground">
-                  {items.length === 0
-                    ? "Your cart is empty. Add sections from a course page."
-                    : `${courseList.length} course${courseList.length === 1 ? "" : "s"} across ${orderedTerms.length} term${orderedTerms.length === 1 ? "" : "s"}`}
-                </p>
-              </div>
-              {items.length > 0 && (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                  <Button variant="outline" size="sm" onClick={clearCart} className="w-full sm:w-auto">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear Cart
-                  </Button>
-                  <Button size="sm" onClick={handleGenerateSchedule} className="w-full sm:w-auto">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Generate Schedule
-                  </Button>
+          {!isEmbeddedPreview && (
+            <div className="mb-8">
+              <Link href="/courses" className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block">
+                ← Back to courses
+              </Link>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-2">Your Cart</h1>
+                  <p className="text-muted-foreground">
+                    {items.length === 0
+                      ? "Your cart is empty. Add sections from a course page."
+                      : `${courseList.length} course${courseList.length === 1 ? "" : "s"} across ${orderedTerms.length} term${orderedTerms.length === 1 ? "" : "s"}`}
+                  </p>
                 </div>
-              )}
+                {items.length > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                    <Button variant="outline" size="sm" onClick={clearCart} className="w-full sm:w-auto">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Clear Cart
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Empty State */}
           {items.length === 0 && (
@@ -1002,6 +1053,81 @@ export default function CartPage() {
                 <Button>Browse Courses</Button>
               </Link>
             </Card>
+          )}
+
+          {/* Conflict Warning */}
+          {allConflicts.size > 0 && items.length > 0 && (
+            <Card className="p-4 mb-6 border-destructive bg-destructive/5">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+                <div>
+                  <p className="font-medium text-destructive">Schedule Conflict Detected</p>
+                  <p className="text-sm text-muted-foreground">
+                    Some items have overlapping times. Review your selections above.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Schedule Timetables first in embedded preview */}
+          {isEmbeddedPreview && items.length > 0 && (
+            <div className="mb-8">
+              <div className="mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold">Your Schedule</h2>
+              </div>
+
+              <div ref={scheduleRef} className="space-y-8">
+                {/* Fall and Winter side-by-side if both exist */}
+                {orderedTerms.includes("fall") && orderedTerms.includes("winter") && (
+                  <div className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <ScheduleTimetable
+                      termItems={itemsByTerm["fall"]}
+                      termKey="fall"
+                      conflicts={conflictsByTerm["fall"]}
+                      globalColorMap={globalColorMap}
+                    />
+                    <ScheduleTimetable
+                      termItems={itemsByTerm["winter"]}
+                      termKey="winter"
+                      conflicts={conflictsByTerm["winter"]}
+                      globalColorMap={globalColorMap}
+                    />
+                  </div>
+                )}
+
+                {/* Individual schedules for standalone or other terms */}
+                {orderedTerms.map((term) => {
+                  // Skip if we already rendered fall/winter together
+                  if ((term === "fall" || term === "winter") && orderedTerms.includes("fall") && orderedTerms.includes("winter")) {
+                    return null
+                  }
+                  return (
+                    <ScheduleTimetable
+                      key={term}
+                      termItems={itemsByTerm[term]}
+                      termKey={term}
+                      conflicts={conflictsByTerm[term]}
+                      globalColorMap={globalColorMap}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Embedded preview actions right after schedule */}
+          {isEmbeddedPreview && items.length > 0 && (
+            <div className="mb-8 flex flex-col gap-2">
+              <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="w-full shadow-md shadow-primary">
+                <Download className="h-4 w-4 mr-2" />
+                Save as PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={clearCart} className="w-full">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear Cart
+              </Button>
+            </div>
           )}
 
           {/* Selection Review (before schedule generation) */}
@@ -1174,23 +1300,8 @@ export default function CartPage() {
             </div>
           )}
 
-          {/* Conflict Warning */}
-          {allConflicts.size > 0 && showSchedule && (
-            <Card className="p-4 mb-6 border-destructive bg-destructive/5">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
-                <div>
-                  <p className="font-medium text-destructive">Schedule Conflict Detected</p>
-                  <p className="text-sm text-muted-foreground">
-                    Some items have overlapping times. Review your selections above.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          )}
-
           {/* Schedule Timetables - one per term */}
-          {showSchedule && items.length > 0 && (
+          {!isEmbeddedPreview && items.length > 0 && (
             <div className="mb-8">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                 <h2 className="text-xl sm:text-2xl font-bold">Your Schedule</h2>
@@ -1238,6 +1349,7 @@ export default function CartPage() {
               </div>
             </div>
           )}
+
         </div>
       </div>
       <Footer />
