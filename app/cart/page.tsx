@@ -34,7 +34,6 @@ import {
   ShoppingCart,
 } from "lucide-react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import { useState, useRef, useEffect } from "react"
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
@@ -760,12 +759,17 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
 }
 
 export default function CartPage() {
-  const searchParams = useSearchParams()
-  const isEmbeddedPreview = searchParams.get("embed") === "1"
+  const [isEmbeddedPreview, setIsEmbeddedPreview] = useState(false)
   const { items, removeItem, clearCart } = useCart()
   const scheduleRef = useRef<HTMLDivElement>(null)
   const previousItemsRef = useRef<CartItem[]>([])
   const hasInitializedChangeTrackingRef = useRef(false)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    setIsEmbeddedPreview(params.get("embed") === "1")
+  }, [])
 
   // Group items by course code
   const groupedItems: Record<string, CartItem[]> = {}
