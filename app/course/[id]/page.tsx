@@ -4,6 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  ArrowUpRight,
   Users,
   BookOpen,
   Copy,
@@ -95,6 +103,9 @@ export default function CoursePage() {
   const params = useParams();
   const courseCode = getIDFromParams({ id: params.id as string });
   const { addItem, removeItem, isInCart } = useCart();
+  const [isCartSideOpen, setIsCartSideOpen] = useState(false);
+  const [canDockCartPreview, setCanDockCartPreview] = useState(false);
+  const [cartPreviewWidth, setCartPreviewWidth] = useState(480);
   const [offerings, setOfferings] = useState<CourseOffering[]>([]);
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,6 +123,36 @@ export default function CoursePage() {
   const sections: Section[] = selectedOffering?.sections || [];
   const courseCodeCompact = normalizeCode(selectedOffering?.code ?? courseCode);
   const courseDisplayCode = formatCourseCode(selectedOffering?.code ?? courseCode);
+
+  const shouldOpenCartOnSide = () => canDockCartPreview;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateDockMetrics = () => {
+      const canDock = window.matchMedia("(min-width: 1024px), ((min-width: 768px) and (orientation: landscape))").matches;
+      const width = Math.min(560, Math.max(420, Math.round(window.innerWidth * 0.38)));
+      setCanDockCartPreview(canDock);
+      setCartPreviewWidth(width);
+      if (!canDock) {
+        setIsCartSideOpen(false);
+      }
+    };
+
+    updateDockMetrics();
+    window.addEventListener("resize", updateDockMetrics);
+    window.addEventListener("orientationchange", updateDockMetrics);
+    return () => {
+      window.removeEventListener("resize", updateDockMetrics);
+      window.removeEventListener("orientationchange", updateDockMetrics);
+    };
+  }, []);
+
+  const openCartSidePreview = () => {
+    if (shouldOpenCartOnSide()) {
+      setIsCartSideOpen(true);
+    }
+  };
 
   const getInstructorName = (sectionId: string): string => {
     const instructor = instructorsBySection[sectionId];
@@ -445,7 +486,10 @@ export default function CoursePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div
+      className="min-h-screen bg-background flex flex-col transition-[padding-right] duration-300"
+      style={isCartSideOpen && canDockCartPreview ? { paddingRight: `${cartPreviewWidth}px` } : undefined}
+    >
       <Header showSearch />
 
       <div className="grow">
@@ -858,6 +902,8 @@ export default function CoursePage() {
                                                       });
                                                     });
                                                   }
+
+                                                  openCartSidePreview();
                                                 }
                                               }}
                                             >
@@ -1108,6 +1154,41 @@ export default function CoursePage() {
           onSuccess={refetchReviews}
         />
       )}
+
+      <Sheet open={isCartSideOpen} onOpenChange={setIsCartSideOpen} modal={false}>
+        <SheetContent
+          side="right"
+          showOverlay={false}
+          className="w-[92vw] sm:max-w-140 p-0 gap-0"
+          style={canDockCartPreview ? { width: `${cartPreviewWidth}px`, maxWidth: `${cartPreviewWidth}px` } : undefined}
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+        >
+          <SheetHeader className="border-b border-border px-4 py-3">
+            <div className="flex items-center justify-between gap-3 pr-8">
+              <div>
+                <SheetTitle>Cart & Schedule</SheetTitle>
+                <SheetDescription>
+                  Compare sections while staying on this course page.
+                </SheetDescription>
+              </div>
+              <Link href="/cart" target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm" className="shadow-sm shadow-primary text-xs">
+                  Open full cart
+                  <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </SheetHeader>
+          <div className="flex-1 min-h-0">
+            <iframe
+              src="/cart?embed=1"
+              title="Cart side preview"
+              className="w-full h-full border-0"
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
