@@ -103,7 +103,14 @@ export default function CoursePage() {
   const params = useParams();
   const courseCode = getIDFromParams({ id: params.id as string });
   const { addItem, removeItem, isInCart } = useCart();
-  const [isCartSideOpen, setIsCartSideOpen] = useState(false);
+  const [isCartSideOpen, setIsCartSideOpen] = useState(() => {
+    // Restore cart preview state from localStorage on mount
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("cartPreviewOpen");
+      return saved === "true";
+    }
+    return false;
+  });
   const [canDockCartPreview, setCanDockCartPreview] = useState(false);
   const [cartPreviewWidth, setCartPreviewWidth] = useState(480);
   const [offerings, setOfferings] = useState<CourseOffering[]>([]);
@@ -125,6 +132,13 @@ export default function CoursePage() {
   const courseDisplayCode = formatCourseCode(selectedOffering?.code ?? courseCode);
 
   const shouldOpenCartOnSide = () => canDockCartPreview;
+
+  // Persist cart preview state to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cartPreviewOpen", String(isCartSideOpen));
+    }
+  }, [isCartSideOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
