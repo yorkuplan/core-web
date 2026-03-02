@@ -1,5 +1,6 @@
 "use client"
 
+import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -39,6 +40,26 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { useIsMobile } from "@/hooks/use-mobile"
 import Logo from "@/public/logo.webp"
+
+// Animation variants
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5 },
+}
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+const cardVariant = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+}
 
 const COURSE_COLORS = [
   { bg: "bg-red-100 dark:bg-red-900/40", border: "border-red-300 dark:border-red-700", text: "text-red-800 dark:text-red-200", print: "#fee2e2" },
@@ -1018,73 +1039,103 @@ export default function CartPage() {
         <div className="max-w-6xl mx-auto">
           {/* Page Header */}
           {!isEmbeddedPreview && (
-            <div className="mb-8">
-              <Link href="/courses" className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block">
-                ← Back to courses
-              </Link>
+            <motion.div
+              className="mb-8"
+              initial="initial"
+              animate="animate"
+              variants={staggerContainer}
+            >
+              <motion.div variants={fadeInUp}>
+                <Link href="/courses" className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block">
+                  ← Back to courses
+                </Link>
+              </motion.div>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
+                <motion.div variants={fadeInUp}>
                   <h1 className="text-3xl sm:text-4xl font-bold mb-2">Your Cart</h1>
                   <p className="text-muted-foreground">
                     {items.length === 0
                       ? "Your cart is empty. Add sections from a course page."
                       : `${courseList.length} course${courseList.length === 1 ? "" : "s"} across ${orderedTerms.length} term${orderedTerms.length === 1 ? "" : "s"}`}
                   </p>
-                </div>
+                </motion.div>
                 {items.length > 0 && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                  <motion.div
+                    className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto"
+                    variants={fadeInUp}
+                  >
                     <Button variant="outline" size="sm" onClick={clearCart} className="w-full sm:w-auto">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Clear Cart
                     </Button>
-                  </div>
+                  </motion.div>
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Empty State */}
           {items.length === 0 && (
-            <Card className="p-6 sm:p-12 text-center">
-              <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <ShoppingCart className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h2 className="text-xl font-semibold mb-2">No courses in your cart</h2>
-              <p className="text-muted-foreground mb-6">
-                Browse courses and add them to cart to start building your schedule.
-              </p>
-              <Link href="/courses">
-                <Button>Browse Courses</Button>
-              </Link>
-            </Card>
+            <motion.div
+              initial="initial"
+              animate="animate"
+              variants={fadeInUp}
+            >
+              <Card className="p-6 sm:p-12 text-center">
+                <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ShoppingCart className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h2 className="text-xl font-semibold mb-2">No courses in your cart</h2>
+                <p className="text-muted-foreground mb-6">
+                  Browse courses and add them to cart to start building your schedule.
+                </p>
+                <Link href="/courses">
+                  <Button>Browse Courses</Button>
+                </Link>
+              </Card>
+            </motion.div>
           )}
 
           {/* Conflict Warning */}
           {allConflicts.size > 0 && items.length > 0 && (
-            <Card className="p-4 mb-6 border-destructive bg-destructive/5">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
-                <div>
-                  <p className="font-medium text-destructive">Schedule Conflict Detected</p>
-                  <p className="text-sm text-muted-foreground">
-                    Some items have overlapping times. Review your selections above.
-                  </p>
+            <motion.div
+              initial="initial"
+              animate="animate"
+              variants={fadeInUp}
+            >
+              <Card className="p-4 mb-6 border-destructive bg-destructive/5">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+                  <div>
+                    <p className="font-medium text-destructive">Schedule Conflict Detected</p>
+                    <p className="text-sm text-muted-foreground">
+                      Some items have overlapping times. Review your selections above.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </motion.div>
           )}
 
           {/* Schedule Timetables first in embedded preview */}
           {isEmbeddedPreview && items.length > 0 && (
-            <div className="mb-8">
-              <div className="mb-4">
+            <motion.div
+              className="mb-8"
+              initial="initial"
+              animate="animate"
+              variants={staggerContainer}
+            >
+              <motion.div className="mb-4" variants={fadeInUp}>
                 <h2 className="text-xl sm:text-2xl font-bold">Your Schedule</h2>
-              </div>
+              </motion.div>
 
               <div ref={scheduleRef} className="space-y-8">
                 {/* Fall and Winter side-by-side if both exist */}
                 {orderedTerms.includes("fall") && orderedTerms.includes("winter") && (
-                  <div className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <motion.div
+                    className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-4"
+                    variants={cardVariant}
+                  >
                     <ScheduleTimetable
                       termItems={itemsByTerm["fall"]}
                       termKey="fall"
@@ -1097,7 +1148,7 @@ export default function CartPage() {
                       conflicts={conflictsByTerm["winter"]}
                       globalColorMap={globalColorMap}
                     />
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Individual schedules for standalone or other terms */}
@@ -1107,22 +1158,28 @@ export default function CartPage() {
                     return null
                   }
                   return (
-                    <ScheduleTimetable
-                      key={term}
-                      termItems={itemsByTerm[term]}
-                      termKey={term}
-                      conflicts={conflictsByTerm[term]}
-                      globalColorMap={globalColorMap}
-                    />
+                    <motion.div key={term} variants={cardVariant}>
+                      <ScheduleTimetable
+                        termItems={itemsByTerm[term]}
+                        termKey={term}
+                        conflicts={conflictsByTerm[term]}
+                        globalColorMap={globalColorMap}
+                      />
+                    </motion.div>
                   )
                 })}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Embedded preview actions right after schedule */}
           {isEmbeddedPreview && items.length > 0 && (
-            <div className="mb-8 flex flex-col gap-2">
+            <motion.div
+              className="mb-8 flex flex-col gap-2"
+              initial="initial"
+              animate="animate"
+              variants={fadeInUp}
+            >
               <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="w-full shadow-md shadow-primary">
                 <Download className="h-4 w-4 mr-2" />
                 Save as PDF
@@ -1131,12 +1188,17 @@ export default function CartPage() {
                 <Trash2 className="h-4 w-4 mr-2" />
                 Clear Cart
               </Button>
-            </div>
+            </motion.div>
           )}
 
           {/* Selection Review (before schedule generation) */}
           {orderedTerms.length > 0 && (
-            <div className="space-y-6 mb-8">
+            <motion.div
+              className="space-y-6 mb-8"
+              initial="initial"
+              animate="animate"
+              variants={staggerContainer}
+            >
               {orderedTerms.map((term) => {
                 const termItems = itemsByTerm[term]
                 const termInfo = getTermDisplayInfo(term)
@@ -1149,7 +1211,8 @@ export default function CartPage() {
                 const termConflictCount = termItems.filter((item) => allConflicts.has(item.id)).length
 
                 return (
-                  <Card key={term} className="overflow-hidden">
+                  <motion.div key={term} variants={cardVariant}>
+                    <Card className="overflow-hidden">
                     <div className="p-4 md:p-5 bg-muted/40 border-b border-border">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-lg md:text-xl font-bold">{termInfo.label}</h2>
@@ -1298,27 +1361,39 @@ export default function CartPage() {
                         )
                       })}
                     </Accordion>
-                  </Card>
+                    </Card>
+                  </motion.div>
                 )
               })}
-            </div>
+            </motion.div>
           )}
 
           {/* Schedule Timetables - one per term */}
           {!isEmbeddedPreview && items.length > 0 && (
-            <div className="mb-8">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <motion.div
+              className="mb-8"
+              initial="initial"
+              animate="animate"
+              variants={staggerContainer}
+            >
+              <motion.div
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4"
+                variants={fadeInUp}
+              >
                 <h2 className="text-xl sm:text-2xl font-bold">Your Schedule</h2>
                 <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="w-full sm:w-auto shadow-md shadow-primary">
                   <Download className="h-4 w-4 mr-2" />
                   Save as PDF
                 </Button>
-              </div>
+              </motion.div>
 
               <div ref={scheduleRef} className="space-y-8">
                 {/* Fall and Winter side-by-side if both exist */}
                 {orderedTerms.includes("fall") && orderedTerms.includes("winter") && (
-                  <div className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <motion.div
+                    className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-4"
+                    variants={cardVariant}
+                  >
                     <ScheduleTimetable
                       termItems={itemsByTerm["fall"]}
                       termKey="fall"
@@ -1331,7 +1406,7 @@ export default function CartPage() {
                       conflicts={conflictsByTerm["winter"]}
                       globalColorMap={globalColorMap}
                     />
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Individual schedules for standalone or other terms */}
@@ -1341,17 +1416,18 @@ export default function CartPage() {
                     return null
                   }
                   return (
-                    <ScheduleTimetable
-                      key={term}
-                      termItems={itemsByTerm[term]}
-                      termKey={term}
-                      conflicts={conflictsByTerm[term]}
-                      globalColorMap={globalColorMap}
-                    />
+                    <motion.div key={term} variants={cardVariant}>
+                      <ScheduleTimetable
+                        termItems={itemsByTerm[term]}
+                        termKey={term}
+                        conflicts={conflictsByTerm[term]}
+                        globalColorMap={globalColorMap}
+                      />
+                    </motion.div>
                   )
                 })}
               </div>
-            </div>
+            </motion.div>
           )}
 
         </div>
