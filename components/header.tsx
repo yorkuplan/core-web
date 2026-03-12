@@ -335,6 +335,7 @@ export function Header({
   );
 
   const showCenterOnMobile = !showSearch && Boolean(centerContent && !rightSlotMobile);
+  const useAbsoluteCenter = !showSearch && !centerContent && Boolean(subtitle);
 
   return (
     <>
@@ -352,7 +353,11 @@ export function Header({
           {center && (
             <div
               className={`flex-1 min-w-0 flex justify-center px-2 ${
-                !showCenterOnMobile ? "hidden md:flex" : ""
+                !showCenterOnMobile
+                  ? useAbsoluteCenter
+                    ? "hidden md:flex xl:hidden"
+                    : "hidden md:flex"
+                  : ""
               }`}
             >
               {center}
@@ -433,6 +438,12 @@ export function Header({
             </Sheet>
           </div>
         </div>
+
+        {center && useAbsoluteCenter && (
+          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden xl:block">
+            {center}
+          </div>
+        )}
       </div>
       </header>
 
