@@ -122,7 +122,7 @@ export function Header({
   };
 
   const desktopSearch = (
-    <div className="relative w-full min-w-0 max-w-md">
+    <div className="relative w-full min-w-0 max-w-md lg:max-w-xl">
       <div className="relative">
         <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-4 sm:h-5 w-4 sm:w-5 text-muted-foreground pointer-events-none" />
         <Input
