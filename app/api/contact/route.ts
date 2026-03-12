@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     params.append(`entry.${messageId}`, message ?? "")
 
     console.log("Submitting to Google Forms:", formAction)
-    console.log("Params:", params.toString())
+    // Note: params intentionally not logged to avoid PII in server logs
 
     const resp = await fetch(formAction, {
       method: "POST",
@@ -43,13 +43,10 @@ export async function POST(req: Request) {
 
     // Google Forms returns 303 redirect on success, which is ok
     if (!resp.ok && resp.status !== 303) {
-      const detail = await resp.text()
-      console.error("Google Forms error:", resp.status, detail)
+      console.error("Google Forms error:", resp.status)
       return new Response(
         JSON.stringify({
-          error: "Failed to submit to Google Forms",
-          detail,
-          status: resp.status,
+          error: "Failed to submit form. Please try again later.",
         }),
         { status: 502, headers: { "Content-Type": "application/json" } },
       )
