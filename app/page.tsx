@@ -26,6 +26,7 @@ import {
   formatCourseCode,
   getFacultyName,
 } from "@/lib/api/courses"
+import { IMPORTANT_DATES } from "@/lib/important-dates"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { BlurredHero } from "@/components/blurred-hero"
@@ -50,6 +51,32 @@ const cardVariant = {
   animate: { opacity: 1, y: 0 },
 }
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24
+
+function getDayDelta(date: Date, nowDate: Date): number {
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const nowOnly = new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate())
+  return Math.floor((dateOnly.getTime() - nowOnly.getTime()) / MS_PER_DAY)
+}
+
+function formatCountdown(deltaDays: number): string {
+  if (deltaDays <= 0) return "Today"
+  if (deltaDays === 1) return "Tomorrow"
+  return `In ${deltaDays} days`
+}
+
+function getUrgencyTone(deltaDays: number): string {
+  if (deltaDays <= 3) return "bg-destructive/15 text-destructive"
+  if (deltaDays <= 10) return "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+  return "bg-primary/10 text-primary"
+}
+
+function formatDateWithWeekday(startsOn: string, dateLabel: string): string {
+  const date = new Date(`${startsOn}T00:00:00`)
+  const weekday = date.toLocaleDateString("en-CA", { weekday: "short" })
+  return `${weekday}, ${dateLabel}`
+}
+
 export default function HomePage() {
   const [topCourses, setTopCourses] = useState<Course[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -61,6 +88,17 @@ export default function HomePage() {
   const [isFocused, setIsFocused] = useState(false)
   const heroText = "Plan your perfect semester."
   const [typedHeroText, setTypedHeroText] = useState("")
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const upcomingImportantDates = IMPORTANT_DATES.filter((event) => {
+    const eventDate = new Date(`${event.startsOn}T00:00:00`)
+    return eventDate.getTime() >= today.getTime()
+  })
+  const nextFourImportantDates = (
+    upcomingImportantDates.length > 0 ? upcomingImportantDates : IMPORTANT_DATES
+  ).slice(0, 4)
+  const [nextEvent, ...followingEvents] = nextFourImportantDates
 
   useEffect(() => {
     async function fetchCourses() {
@@ -359,52 +397,57 @@ export default function HomePage() {
                   </div>
                 </Card>
 
-                <Card className="p-3 sm:p-4 md:p-5 bg-background/90">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm sm:text-base font-semibold">
-                      Trending right now
+                <Card className="p-2.5 sm:p-4 md:p-5 bg-background/90">
+                  <div className="mb-2.5 sm:mb-3">
+                    <h3 className="text-base sm:text-lg font-semibold leading-tight">
+                      Upcoming deadlines and closures
                     </h3>
-                    <Link
-                      href="/courses"
-                      className="text-xs text-primary hover:underline"
-                    >
-                      View all
-                    </Link>
                   </div>
-                  {isLoading ? (
-                    <div className="space-y-2 min-h-42 flex items-center justify-center">
-                      <p className="text-sm text-muted-foreground">
-                        Loading picks...
-                      </p>
-                    </div>
-                  ) : topCourses.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No courses available.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {topCourses.slice(0, 3).map((course) => (
-                        <Link
-                          key={course.id}
-                          href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
-                          className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2 hover:bg-muted/40 transition-colors"
-                        >
+                  <div className="space-y-1.5 sm:space-y-2 min-h-42">
+                    {nextEvent && (
+                      <div className="rounded-lg border border-border/70 p-2.5 sm:p-3 bg-muted/30">
+                        <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="text-sm font-semibold text-foreground">
-                              {formatCourseCode(course.code)}
+                            <p className="text-[11px] sm:text-xs font-medium text-muted-foreground mb-0.5 sm:mb-1">
+                              Next up
+                            </p>
+                            <p className="text-[13px] sm:text-sm font-semibold text-foreground line-clamp-2 leading-snug">
+                              {nextEvent.title}
+                            </p>
+                            <p className="text-[11px] sm:text-xs text-muted-foreground">
+                              {formatDateWithWeekday(nextEvent.startsOn, nextEvent.dateLabel)}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            <Badge className={`text-[9px] sm:text-[10px] ${getUrgencyTone(getDayDelta(new Date(`${nextEvent.startsOn}T00:00:00`), now))}`}>
+                              {formatCountdown(getDayDelta(new Date(`${nextEvent.startsOn}T00:00:00`), now))}
+                            </Badge>
+                            <Badge variant="secondary" className="text-[9px] sm:text-[10px]">
+                              {nextEvent.kind}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {followingEvents.map((event) => (
+                      <div key={`${event.title}-${event.startsOn}`} className="rounded-lg border border-border/70 px-2.5 sm:px-3 py-1.5 sm:py-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-[13px] sm:text-sm font-semibold text-foreground line-clamp-1 leading-snug">
+                              {event.title}
                             </div>
-                            <div className="text-xs text-muted-foreground line-clamp-1">
-                              {course.name}
+                            <div className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2">
+                              {formatDateWithWeekday(event.startsOn, event.dateLabel)}
                             </div>
                           </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {course.credits} credit
-                            {course.credits === 1 ? "" : "s"}
+                          <Badge className={`text-[9px] sm:text-[10px] shrink-0 ${getUrgencyTone(getDayDelta(new Date(`${event.startsOn}T00:00:00`), now))}`}>
+                            {formatCountdown(getDayDelta(new Date(`${event.startsOn}T00:00:00`), now))}
                           </Badge>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </Card>
               </motion.div>
             </div>
