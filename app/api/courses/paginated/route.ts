@@ -1,5 +1,6 @@
 import { fetchApiData, fetchFromApi } from "@/lib/api/utils"
 import { getTermBucket } from "@/lib/term-buckets"
+import { unstable_cache } from "next/cache"
 import { NextRequest } from "next/server"
 
 // Allowlist of query parameters that may be forwarded to the backend
@@ -14,11 +15,9 @@ type CourseLike = {
   [key: string]: unknown
 }
 
-let allCoursesCache: { data: CourseLike[]; expiresAt: number } | null = null
-let allCoursesLoadPromise: Promise<CourseLike[]> | null = null
-
-const CACHE_MS = 30 * 60 * 1000
-const STALE_CACHE_MS = 6 * 60 * 60 * 1000
+// Cache TTL in seconds — shared via Next.js data cache across all serverless instances.
+// unstable_cache uses stale-while-revalidate, so a cold revalidation never blocks a request.
+const CACHE_REVALIDATE_SECONDS = 30 * 60 // 30 minutes
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -105,57 +104,36 @@ function dedupeByCode(items: CourseLike[]): CourseLike[] {
   return out
 }
 
-async function loadAllCourses(): Promise<CourseLike[]> {
-  const now = Date.now()
-  if (allCoursesCache && allCoursesCache.expiresAt > now) {
-    return allCoursesCache.data
-  }
+// unstable_cache persists the result in the Next.js shared data cache — this is stored
+// outside the serverless function instance, so all concurrent instances read the same
+// cached value. Revalidation happens in the background (stale-while-revalidate), so
+// no request ever blocks waiting for a full 295-page load after the first warm-up.
+const loadAllCourses = unstable_cache(
+  async (): Promise<CourseLike[]> => {
+    const pageSize = 20
+    const firstJson = await fetchPageWithRetry(1, pageSize)
 
-  // Single-flight: share one in-progress load across concurrent requests.
-  if (allCoursesLoadPromise) {
-    return allCoursesLoadPromise
-  }
+    const firstPageData = Array.isArray(firstJson)
+      ? (firstJson as CourseLike[])
+      : (firstJson?.data as CourseLike[]) || []
 
-  allCoursesLoadPromise = (async () => {
-    try {
-      const pageSize = 20
-      const firstJson = await fetchPageWithRetry(1, pageSize)
+    const totalPages = Math.max(Number.parseInt(String(firstJson?.total_pages ?? 1), 10) || 1, 1)
+    const allData: CourseLike[] = [...firstPageData]
 
-      const firstPageData = Array.isArray(firstJson)
-        ? (firstJson as CourseLike[])
-        : (firstJson?.data as CourseLike[]) || []
-
-      const totalPages = Math.max(Number.parseInt(String(firstJson?.total_pages ?? 1), 10) || 1, 1)
-      const allData: CourseLike[] = [...firstPageData]
-
-      for (let page = 2; page <= totalPages; page++) {
-        const json = await fetchPageWithRetry(page, pageSize)
-        const pageData = Array.isArray(json)
-          ? (json as CourseLike[])
-          : (json?.data as CourseLike[]) || []
-        if (pageData.length === 0) break
-        allData.push(...pageData)
-      }
-
-      allCoursesCache = {
-        data: allData,
-        expiresAt: now + CACHE_MS,
-      }
-
-      return allData
-    } catch (error) {
-      // Serve stale cache during backend throttling, if available.
-      if (allCoursesCache && allCoursesCache.expiresAt + STALE_CACHE_MS > now) {
-        return allCoursesCache.data
-      }
-      throw error
-    } finally {
-      allCoursesLoadPromise = null
+    for (let page = 2; page <= totalPages; page++) {
+      const json = await fetchPageWithRetry(page, pageSize)
+      const pageData = Array.isArray(json)
+        ? (json as CourseLike[])
+        : (json?.data as CourseLike[]) || []
+      if (pageData.length === 0) break
+      allData.push(...pageData)
     }
-  })()
 
-  return allCoursesLoadPromise
-}
+    return allData
+  },
+  ["all-courses-dataset"],
+  { revalidate: CACHE_REVALIDATE_SECONDS },
+)
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
