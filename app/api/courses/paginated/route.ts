@@ -15,8 +15,44 @@ type CourseLike = {
 }
 
 let allCoursesCache: { data: CourseLike[]; expiresAt: number } | null = null
+let allCoursesLoadPromise: Promise<CourseLike[]> | null = null
 
-const CACHE_MS = 5 * 60 * 1000
+const CACHE_MS = 30 * 60 * 1000
+const STALE_CACHE_MS = 6 * 60 * 60 * 1000
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function getErrorStatus(error: unknown): number | null {
+  if (!(error instanceof Error)) return null
+  const match = error.message.match(/API Error:\s*(\d{3})/)
+  return match ? Number(match[1]) : null
+}
+
+async function fetchPageWithRetry(page: number, pageSize: number): Promise<any> {
+  const maxAttempts = 3
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetchFromApi(`/courses/paginated?page=${page}&page_size=${pageSize}`)
+      return await response.json()
+    } catch (error) {
+      const status = getErrorStatus(error)
+      const isRateLimited = status === 429
+      const isLastAttempt = attempt === maxAttempts
+
+      if (!isRateLimited || isLastAttempt) {
+        throw error
+      }
+
+      // Exponential backoff for backend rate-limiting
+      await sleep(250 * attempt * attempt)
+    }
+  }
+
+  throw new Error("Failed to fetch paginated courses page")
+}
 function matchesRequestedTerm(courseTerm: string | undefined, requested: string | null): boolean {
   if (!requested) return true
 
@@ -75,33 +111,50 @@ async function loadAllCourses(): Promise<CourseLike[]> {
     return allCoursesCache.data
   }
 
-  const pageSize = 20
-  const firstResponse = await fetchFromApi(`/courses/paginated?page=1&page_size=${pageSize}`)
-  const firstJson = await firstResponse.json()
-
-  const firstPageData = Array.isArray(firstJson)
-    ? (firstJson as CourseLike[])
-    : (firstJson?.data as CourseLike[]) || []
-
-  const totalPages = Math.max(Number.parseInt(String(firstJson?.total_pages ?? 1), 10) || 1, 1)
-  const allData: CourseLike[] = [...firstPageData]
-
-  for (let page = 2; page <= totalPages; page++) {
-    const response = await fetchFromApi(`/courses/paginated?page=${page}&page_size=${pageSize}`)
-    const json = await response.json()
-    const pageData = Array.isArray(json)
-      ? (json as CourseLike[])
-      : (json?.data as CourseLike[]) || []
-    if (pageData.length === 0) break
-    allData.push(...pageData)
+  // Single-flight: share one in-progress load across concurrent requests.
+  if (allCoursesLoadPromise) {
+    return allCoursesLoadPromise
   }
 
-  allCoursesCache = {
-    data: allData,
-    expiresAt: now + CACHE_MS,
-  }
+  allCoursesLoadPromise = (async () => {
+    try {
+      const pageSize = 20
+      const firstJson = await fetchPageWithRetry(1, pageSize)
 
-  return allData
+      const firstPageData = Array.isArray(firstJson)
+        ? (firstJson as CourseLike[])
+        : (firstJson?.data as CourseLike[]) || []
+
+      const totalPages = Math.max(Number.parseInt(String(firstJson?.total_pages ?? 1), 10) || 1, 1)
+      const allData: CourseLike[] = [...firstPageData]
+
+      for (let page = 2; page <= totalPages; page++) {
+        const json = await fetchPageWithRetry(page, pageSize)
+        const pageData = Array.isArray(json)
+          ? (json as CourseLike[])
+          : (json?.data as CourseLike[]) || []
+        if (pageData.length === 0) break
+        allData.push(...pageData)
+      }
+
+      allCoursesCache = {
+        data: allData,
+        expiresAt: now + CACHE_MS,
+      }
+
+      return allData
+    } catch (error) {
+      // Serve stale cache during backend throttling, if available.
+      if (allCoursesCache && allCoursesCache.expiresAt + STALE_CACHE_MS > now) {
+        return allCoursesCache.data
+      }
+      throw error
+    } finally {
+      allCoursesLoadPromise = null
+    }
+  })()
+
+  return allCoursesLoadPromise
 }
 
 export async function GET(request: NextRequest) {
