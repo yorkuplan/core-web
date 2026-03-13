@@ -226,6 +226,7 @@ export interface PaginatedCoursesParams {
   page_size?: number
   faculty?: string
   course_code_range?: string
+  term?: string
 }
 
 // Review types
@@ -384,6 +385,9 @@ export const coursesApi = {
     }
     if (params.course_code_range) {
       queryParams.append("course_code_range", params.course_code_range)
+    }
+    if (params.term) {
+      queryParams.append("term", params.term)
     }
 
     // Add cache-busting timestamp to ensure fresh requests
