@@ -689,7 +689,7 @@ export default function CoursesContent() {
                   viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
                   transition={{ duration: 0.6 }}
                 >
-                  <Card className="p-4 sm:p-6">
+                  <Card className="p-4 sm:p-6 max-h-[calc(100vh-7rem)] overflow-y-auto">
                     <h2 className="font-semibold text-base sm:text-lg mb-4 sm:mb-6">
                       Filter your results
                     </h2>
