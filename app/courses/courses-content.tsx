@@ -76,12 +76,20 @@ const COURSE_LEVEL_TO_RANGE: Record<string, string> = {
   "9xxx": "9000s",
 };
 
+// Map semester filter to API query values
+const TERM_FILTER_TO_API: Record<string, string> = {
+  "fall-winter": "FW",
+  summer: "SU",
+};
+
 export default function CoursesContent() {
   const searchParams = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFaculty, setSelectedFaculty] = useState("all");
   const [selectedCourseLevel, setSelectedCourseLevel] = useState<string[]>([]);
+  const [selectedTerm, setSelectedTerm] = useState("all");
   const [isFacultyExpanded, setIsFacultyExpanded] = useState(true);
+  const [isTermExpanded, setIsTermExpanded] = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -138,6 +146,12 @@ export default function CoursesContent() {
     { id: "schulich", name: "Schulich School of Business" },
     { id: "environmental-urban", name: "Environmental and Urban Change" },
     { id: "graduate-studies", name: "Graduate Studies" },
+  ];
+
+  const terms = [
+    { id: "all", name: "All terms" },
+    { id: "fall-winter", name: "Fall/Winter" },
+    { id: "summer", name: "Summer" },
   ];
 
   const courseLevels = [
@@ -200,7 +214,7 @@ export default function CoursesContent() {
     if (!isSearchMode) {
       setCurrentPage(1);
     }
-  }, [selectedFaculty, selectedCourseLevel, isSearchMode]);
+  }, [selectedFaculty, selectedCourseLevel, selectedTerm, isSearchMode]);
 
   // Fetch courses from API (only when not in search mode)
   useEffect(() => {
@@ -217,6 +231,7 @@ export default function CoursesContent() {
           page_size: number;
           faculty?: string;
           course_code_range?: string;
+          term?: string;
         } = {
           page: currentPage,
           page_size: coursesPerPage,
@@ -237,6 +252,14 @@ export default function CoursesContent() {
           const range = COURSE_LEVEL_TO_RANGE[firstLevel];
           if (range) {
             params.course_code_range = range;
+          }
+        }
+
+        // Add semester filter
+        if (selectedTerm !== "all") {
+          const termValue = TERM_FILTER_TO_API[selectedTerm];
+          if (termValue) {
+            params.term = termValue;
           }
         }
 
@@ -265,11 +288,12 @@ export default function CoursesContent() {
     };
 
     fetchCourses();
-  }, [currentPage, selectedFaculty, selectedCourseLevel, isSearchMode]);
+  }, [currentPage, selectedFaculty, selectedCourseLevel, selectedTerm, isSearchMode]);
 
   const clearAllFilters = () => {
     setSelectedFaculty("all");
     setSelectedCourseLevel([]);
+    setSelectedTerm("all");
     setSearchQuery("");
   };
 
@@ -400,6 +424,38 @@ export default function CoursesContent() {
                     Filter your results
                   </h2>
 
+                  {/* Semester Filter - Collapsible */}
+                  <div className="mb-6 pb-6 border-b">
+                    <button
+                      onClick={() => setIsTermExpanded(!isTermExpanded)}
+                      className="w-full flex items-center justify-between text-xs sm:text-sm font-medium mb-3 hover:text-primary transition-colors"
+                    >
+                      <span>Semester</span>
+                      {isTermExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+                    <div
+                      className={`space-y-2 ${isTermExpanded ? "block" : "hidden"}`}
+                    >
+                      {terms.map((term) => (
+                        <button
+                          key={term.id}
+                          onClick={() => setSelectedTerm(term.id)}
+                          className={`w-full text-left px-3 py-2 rounded-md text-xs sm:text-sm transition-colors ${
+                            selectedTerm === term.id
+                              ? "bg-primary text-primary-foreground"
+                              : "hover:bg-accent"
+                          }`}
+                        >
+                          {term.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Course Code Level Filter */}
                   <div className="mb-6 pb-6 border-b">
                     <label className="text-xs sm:text-sm font-medium block mb-3">
@@ -458,7 +514,8 @@ export default function CoursesContent() {
 
                   {/* Clear Filter Button */}
                   {(selectedFaculty !== "all" ||
-                    selectedCourseLevel.length > 0) && (
+                    selectedCourseLevel.length > 0 ||
+                    selectedTerm !== "all") && (
                     <Button
                       variant="default"
                       size="sm"
@@ -531,7 +588,7 @@ export default function CoursesContent() {
                                   </Badge>
                                 </div>
                                 {/* Reserve a consistent 2-line height so meta aligns across cards */}
-                                <p className="text-sm sm:text-base font-medium text-foreground mb-2 sm:mb-3 line-clamp-2 min-h-[2.75rem] sm:min-h-[3rem] leading-snug">
+                                <p className="text-sm sm:text-base font-medium text-foreground mb-2 sm:mb-3 line-clamp-2 min-h-11 sm:min-h-12 leading-snug">
                                   {course.name}
                                 </p>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
@@ -602,7 +659,7 @@ export default function CoursesContent() {
                         size="sm"
                         onClick={() => setCurrentPage(page as number)}
                         disabled={isLoading}
-                        className="min-w-[2rem] sm:min-w-[2.5rem] h-8 sm:h-9 text-xs sm:text-sm"
+                        className="min-w-8 sm:min-w-10 h-8 sm:h-9 text-xs sm:text-sm"
                       >
                         {page}
                       </Button>
@@ -632,10 +689,42 @@ export default function CoursesContent() {
                   viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
                   transition={{ duration: 0.6 }}
                 >
-                  <Card className="p-4 sm:p-6">
+                  <Card className="p-4 sm:p-6 max-h-[calc(100vh-7rem)] overflow-y-auto">
                     <h2 className="font-semibold text-base sm:text-lg mb-4 sm:mb-6">
                       Filter your results
                     </h2>
+
+                    {/* Semester Filter - Collapsible */}
+                    <div className="mb-6 pb-6 border-b">
+                      <button
+                        onClick={() => setIsTermExpanded(!isTermExpanded)}
+                        className="w-full flex items-center justify-between text-xs sm:text-sm font-medium mb-3 hover:text-primary transition-colors"
+                      >
+                        <span>Semester</span>
+                        {isTermExpanded ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+                      <div
+                        className={`space-y-2 ${isTermExpanded ? "block" : "hidden"}`}
+                      >
+                        {terms.map((term) => (
+                          <button
+                            key={term.id}
+                            onClick={() => setSelectedTerm(term.id)}
+                            className={`w-full text-left px-3 py-2 rounded-md text-xs sm:text-sm transition-colors ${
+                              selectedTerm === term.id
+                                ? "bg-primary text-primary-foreground"
+                                : "hover:bg-accent"
+                            }`}
+                          >
+                            {term.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
                     {/* Course Code Level Filter */}
                     <div className="mb-6 pb-6 border-b">
@@ -695,7 +784,8 @@ export default function CoursesContent() {
 
                     {/* Clear Filter Button */}
                     {(selectedFaculty !== "all" ||
-                      selectedCourseLevel.length > 0) && (
+                      selectedCourseLevel.length > 0 ||
+                      selectedTerm !== "all") && (
                       <Button
                         variant="default"
                         size="sm"
