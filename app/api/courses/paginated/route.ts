@@ -1,4 +1,5 @@
 import { fetchApiData, fetchFromApi } from "@/lib/api/utils"
+import { getTermBucket } from "@/lib/term-buckets"
 import { NextRequest } from "next/server"
 
 // Allowlist of query parameters that may be forwarded to the backend
@@ -16,28 +17,17 @@ type CourseLike = {
 let allCoursesCache: { data: CourseLike[]; expiresAt: number } | null = null
 
 const CACHE_MS = 5 * 60 * 1000
-const SUMMER_TERM_CODES = new Set(["S", "SU", "S1", "S2", "SUMMER"])
-const FALL_WINTER_TERM_CODES = new Set(["F", "W", "Y", "FW", "FALL", "WINTER", "FULL YEAR"])
-
-function normalizeTermCode(term: string | undefined): string {
-  return (term ?? "").trim().toUpperCase()
-}
-
 function matchesRequestedTerm(courseTerm: string | undefined, requested: string | null): boolean {
   if (!requested) return true
 
   const normalizedRequested = requested.trim().toUpperCase()
-  const normalizedCourseTerm = normalizeTermCode(courseTerm)
+  const bucket = getTermBucket(courseTerm)
 
-  if (normalizedRequested === "SU") {
-    return SUMMER_TERM_CODES.has(normalizedCourseTerm)
+  if (normalizedRequested === "SU" || normalizedRequested === "FW") {
+    return bucket === normalizedRequested
   }
 
-  if (normalizedRequested === "FW") {
-    return FALL_WINTER_TERM_CODES.has(normalizedCourseTerm)
-  }
-
-  return normalizedCourseTerm === normalizedRequested
+  return (courseTerm ?? "").trim().toUpperCase() === normalizedRequested
 }
 
 function matchesCourseCodeRange(code: string, range?: string): boolean {
