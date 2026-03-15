@@ -8,6 +8,8 @@ const DAY_MAP: Record<string, string> = {
   W: "Wednesday",
   R: "Thursday",
   F: "Friday",
+  S: "Saturday",
+  U: "Sunday",
 }
 
 const FACULTY_MAP: Record<string, string> = {

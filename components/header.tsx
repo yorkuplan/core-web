@@ -122,7 +122,7 @@ export function Header({
   };
 
   const desktopSearch = (
-    <div className="relative flex-1 w-full min-w-0 max-w-md mx-auto hidden md:block">
+    <div className="relative w-full min-w-0 max-w-md lg:max-w-xl">
       <div className="relative">
         <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-4 sm:h-5 w-4 sm:w-5 text-muted-foreground pointer-events-none" />
         <Input
@@ -335,6 +335,7 @@ export function Header({
   );
 
   const showCenterOnMobile = !showSearch && Boolean(centerContent && !rightSlotMobile);
+  const useAbsoluteCenter = !showSearch && !centerContent && Boolean(subtitle);
 
   return (
     <>
@@ -348,6 +349,20 @@ export function Header({
               className="w-auto h-5 sm:h-6 lg:h-7 object-contain"
             />
           </Link>
+
+          {center && (
+            <div
+              className={`flex-1 min-w-0 flex justify-center px-2 ${
+                !showCenterOnMobile
+                  ? useAbsoluteCenter
+                    ? "hidden md:flex xl:hidden"
+                    : "hidden md:flex"
+                  : ""
+              }`}
+            >
+              {center}
+            </div>
+          )}
           
           <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4 shrink-0">
             {mobileRightSlot && (
@@ -403,6 +418,11 @@ export function Header({
                   <SheetTitle>Menu</SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-2 px-4">
+                  <Link href="/courses" className="w-full">
+                    <Button variant="ghost" className="w-full justify-start">
+                      Courses
+                    </Button>
+                  </Link>
                   <Link href="/about" className="w-full">
                     <Button variant="ghost" className="w-full justify-start">
                       About
@@ -418,15 +438,10 @@ export function Header({
             </Sheet>
           </div>
         </div>
-        
-        {/* Absolutely positioned center content */}
-        {center && (
-          <div
-            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none ${!showCenterOnMobile ? "hidden md:block" : ""}`}
-          >
-            <div className="pointer-events-auto w-full max-w-xl">
-              {center}
-            </div>
+
+        {center && useAbsoluteCenter && (
+          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden xl:block">
+            {center}
           </div>
         )}
       </div>

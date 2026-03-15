@@ -111,8 +111,8 @@ export async function fetchApiData<T>(
 }
 
 /**
- * Helper to extract and await params in Next.js 15+ dynamic routes
- * Handles both Next.js 15+ (Promise) and older versions (object)
+ * Helper to extract and await params in Next.js 15+ dynamic routes.
+ * Validates the value to prevent path traversal attacks.
  */
 export async function getRouteParam(
   params: Promise<Record<string, string>> | Record<string, string> | undefined | null,
@@ -128,13 +128,28 @@ export async function getRouteParam(
     if (!resolvedParams || typeof resolvedParams !== 'object') {
       throw new Error(`Route parameter '${key}' is missing`)
     }
-    return resolvedParams[key]
+    return sanitizeRouteParam(resolvedParams[key], key)
   }
   
   // Handle older Next.js versions or direct object params
   if (typeof params === 'object') {
-    return params[key]
+    return sanitizeRouteParam(params[key], key)
   }
   
   throw new Error(`Route parameter '${key}' is missing`)
+}
+
+/**
+ * Rejects values that could be used for path traversal (e.g. "../../admin").
+ * Allows alphanumerics, hyphens, underscores, and dots (for course codes like "EECS1001").
+ */
+function sanitizeRouteParam(value: string, key: string): string {
+  if (!value || typeof value !== 'string') {
+    throw new Error(`Route parameter '${key}' is missing`)
+  }
+  // Block path separators and encoded variants
+  if (/[\/\\]|%2[Ff]|%5[Cc]|\.\./i.test(value)) {
+    throw new Error(`Route parameter '${key}' contains invalid characters`)
+  }
+  return value
 }

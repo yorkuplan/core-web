@@ -19,6 +19,29 @@ export async function POST(
       )
     }
 
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email address" },
+        { status: 400 }
+      )
+    }
+
+    // Length limits to prevent oversized payloads
+    if (typeof review_text !== "string" || review_text.trim().length > 2000) {
+      return NextResponse.json(
+        { error: "Review text must be 2000 characters or fewer" },
+        { status: 400 }
+      )
+    }
+    if (author_name && (typeof author_name !== "string" || author_name.length > 100)) {
+      return NextResponse.json(
+        { error: "Author name must be 100 characters or fewer" },
+        { status: 400 }
+      )
+    }
+
     // Validate ranges
     if (difficulty < 1 || difficulty > 5 || real_world_relevance < 1 || real_world_relevance > 5) {
       return NextResponse.json(
@@ -71,9 +94,11 @@ export async function GET(
     const id = await getRouteParam(params, "id")
     const searchParams = request.nextUrl.searchParams
     
-    const sort = searchParams.get("sort") || "recent"
+    const sort = ["recent", "helpful", "oldest"].includes(searchParams.get("sort") ?? "")
+      ? searchParams.get("sort")!
+      : "recent"
     const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 50)
-    const offset = parseInt(searchParams.get("offset") || "0")
+    const offset = Math.min(Math.max(parseInt(searchParams.get("offset") || "0"), 0), 10000)
 
     // Build query string
     const queryParams = new URLSearchParams({

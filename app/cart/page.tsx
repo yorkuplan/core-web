@@ -874,6 +874,13 @@ export default function CartPage() {
     for (const id of s) allConflicts.add(id)
   }
 
+  const clearTermItems = (termItems: CartItem[]) => {
+    const uniqueIds = new Set(termItems.map((item) => item.id))
+    for (const id of uniqueIds) {
+      removeItem(id)
+    }
+  }
+
   const handleSaveAsPdf = async () => {
     if (!scheduleRef.current) return
     const { default: html2canvas } = await import("html2canvas-pro")
@@ -1218,12 +1225,36 @@ export default function CartPage() {
                         <h2 className="text-lg md:text-xl font-bold">{termInfo.label}</h2>
                         {termInfo.period && <Badge variant="secondary">{termInfo.period}</Badge>}
                         <Badge variant="outline">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
-                        {termConflictCount > 0 && (
-                          <Badge variant="destructive" className="ml-auto">
-                            <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-                            {termConflictCount} conflict{termConflictCount !== 1 && "s"}
-                          </Badge>
-                        )}
+                        <div className="ml-auto flex items-center gap-2">
+                          {termConflictCount > 0 && (
+                            <Badge variant="destructive">
+                              <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+                              {termConflictCount} conflict{termConflictCount !== 1 && "s"}
+                            </Badge>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4 mr-1.5" />
+                                Clear semester
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Clear {termInfo.label}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will remove all selected courses and components in this semester from your cart.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => clearTermItems(termItems)}>
+                                  Clear semester
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </div>
 
