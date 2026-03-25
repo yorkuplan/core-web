@@ -1087,8 +1087,9 @@ export default function CartPage() {
               initial="initial"
               animate="animate"
               variants={fadeInUp}
+              className={`flex items-center justify-center ${isEmbeddedPreview ? "min-h-[calc(100vh-11rem)]" : "min-h-[calc(100vh-20rem)]"}`}
             >
-              <Card className="p-6 sm:p-12 text-center">
+              <Card className="p-6 sm:p-12 text-center max-w-sm">
                 <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                   <ShoppingCart className="h-8 w-8 text-muted-foreground" />
                 </div>

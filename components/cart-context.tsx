@@ -54,6 +54,10 @@ interface CartContextType {
   clearCart: () => void
   isInCart: (id: string) => boolean
   itemCount: number
+  isCartDockOpen: boolean
+  setIsCartDockOpen: (open: boolean) => void
+  canDock: boolean
+  dockWidth: number
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -61,6 +65,9 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [] })
   const [hasHydrated, setHasHydrated] = useState(false)
+  const [isCartDockOpen, setIsCartDockOpen] = useState(false)
+  const [canDock, setCanDock] = useState(false)
+  const [dockWidth, setDockWidth] = useState(480)
   const itemsRef = useRef<CartItem[]>([])
 
   useEffect(() => {
@@ -127,6 +134,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.items))
   }, [state.items, hasHydrated])
 
+  // Update dock metrics on mount and resize
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const updateDockMetrics = () => {
+      const shouldDock = window.matchMedia("(min-width: 1024px), ((min-width: 768px) and (orientation: landscape))").matches
+      const width = Math.min(560, Math.max(420, Math.round(window.innerWidth * 0.38)))
+      setCanDock(shouldDock)
+      setDockWidth(width)
+      if (!shouldDock) {
+        setIsCartDockOpen(false)
+      }
+    }
+
+    updateDockMetrics()
+    window.addEventListener("resize", updateDockMetrics)
+    window.addEventListener("orientationchange", updateDockMetrics)
+    return () => {
+      window.removeEventListener("resize", updateDockMetrics)
+      window.removeEventListener("orientationchange", updateDockMetrics)
+    }
+  }, [])
+
   const addItem = (item: CartItem) => dispatch({ type: "ADD_ITEM", payload: item })
   const removeItem = (id: string) => dispatch({ type: "REMOVE_ITEM", payload: id })
   const clearCart = () => dispatch({ type: "CLEAR_CART" })
@@ -141,6 +171,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         clearCart,
         isInCart,
         itemCount: state.items.length,
+        isCartDockOpen,
+        setIsCartDockOpen,
+        canDock,
+        dockWidth,
       }}
     >
       {children}
