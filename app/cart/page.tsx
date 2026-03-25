@@ -792,6 +792,17 @@ export default function CartPage() {
     setIsEmbeddedPreview(params.get("embed") === "1")
   }, [])
 
+  const requestParentNavigation = (href: string) => {
+    if (typeof window === "undefined") return false
+    if (!isEmbeddedPreview || window.parent === window) return false
+
+    window.parent.postMessage(
+      { type: "yuplan:navigate", href },
+      window.location.origin,
+    )
+    return true
+  }
+
   // Group items by course code
   const groupedItems: Record<string, CartItem[]> = {}
   for (const item of items) {
@@ -1097,7 +1108,14 @@ export default function CartPage() {
                 <p className="text-muted-foreground mb-6">
                   Browse courses and add them to cart to start building your schedule.
                 </p>
-                <Link href="/courses">
+                <Link
+                  href="/courses"
+                  onClick={(event) => {
+                    if (requestParentNavigation("/courses")) {
+                      event.preventDefault()
+                    }
+                  }}
+                >
                   <Button>Browse Courses</Button>
                 </Link>
               </Card>
@@ -1276,6 +1294,12 @@ export default function CartPage() {
                               <div className="min-w-0 flex-1">
                                 <Link
                                   href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`}
+                                  onClick={(event) => {
+                                    const href = `/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`
+                                    if (requestParentNavigation(href)) {
+                                      event.preventDefault()
+                                    }
+                                  }}
                                   className="text-base font-semibold text-primary hover:underline truncate block"
                                 >
                                   {courseCode}

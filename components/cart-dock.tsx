@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
   Sheet,
   SheetContent,
@@ -10,7 +12,24 @@ import {
 import { useCart } from "@/components/cart-context"
 
 export function CartDock() {
+  const router = useRouter()
   const { isCartDockOpen, setIsCartDockOpen, canDock, dockWidth } = useCart()
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+
+      const data = event.data as { type?: string; href?: string } | null
+      if (!data || data.type !== "yuplan:navigate") return
+      if (!data.href || !data.href.startsWith("/")) return
+
+      router.push(data.href)
+      setIsCartDockOpen(true)
+    }
+
+    window.addEventListener("message", handleMessage)
+    return () => window.removeEventListener("message", handleMessage)
+  }, [router, setIsCartDockOpen])
 
   return (
     <Sheet open={isCartDockOpen} onOpenChange={setIsCartDockOpen} modal={false}>
