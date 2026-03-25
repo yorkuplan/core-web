@@ -552,12 +552,12 @@ function detectConflicts(blocks: ScheduleBlock[]): Set<string> {
   return conflicts
 }
 
-function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { termItems: CartItem[]; termKey: string; conflicts: Set<string>; globalColorMap: Record<string, number> }) {
+function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, denseMode = false }: { termItems: CartItem[]; termKey: string; conflicts: Set<string>; globalColorMap: Record<string, number>; denseMode?: boolean }) {
   const isMobile = useIsMobile()
   const isTabletOrBelow = useIsTabletOrBelow()
   const isSummerTerm = termKey === "summer" || termKey === "summer1" || termKey === "summer2"
   const isCompactTerm = termKey === "fall" || termKey === "winter" || (isTabletOrBelow && isSummerTerm)
-  const compactSlotHeight = isMobile ? 36 : isTabletOrBelow ? 34 : 32
+  const compactSlotHeight = denseMode ? (isMobile ? 18 : isTabletOrBelow ? 16 : 15) : (isMobile ? 36 : isTabletOrBelow ? 34 : 32)
   const [activeBlock, setActiveBlock] = useState<ScheduleBlock | null>(null)
   const blocks = buildScheduleBlocks(termItems, globalColorMap)
   const termInfo = getTermDisplayInfo(termKey)
@@ -567,12 +567,14 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
   const startHour = 8
   const endHour = 21
   const halfHourRows = (endHour - startHour) * 2
-  const slotHeight = isCompactTerm ? compactSlotHeight : (isMobile ? 40 : SLOT_HEIGHT)
+  const slotHeight = denseMode
+    ? (isCompactTerm ? compactSlotHeight : (isMobile ? 20 : 22))
+    : (isCompactTerm ? compactSlotHeight : (isMobile ? 40 : SLOT_HEIGHT))
   const visibleMonthWindow = getVisibleMonthWindow(termKey)
-  const runRowHeight = isCompactTerm ? 24 : (isMobile ? 24 : 28)
-  const runBubbleHeight = isCompactTerm ? 18 : (isMobile ? 18 : 22)
-  const timeColumnWidth = isCompactTerm ? 40 : (isMobile ? 48 : 60)
-  const dayColumnMinWidth = isCompactTerm ? (isMobile ? 92 : isTabletOrBelow ? 88 : 80) : (isMobile ? 100 : 140)
+  const runRowHeight = denseMode ? 16 : (isCompactTerm ? 24 : (isMobile ? 24 : 28))
+  const runBubbleHeight = denseMode ? 12 : (isCompactTerm ? 18 : (isMobile ? 18 : 22))
+  const timeColumnWidth = denseMode ? 28 : (isCompactTerm ? 40 : (isMobile ? 48 : 60))
+  const dayColumnMinWidth = denseMode ? (isMobile ? 64 : 60) : (isCompactTerm ? (isMobile ? 92 : isTabletOrBelow ? 88 : 80) : (isMobile ? 100 : 140))
   const showTapDetails = isTabletOrBelow
 
   // Build term-specific legend from the global map
@@ -594,15 +596,15 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
     .filter((entry): entry is { courseCode: string; monthRange: { active: Set<number>; startIdx: number; endIdx: number }; colorIndex: number } => Boolean(entry))
 
   return (
-    <div data-term-schedule={termKey} className="bg-card border border-border rounded-lg overflow-hidden p-3 sm:p-4">
-      <div className={`${isCompactTerm ? "mb-2 pb-2" : "mb-4 pb-3"} border-b border-border`}>
-        <h3 className={`${isCompactTerm ? "text-lg" : "text-xl"} font-bold`}>{termInfo.label}</h3>
-        <p className="text-sm text-muted-foreground">{termInfo.period}</p>
+    <div data-term-schedule={termKey} className={`bg-card border border-border rounded-lg overflow-hidden ${denseMode ? "p-1" : "p-3 sm:p-4"}`}>
+      <div className={`${isCompactTerm || denseMode ? "mb-1 pb-1" : "mb-4 pb-3"} border-b border-border`}>
+        <h3 className={`${isCompactTerm || denseMode ? "text-sm" : "text-xl"} font-bold`}>{termInfo.label}</h3>
+        <p className={`${denseMode ? "text-[11px]" : "text-sm"} text-muted-foreground`}>{termInfo.period}</p>
       </div>
 
       {courseRuns.length > 0 && (
-        <div className={`${isCompactTerm ? "mb-2" : "mb-4"}`}>
-          <p className={`mb-2 ${isCompactTerm ? "text-[0.65rem]" : "text-xs"} text-muted-foreground`}>
+        <div className={`${isCompactTerm || denseMode ? "mb-1" : "mb-4"}`}>
+          <p className={`mb-1 ${denseMode ? "text-[0.65rem]" : (isCompactTerm ? "text-[0.65rem]" : "text-xs")} text-muted-foreground`}>
             Course Duration
           </p>
           <div className="rounded-md border border-border overflow-hidden">
@@ -610,7 +612,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
               {visibleMonthWindow.map((month) => (
                 <div
                   key={month.label}
-                  className={`px-1 text-center font-medium text-muted-foreground border-r border-border last:border-r-0 ${isCompactTerm ? "py-0.5 text-[0.6rem]" : "py-1 text-[0.65rem]"}`}
+                  className={`text-center font-medium text-muted-foreground border-r border-border last:border-r-0 ${denseMode ? "px-0.5 py-0.5 text-[0.6rem]" : (isCompactTerm ? "px-1 py-0.5 text-[0.6rem]" : "px-1 py-1 text-[0.65rem]")}` }
                 >
                   {month.label}
                 </div>
@@ -678,9 +680,9 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
       <div className="overflow-x-auto">
         <div className="min-w-175" style={{ minWidth: `${Math.max(dayColumns.length, 5) * dayColumnMinWidth}px` }}>
           <div className="grid gap-0" style={{ gridTemplateColumns: `${timeColumnWidth}px repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
-            <div className={isCompactTerm ? "h-8" : "h-10"} />
+            <div className={denseMode ? "h-4" : (isCompactTerm ? "h-8" : "h-10")} />
             {dayColumns.map((day) => (
-              <div key={day} className={`flex items-center justify-center font-semibold border-b border-border bg-muted/50 ${isCompactTerm ? "h-8 text-xs" : "h-10 text-sm"}`}>
+              <div key={day} className={`flex items-center justify-center font-semibold border-b border-border bg-muted/50 ${denseMode ? "h-4 text-[10px]" : (isCompactTerm ? "h-8 text-xs" : "h-10 text-sm")}`}>
                 {day}
               </div>
             ))}
@@ -692,9 +694,9 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
                 const hour = startHour + Math.floor(i / 2)
                 const isHour = i % 2 === 0
                 return (
-                  <div key={i} className={`flex items-start justify-end ${isCompactTerm ? "pr-1 text-xs" : "pr-2 text-xs"} text-muted-foreground`} style={{ height: slotHeight }}>
+                  <div key={i} className={`flex items-start justify-end ${denseMode ? "pr-0.5 text-[9px]" : (isCompactTerm ? "pr-1 text-xs" : "pr-2 text-xs")} text-muted-foreground`} style={{ height: slotHeight }}>
                     {isHour && (
-                      <span className={isCompactTerm ? "-mt-1 text-xs" : "-mt-2"}>
+                      <span className={denseMode ? "-mt-0.5 text-[9px]" : (isCompactTerm ? "-mt-1 text-xs" : "-mt-2")}>
                         {hour > 12 ? `${hour - 12}PM` : hour === 12 ? "12PM" : `${hour}AM`}
                       </span>
                     )}
@@ -720,7 +722,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
                         key={`${block.item.id}-${idx}`}
                         data-schedule-item-id={block.item.id}
                         data-schedule-course-code={block.item.courseCode}
-                        className={`absolute left-1 right-1 rounded-md border overflow-hidden ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${isCompactTerm ? "px-1.5 py-1" : "px-2 py-1"} ${showTapDetails ? "cursor-pointer" : ""}`}
+                        className={`absolute left-1 right-1 rounded-md border overflow-hidden ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${denseMode ? "px-1 py-0.5" : (isCompactTerm ? "px-1.5 py-1" : "px-2 py-1")} ${showTapDetails ? "cursor-pointer" : ""}`}
                         style={{ top: topCompact, height: heightCompact }}
                         role={showTapDetails ? "button" : undefined}
                         tabIndex={showTapDetails ? 0 : undefined}
@@ -733,9 +735,9 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
                           }
                         } : undefined}
                       >
-                        <p className={`font-bold truncate ${isCompactTerm ? "text-xs" : "text-xs"}`}>{block.item.courseCode}</p>
-                        <p className={`truncate ${isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]"}`}>{block.item.typeLabel}</p>
-                        {heightCompact > 50 && <p className={`truncate opacity-75 ${isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]"}`}>{block.item.location}</p>}
+                        <p className={`font-bold truncate ${denseMode ? "text-[10px]" : "text-xs"}`}>{block.item.courseCode}</p>
+                        <p className={`truncate ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>{block.item.typeLabel}</p>
+                        {heightCompact > (denseMode ? 32 : 50) && <p className={`truncate opacity-75 ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>{block.item.location}</p>}
                       </div>
                     )
                   })}
@@ -1155,11 +1157,11 @@ export default function CartPage() {
                 <h2 className="text-xl sm:text-2xl font-bold">Your Schedule</h2>
               </motion.div>
 
-              <div ref={scheduleRef} className="space-y-8">
+              <div ref={scheduleRef} className="space-y-4">
                 {/* Fall and Winter side-by-side if both exist */}
                 {orderedTerms.includes("fall") && orderedTerms.includes("winter") && (
                   <motion.div
-                    className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-4"
+                    className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-3"
                     variants={cardVariant}
                   >
                     <ScheduleTimetable
@@ -1167,12 +1169,14 @@ export default function CartPage() {
                       termKey="fall"
                       conflicts={conflictsByTerm["fall"]}
                       globalColorMap={globalColorMap}
+                      denseMode={true}
                     />
                     <ScheduleTimetable
                       termItems={itemsByTerm["winter"]}
                       termKey="winter"
                       conflicts={conflictsByTerm["winter"]}
                       globalColorMap={globalColorMap}
+                      denseMode={true}
                     />
                   </motion.div>
                 )}
@@ -1190,6 +1194,7 @@ export default function CartPage() {
                         termKey={term}
                         conflicts={conflictsByTerm[term]}
                         globalColorMap={globalColorMap}
+                        denseMode={true}
                       />
                     </motion.div>
                   )
