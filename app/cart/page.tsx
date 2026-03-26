@@ -560,13 +560,19 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
   const compactSlotHeight = denseMode ? (isMobile ? 18 : isTabletOrBelow ? 16 : 15) : (isMobile ? 36 : isTabletOrBelow ? 34 : 32)
   const [activeBlock, setActiveBlock] = useState<ScheduleBlock | null>(null)
   const blocks = buildScheduleBlocks(termItems, globalColorMap)
+  
+  // Prevent rendering if no items to display
+  if (termItems.length === 0 || blocks.length === 0) {
+    return null
+  }
+  
   const termInfo = getTermDisplayInfo(termKey)
   const days = orderDays(blocks.map((block) => block.day))
   const baseDays = [...DAY_DISPLAY_ORDER.slice(0, 5)]
   const dayColumns = orderDays([...baseDays, ...days])
-  const startHour = 8
-  const endHour = 21
-  const halfHourRows = (endHour - startHour) * 2
+  // Dynamically calculate start/end hours based on actual courses
+  const { startHour, endHour } = getScheduleHours(blocks)
+  const halfHourRows = Math.max(4, (endHour - startHour) * 2)
   const slotHeight = denseMode
     ? (isCompactTerm ? compactSlotHeight : (isMobile ? 20 : 22))
     : (isCompactTerm ? compactSlotHeight : (isMobile ? 40 : SLOT_HEIGHT))
