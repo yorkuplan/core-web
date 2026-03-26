@@ -33,6 +33,7 @@ import {
   Download,
   AlertTriangle,
   ShoppingCart,
+  X,
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useRef, useEffect } from "react"
@@ -552,7 +553,7 @@ function detectConflicts(blocks: ScheduleBlock[]): Set<string> {
   return conflicts
 }
 
-function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, denseMode = false }: { termItems: CartItem[]; termKey: string; conflicts: Set<string>; globalColorMap: Record<string, number>; denseMode?: boolean }) {
+function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, denseMode = false, onRemoveItem }: { termItems: CartItem[]; termKey: string; conflicts: Set<string>; globalColorMap: Record<string, number>; denseMode?: boolean; onRemoveItem?: (id: string) => void }) {
   const isMobile = useIsMobile()
   const isTabletOrBelow = useIsTabletOrBelow()
   const isSummerTerm = termKey === "summer" || termKey === "summer1" || termKey === "summer2"
@@ -741,9 +742,25 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                           }
                         } : undefined}
                       >
-                        <p className={`font-bold truncate ${denseMode ? "text-[10px]" : "text-xs"}`}>{block.item.courseCode}</p>
-                        <p className={`truncate ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>{block.item.typeLabel}</p>
-                        {heightCompact > (denseMode ? 32 : 50) && <p className={`truncate opacity-75 ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>{block.item.location}</p>}
+                        <div className="flex items-start justify-between gap-1">
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-bold truncate ${denseMode ? "text-[10px]" : "text-xs"}`}>{block.item.courseCode}</p>
+                            <p className={`truncate ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>{block.item.typeLabel}</p>
+                            {heightCompact > (denseMode ? 32 : 50) && <p className={`truncate opacity-75 ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>{block.item.location}</p>}
+                          </div>
+                          {onRemoveItem && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onRemoveItem(block.item.id)
+                              }}
+                              className="shrink-0 p-0.5 hover:bg-current hover:bg-opacity-20 rounded transition-colors"
+                              aria-label={`Remove ${block.item.courseCode}`}
+                            >
+                              <X className={denseMode ? "w-3 h-3" : "w-4 h-4"} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )
                   })}
@@ -1222,6 +1239,7 @@ export default function CartPage() {
                       conflicts={conflictsByTerm["fall"]}
                       globalColorMap={globalColorMap}
                       denseMode={true}
+                      onRemoveItem={removeItem}
                     />
                     <ScheduleTimetable
                       termItems={itemsByTerm["winter"]}
@@ -1229,6 +1247,7 @@ export default function CartPage() {
                       conflicts={conflictsByTerm["winter"]}
                       globalColorMap={globalColorMap}
                       denseMode={true}
+                      onRemoveItem={removeItem}
                     />
                   </motion.div>
                 )}
@@ -1247,6 +1266,7 @@ export default function CartPage() {
                         conflicts={conflictsByTerm[term]}
                         globalColorMap={globalColorMap}
                         denseMode={true}
+                        onRemoveItem={removeItem}
                       />
                     </motion.div>
                   )
@@ -1512,12 +1532,14 @@ export default function CartPage() {
                       termKey="fall"
                       conflicts={conflictsByTerm["fall"]}
                       globalColorMap={globalColorMap}
+                      onRemoveItem={removeItem}
                     />
                     <ScheduleTimetable
                       termItems={itemsByTerm["winter"]}
                       termKey="winter"
                       conflicts={conflictsByTerm["winter"]}
                       globalColorMap={globalColorMap}
+                      onRemoveItem={removeItem}
                     />
                   </motion.div>
                 )}
@@ -1535,6 +1557,7 @@ export default function CartPage() {
                         termKey={term}
                         conflicts={conflictsByTerm[term]}
                         globalColorMap={globalColorMap}
+                        onRemoveItem={removeItem}
                       />
                     </motion.div>
                   )
