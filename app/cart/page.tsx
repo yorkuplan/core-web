@@ -951,14 +951,19 @@ export default function CartPage() {
       if (pageCount > 0) pdf.addPage()
 
       const canvas = await html2canvas(element, {
-        scale: 1.5,
+        scale: 1.8,
         useCORS: true,
         backgroundColor: "#ffffff",
+        onclone: (clonedDoc) => {
+          // Force light theme for higher contrast in exported PDF
+          clonedDoc.documentElement.classList.remove("dark")
+          clonedDoc.body.classList.remove("dark")
+        },
       })
 
       drawPdfHeader()
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.8)
+      const imgData = canvas.toDataURL("image/jpeg", 0.9)
       const availableW = pageWidth - margin * 2
       const contentTop = margin + headerHeight
       const availableH = pageHeight - contentTop - margin
@@ -977,20 +982,61 @@ export default function CartPage() {
       pageCount++
     }
 
-    // Check if fall and winter are displayed side-by-side
-    const fallWinterGrid = scheduleRef.current.querySelector<HTMLElement>(".fall-winter-grid")
     let pageCount = 0
 
-    // If fall/winter grid exists, render it as one page
+    // Check if fall and winter are rendered side-by-side
+    const fallWinterGrid = scheduleRef.current.querySelector<HTMLElement>(".fall-winter-grid")
+    
     if (fallWinterGrid) {
-      await renderSchedulePage(fallWinterGrid)
+      // Both fall and winter exist - render them side-by-side
+      // Force wide viewport so lg:grid-cols-2 activates
+      if (pageCount > 0) pdf.addPage()
+
+      const canvas = await html2canvas(fallWinterGrid, {
+        scale: 1.8,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        windowWidth: 1400, // Force wide enough for lg breakpoint
+        windowHeight: 1200,
+        onclone: (clonedDoc) => {
+          clonedDoc.documentElement.classList.remove("dark")
+          clonedDoc.body.classList.remove("dark")
+        },
+      })
+
+      drawPdfHeader()
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.9)
+      const availableW = pageWidth - margin * 2
+      const contentTop = margin + headerHeight
+      const availableH = pageHeight - contentTop - margin
+      const imgRatio = canvas.width / canvas.height
+      let drawW = availableW
+      let drawH = drawW / imgRatio
+
+      if (drawH > availableH) {
+        drawH = availableH
+        drawW = drawH * imgRatio
+      }
+
+      const offsetX = margin + (availableW - drawW) / 2
+      const offsetY = contentTop + (availableH - drawH) / 2
+      pdf.addImage(imgData, "JPEG", offsetX, offsetY, drawW, drawH)
+      pageCount++
+    } else {
+      // Fall and winter don't exist together - render individually if they exist
+      const hasFall = scheduleRef.current.querySelector<HTMLElement>("[data-term-schedule='fall']")
+      const hasWinter = scheduleRef.current.querySelector<HTMLElement>("[data-term-schedule='winter']")
+      
+      if (hasFall) await renderSchedulePage(hasFall)
+      if (hasWinter) await renderSchedulePage(hasWinter)
     }
 
-    // Find all other term schedules (not fall/winter)
+    // Render all other term schedules (not fall/winter)
     const allTermElements = scheduleRef.current.querySelectorAll<HTMLElement>("[data-term-schedule]")
     for (const termEl of allTermElements) {
       const termKey = termEl.getAttribute("data-term-schedule")
-      if (fallWinterGrid && (termKey === "fall" || termKey === "winter")) continue // Skip only when fall/winter combined grid was rendered
+      if (termKey === "fall" || termKey === "winter") continue // Skip fall/winter - already rendered above
 
       await renderSchedulePage(termEl)
     }
