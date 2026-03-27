@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useRef } from "react"
 import {
   Sheet,
   SheetContent,
@@ -10,26 +9,20 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { useCart } from "@/components/cart-context"
+import { CartPageContent } from "@/app/cart/page"
 
 export function CartDock() {
-  const router = useRouter()
-  const { isCartDockOpen, setIsCartDockOpen, canDock, dockWidth } = useCart()
+  const { isCartDockOpen, setIsCartDockOpen, canDock, dockWidth, itemCount } = useCart()
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
+  const previousItemCountRef = useRef(itemCount)
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return
-
-      const data = event.data as { type?: string; href?: string } | null
-      if (!data || data.type !== "yuplan:navigate") return
-      if (!data.href || !data.href.startsWith("/")) return
-
-      router.push(data.href)
-      setIsCartDockOpen(true)
+    const previousCount = previousItemCountRef.current
+    if (previousCount === 0 && itemCount > 0) {
+      scrollContainerRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" })
     }
-
-    window.addEventListener("message", handleMessage)
-    return () => window.removeEventListener("message", handleMessage)
-  }, [router, setIsCartDockOpen])
+    previousItemCountRef.current = itemCount
+  }, [itemCount])
 
   return (
     <Sheet open={isCartDockOpen} onOpenChange={setIsCartDockOpen} modal={false}>
@@ -51,12 +44,8 @@ export function CartDock() {
             </div>
           </div>
         </SheetHeader>
-        <div className="flex-1 min-h-0">
-          <iframe
-            src="/cart?embed=1"
-            title="Cart"
-            className="w-full h-full border-0"
-          />
+        <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto">
+          <CartPageContent forcedEmbeddedMode />
         </div>
       </SheetContent>
     </Sheet>

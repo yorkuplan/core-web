@@ -509,7 +509,6 @@ function parseDays(dayStr: string): string[] {
     .map((d) => normalizeDayToken(d))
     .filter(Boolean)
 }
-
 interface ScheduleBlock {
   item: CartItem
   day: string
@@ -525,6 +524,7 @@ function buildScheduleBlocks(termItems: CartItem[], globalColorMap: Record<strin
     const parsed = parseTime(item.time)
     if (!parsed) continue
     const days = parseDays(item.day)
+    if (!days || days.length === 0) continue
     for (const day of days) {
       blocks.push({
         item,
@@ -561,7 +561,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
   const compactSlotHeight = denseMode ? (isMobile ? 18 : isTabletOrBelow ? 16 : 15) : (isMobile ? 36 : isTabletOrBelow ? 34 : 32)
   const [activeBlock, setActiveBlock] = useState<ScheduleBlock | null>(null)
   const blocks = buildScheduleBlocks(termItems, globalColorMap)
-  
+
   // Prevent rendering if no items to display
   if (termItems.length === 0 || blocks.length === 0) {
     return null
@@ -723,7 +723,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                     const topCompact = (block.startTime - startHour) * 2 * slotHeight
                     const heightCompact = (block.endTime - block.startTime) * 2 * slotHeight
                     const color = COURSE_COLORS[block.colorIndex]
-                    const hasConflict = conflicts.has(block.item.id)
+                    const hasConflict = conflicts && conflicts.has(block.item.id)
                     return (
                       <div
                         key={`${block.item.id}-${idx}`}
@@ -804,18 +804,95 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
   )
 }
 
-export default function CartPage() {
-  const [isEmbeddedPreview, setIsEmbeddedPreview] = useState(false)
+export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbeddedMode?: boolean }) {
+  const [isEmbeddedPreview, setIsEmbeddedPreview] = useState(forcedEmbeddedMode)
+  const [hasResolvedEmbedMode, setHasResolvedEmbedMode] = useState(forcedEmbeddedMode)
   const { items, removeItem, clearCart } = useCart()
   const scheduleRef = useRef<HTMLDivElement>(null)
-  const previousItemsRef = useRef<CartItem[]>([])
-  const hasInitializedChangeTrackingRef = useRef(false)
+  const previousItemCountRef = useRef(0)
+  const previousItemIdsRef = useRef<Set<string>>(new Set())
+  const previousItemsSnapshotRef = useRef<CartItem[]>([])
 
   useEffect(() => {
+    if (forcedEmbeddedMode) {
+      setIsEmbeddedPreview(true)
+      setHasResolvedEmbedMode(true)
+      return
+    }
     if (typeof window === "undefined") return
     const params = new URLSearchParams(window.location.search)
     setIsEmbeddedPreview(params.get("embed") === "1")
-  }, [])
+    setHasResolvedEmbedMode(true)
+  }, [forcedEmbeddedMode])
+
+  // In the dock iframe, ensure the viewport resets when cart transitions from empty to non-empty.
+  useEffect(() => {
+    const isNestedFrame = typeof window !== "undefined" && window.parent !== window
+    if (!isEmbeddedPreview || !isNestedFrame) {
+      previousItemCountRef.current = items.length
+      return
+    }
+
+    const previousCount = previousItemCountRef.current
+    if (previousCount === 0 && items.length > 0) {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" })
+    }
+
+    previousItemCountRef.current = items.length
+  }, [items.length, isEmbeddedPreview])
+
+  useEffect(() => {
+    if (!isEmbeddedPreview) {
+      previousItemIdsRef.current = new Set(items.map((item) => item.id))
+      previousItemsSnapshotRef.current = items
+      return
+    }
+
+    const previousItems = previousItemsSnapshotRef.current
+    const previousIds = previousItemIdsRef.current
+    const currentIds = new Set(items.map((item) => item.id))
+
+    const addedItems = items.filter((item) => !previousIds.has(item.id))
+    const removedItems = previousItems.filter((item) => !currentIds.has(item.id))
+
+    previousItemIdsRef.current = currentIds
+    previousItemsSnapshotRef.current = items
+
+    if (addedItems.length === 0 && removedItems.length === 0) return
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (addedItems.length > 0) {
+          const target = document.querySelector<HTMLElement>(`[data-schedule-item-id="${addedItems[0].id}"]`)
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" })
+            return
+          }
+        }
+
+        if (removedItems.length > 0) {
+          const removedCourseCode = removedItems[0].courseCode
+          const scheduleBlocks = Array.from(document.querySelectorAll<HTMLElement>("[data-schedule-item-id]"))
+          const sameCourseTarget = scheduleBlocks.find(
+            (block) => block.getAttribute("data-schedule-course-code") === removedCourseCode,
+          )
+
+          if (sameCourseTarget) {
+            sameCourseTarget.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" })
+            return
+          }
+
+          if (scheduleRef.current) {
+            scheduleRef.current.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
+          }
+        }
+      })
+    })
+  }, [items, isEmbeddedPreview])
+
+  if (!hasResolvedEmbedMode) {
+    return <div className="min-h-screen bg-background" />
+  }
 
   const requestParentNavigation = (href: string) => {
     if (typeof window === "undefined") return false
@@ -900,9 +977,21 @@ export default function CartPage() {
       .sort((a, b) => getTermDisplayInfo(a).label.localeCompare(getTermDisplayInfo(b).label)),
   ]
 
+  // Guard against edge cases where items exist but no displayable term is produced.
+  if (items.length > 0 && orderedTerms.length === 0) {
+    itemsByTerm.unspecified = [...items]
+  }
+  const displayTerms = orderedTerms.length > 0
+    ? orderedTerms
+    : (items.length > 0 ? ["unspecified"] : [])
+
   // Compute conflicts per term
   const conflictsByTerm: Record<string, Set<string>> = {}
-  for (const term of orderedTerms) {
+  for (const term of displayTerms) {
+    // Ensure itemsByTerm[term] exists as an array (defensive check)
+    if (!itemsByTerm[term]) {
+      itemsByTerm[term] = []
+    }
     conflictsByTerm[term] = detectConflicts(buildScheduleBlocks(itemsByTerm[term], globalColorMap))
   }
   const allConflicts = new Set<string>()
@@ -1067,65 +1156,306 @@ export default function CartPage() {
     pdf.save("YUPlan-Schedule.pdf")
   }
 
-  useEffect(() => {
-    if (!isEmbeddedPreview) {
-      previousItemsRef.current = items
-      return
-    }
+  if (isEmbeddedPreview) {
+    return (
+      <div className="bg-background px-2 py-2 space-y-3">
+        {items.length === 0 ? (
+          <div className="flex items-center justify-center min-h-[calc(100vh-11rem)]">
+            <Card className="p-6 sm:p-12 text-center max-w-sm">
+              <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShoppingCart className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h2 className="text-xl font-semibold mb-2">No courses in your cart</h2>
+              <p className="text-muted-foreground mb-6">
+                Browse courses and add them to cart to start building your schedule.
+              </p>
+              <Link
+                href="/courses"
+                onClick={(event) => {
+                  if (requestParentNavigation("/courses")) {
+                    event.preventDefault()
+                  }
+                }}
+              >
+                <Button>Browse Courses</Button>
+              </Link>
+            </Card>
+          </div>
+        ) : (
+          <>
+            {allConflicts.size > 0 && (
+              <Card className="p-3 border-destructive bg-destructive/5">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    Some items overlap in time. Review your selections below.
+                  </p>
+                </div>
+              </Card>
+            )}
 
-    if (!hasInitializedChangeTrackingRef.current) {
-      hasInitializedChangeTrackingRef.current = true
-      previousItemsRef.current = items
-      return
-    }
+            <div>
+              <h2 className="text-lg font-bold mb-2">Your Schedule</h2>
+              <div ref={scheduleRef} className="space-y-3">
+                {displayTerms.includes("fall") && displayTerms.includes("winter") && (
+                  <div className="grid grid-cols-1 gap-3">
+                    <ScheduleTimetable
+                      termItems={itemsByTerm["fall"] || []}
+                      termKey="fall"
+                      conflicts={conflictsByTerm["fall"] || new Set()}
+                      globalColorMap={globalColorMap}
+                      denseMode={true}
+                      onRemoveItem={removeItem}
+                    />
+                    <ScheduleTimetable
+                      termItems={itemsByTerm["winter"] || []}
+                      termKey="winter"
+                      conflicts={conflictsByTerm["winter"] || new Set()}
+                      globalColorMap={globalColorMap}
+                      denseMode={true}
+                      onRemoveItem={removeItem}
+                    />
+                  </div>
+                )}
 
-    const previousItems = previousItemsRef.current
-    const previousIds = new Set(previousItems.map((item) => item.id))
-    const currentIds = new Set(items.map((item) => item.id))
+                {displayTerms.map((term) => {
+                  if ((term === "fall" || term === "winter") && displayTerms.includes("fall") && displayTerms.includes("winter")) {
+                    return null
+                  }
+                  return (
+                    <div key={term}>
+                      <ScheduleTimetable
+                        termItems={itemsByTerm[term] || []}
+                        termKey={term}
+                        conflicts={conflictsByTerm[term] || new Set()}
+                        globalColorMap={globalColorMap}
+                        denseMode={true}
+                        onRemoveItem={removeItem}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
 
-    const addedItems = items.filter((item) => !previousIds.has(item.id))
-    const removedItems = previousItems.filter((item) => !currentIds.has(item.id))
+            <div className="space-y-2">
+              <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="w-full">
+                <Download className="h-4 w-4 mr-2" />
+                Save as PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={clearCart} className="w-full">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear Cart
+              </Button>
+            </div>
 
-    const scheduleElement = scheduleRef.current
-    if (!scheduleElement) {
-      previousItemsRef.current = items
-      return
-    }
+            <div className="space-y-6">
+              {displayTerms.map((term) => {
+                const termItems = itemsByTerm[term]
+                const termInfo = getTermDisplayInfo(term)
+                const termGrouped: Record<string, CartItem[]> = {}
+                for (const item of termItems) {
+                  if (!termGrouped[item.courseCode]) termGrouped[item.courseCode] = []
+                  termGrouped[item.courseCode].push(item)
+                }
+                const termCourseList = Object.keys(termGrouped).sort((a, b) => a.localeCompare(b))
+                const termConflictCount = termItems.filter((item) => allConflicts.has(item.id)).length
 
-    const scheduleBlocks = Array.from(scheduleElement.querySelectorAll<HTMLElement>("[data-schedule-item-id]"))
+                return (
+                  <Card key={term} className="overflow-hidden">
+                    <div className="p-4 md:p-5 bg-muted/40 border-b border-border">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-lg md:text-xl font-bold">{termInfo.label}</h2>
+                        {termInfo.period && <Badge variant="secondary">{termInfo.period}</Badge>}
+                        <Badge variant="outline">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
+                        <div className="ml-auto flex items-center gap-2">
+                          {termConflictCount > 0 && (
+                            <Badge variant="destructive">
+                              <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+                              {termConflictCount} conflict{termConflictCount !== 1 && "s"}
+                            </Badge>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4 mr-1.5" />
+                                Clear semester
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Clear {termInfo.label}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will remove all selected courses and components in this semester from your cart.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => clearTermItems(termItems)}>
+                                  Clear semester
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </div>
 
-    const findBlockByItemId = (itemId: string) =>
-      scheduleBlocks.find((element) => element.getAttribute("data-schedule-item-id") === itemId) ?? null
+                    <Accordion type="multiple" className="px-4 md:px-5">
+                      {termCourseList.map((courseCode) => {
+                        const courseItems = termGrouped[courseCode]
+                        const first = courseItems[0]
+                        const sortedCourseItems = [...courseItems].sort((a, b) => {
+                          const rankDiff = getComponentSortRank(a.type) - getComponentSortRank(b.type)
+                          if (rankDiff !== 0) return rankDiff
+                          if (a.section !== b.section) return a.section.localeCompare(b.section)
+                          return a.typeLabel.localeCompare(b.typeLabel)
+                        })
 
-    const findBlockByCourseCode = (courseCode: string) =>
-      scheduleBlocks.find((element) => element.getAttribute("data-schedule-course-code") === courseCode) ?? null
+                        return (
+                          <AccordionItem key={courseCode} value={`${term}-${courseCode}`}>
+                            <div className="pt-4 pb-1 min-w-0 flex items-start gap-3">
+                              <div className="min-w-0 flex-1">
+                                <Link
+                                  href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`}
+                                  onClick={(event) => {
+                                    const href = `/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`
+                                    if (requestParentNavigation(href)) {
+                                      event.preventDefault()
+                                    }
+                                  }}
+                                  className="text-base font-semibold text-primary hover:underline truncate block"
+                                >
+                                  {courseCode}
+                                </Link>
+                                <p className="text-sm text-muted-foreground truncate">{first.courseName}</p>
+                                {first.term && (
+                                  <div className="mt-2">
+                                    <MonthRangeBar
+                                      termLabel={first.term}
+                                      compact
+                                      showLabel
+                                      activeClassName={`${COURSE_COLORS[globalColorMap[courseCode] ?? 0].bg} ${COURSE_COLORS[globalColorMap[courseCode] ?? 0].text}`}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Remove {courseCode}</span>
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remove {courseCode}?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will remove all selected components for this course from your cart.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => {
+                                        for (const courseItem of courseItems) {
+                                          removeItem(courseItem.id)
+                                        }
+                                      }}
+                                    >
+                                      Remove course
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
 
-    let targetBlock: HTMLElement | null = null
+                            <AccordionTrigger className="hover:no-underline py-2 text-xs text-muted-foreground">
+                              Show course components
+                            </AccordionTrigger>
 
-    for (const item of addedItems) {
-      const match = findBlockByItemId(item.id)
-      if (match) {
-        targetBlock = match
-        break
-      }
-    }
+                            <AccordionContent>
+                              <div className="space-y-2">
+                                {sortedCourseItems.map((item) => (
+                                  <div key={item.id} className="p-3 rounded-md border border-border bg-background flex items-start gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                        <Badge variant="outline" className="text-xs">Section {item.section}</Badge>
+                                        <Badge variant="secondary" className="text-xs">{item.typeLabel}</Badge>
+                                        {allConflicts.has(item.id) && (
+                                          <Badge variant="destructive" className="text-xs">
+                                            <AlertTriangle className="h-3 w-3 mr-1" />
+                                            Conflict
+                                          </Badge>
+                                        )}
+                                      </div>
 
-    if (!targetBlock && removedItems.length > 0) {
-      targetBlock = findBlockByCourseCode(removedItems[0].courseCode)
-    }
+                                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                        <span className="flex items-center gap-1">
+                                          <Calendar className="h-3.5 w-3.5" />{item.day}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <Clock className="h-3.5 w-3.5" />{item.time}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <MapPin className="h-3.5 w-3.5" />{item.location}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <BookOpen className="h-3.5 w-3.5" />{item.instructor}
+                                        </span>
+                                      </div>
+                                    </div>
 
-    if (targetBlock) {
-      targetBlock.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" })
-    }
+                                    {(() => {
+                                      const isPrimaryComponent = PRIMARY_COMPONENT_TYPES.has(normalizeComponentType(item.type))
+                                      const hasSecondaryInSameSection = courseItems.some(
+                                        (entry) =>
+                                          entry.section === item.section &&
+                                          SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(entry.type)),
+                                      )
+                                      const canRemove = !(isPrimaryComponent && hasSecondaryInSameSection)
 
-    previousItemsRef.current = items
-  }, [items, isEmbeddedPreview])
+                                      if (!canRemove) return null
+
+                                      return (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                          onClick={() => removeItem(item.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                          <span className="sr-only">Remove {item.typeLabel}</span>
+                                        </Button>
+                                      )
+                                    })()}
+                                  </div>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        )
+                      })}
+                    </Accordion>
+                  </Card>
+                )
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className={`${isEmbeddedPreview ? "bg-background" : "min-h-screen bg-background flex flex-col"}`}>
       {!isEmbeddedPreview && <Header showSearch />}
-      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 flex-1 w-full">
-        <div className="max-w-6xl mx-auto">
+      <div className={isEmbeddedPreview ? "px-2 py-2" : "container mx-auto px-3 sm:px-4 py-6 sm:py-8 flex-1 w-full"}>
+        <div className={isEmbeddedPreview ? "w-full" : "max-w-6xl mx-auto"}>
           {/* Page Header */}
           {!isEmbeddedPreview && (
             <motion.div
@@ -1145,7 +1475,7 @@ export default function CartPage() {
                   <p className="text-muted-foreground">
                     {items.length === 0
                       ? "Your cart is empty. Add sections from a course page."
-                      : `${courseList.length} course${courseList.length === 1 ? "" : "s"} across ${orderedTerms.length} term${orderedTerms.length === 1 ? "" : "s"}`}
+                      : `${courseList.length} course${courseList.length === 1 ? "" : "s"} across ${displayTerms.length} term${displayTerms.length === 1 ? "" : "s"}`}
                   </p>
                 </motion.div>
                 {items.length > 0 && (
@@ -1228,23 +1558,23 @@ export default function CartPage() {
 
               <div ref={scheduleRef} className="space-y-4">
                 {/* Fall and Winter side-by-side if both exist */}
-                {orderedTerms.includes("fall") && orderedTerms.includes("winter") && (
+                {displayTerms.includes("fall") && displayTerms.includes("winter") && (
                   <motion.div
                     className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-3"
                     variants={cardVariant}
                   >
                     <ScheduleTimetable
-                      termItems={itemsByTerm["fall"]}
+                      termItems={itemsByTerm["fall"] || []}
                       termKey="fall"
-                      conflicts={conflictsByTerm["fall"]}
+                      conflicts={conflictsByTerm["fall"] || new Set()}
                       globalColorMap={globalColorMap}
                       denseMode={true}
                       onRemoveItem={removeItem}
                     />
                     <ScheduleTimetable
-                      termItems={itemsByTerm["winter"]}
+                      termItems={itemsByTerm["winter"] || []}
                       termKey="winter"
-                      conflicts={conflictsByTerm["winter"]}
+                      conflicts={conflictsByTerm["winter"] || new Set()}
                       globalColorMap={globalColorMap}
                       denseMode={true}
                       onRemoveItem={removeItem}
@@ -1253,17 +1583,17 @@ export default function CartPage() {
                 )}
 
                 {/* Individual schedules for standalone or other terms */}
-                {orderedTerms.map((term) => {
+                {displayTerms.map((term) => {
                   // Skip if we already rendered fall/winter together
-                  if ((term === "fall" || term === "winter") && orderedTerms.includes("fall") && orderedTerms.includes("winter")) {
+                  if ((term === "fall" || term === "winter") && displayTerms.includes("fall") && displayTerms.includes("winter")) {
                     return null
                   }
                   return (
                     <motion.div key={term} variants={cardVariant}>
                       <ScheduleTimetable
-                        termItems={itemsByTerm[term]}
+                        termItems={itemsByTerm[term] || []}
                         termKey={term}
-                        conflicts={conflictsByTerm[term]}
+                        conflicts={conflictsByTerm[term] || new Set()}
                         globalColorMap={globalColorMap}
                         denseMode={true}
                         onRemoveItem={removeItem}
@@ -1295,14 +1625,14 @@ export default function CartPage() {
           )}
 
           {/* Selection Review (before schedule generation) */}
-          {orderedTerms.length > 0 && (
+          {displayTerms.length > 0 && (
             <motion.div
               className="space-y-6 mb-8"
               initial="initial"
               animate="animate"
               variants={staggerContainer}
             >
-              {orderedTerms.map((term) => {
+              {displayTerms.map((term) => {
                 const termItems = itemsByTerm[term]
                 const termInfo = getTermDisplayInfo(term)
                 const termGrouped: Record<string, CartItem[]> = {}
@@ -1522,22 +1852,22 @@ export default function CartPage() {
 
               <div ref={scheduleRef} className="space-y-8">
                 {/* Fall and Winter side-by-side if both exist */}
-                {orderedTerms.includes("fall") && orderedTerms.includes("winter") && (
+                {displayTerms.includes("fall") && displayTerms.includes("winter") && (
                   <motion.div
                     className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-4"
                     variants={cardVariant}
                   >
                     <ScheduleTimetable
-                      termItems={itemsByTerm["fall"]}
+                      termItems={itemsByTerm["fall"] || []}
                       termKey="fall"
-                      conflicts={conflictsByTerm["fall"]}
+                      conflicts={conflictsByTerm["fall"] || new Set()}
                       globalColorMap={globalColorMap}
                       onRemoveItem={removeItem}
                     />
                     <ScheduleTimetable
-                      termItems={itemsByTerm["winter"]}
+                      termItems={itemsByTerm["winter"] || []}
                       termKey="winter"
-                      conflicts={conflictsByTerm["winter"]}
+                      conflicts={conflictsByTerm["winter"] || new Set()}
                       globalColorMap={globalColorMap}
                       onRemoveItem={removeItem}
                     />
@@ -1545,17 +1875,17 @@ export default function CartPage() {
                 )}
 
                 {/* Individual schedules for standalone or other terms */}
-                {orderedTerms.map((term) => {
+                {displayTerms.map((term) => {
                   // Skip if we already rendered fall/winter together
-                  if ((term === "fall" || term === "winter") && orderedTerms.includes("fall") && orderedTerms.includes("winter")) {
+                  if ((term === "fall" || term === "winter") && displayTerms.includes("fall") && displayTerms.includes("winter")) {
                     return null
                   }
                   return (
                     <motion.div key={term} variants={cardVariant}>
                       <ScheduleTimetable
-                        termItems={itemsByTerm[term]}
+                        termItems={itemsByTerm[term] || []}
                         termKey={term}
-                        conflicts={conflictsByTerm[term]}
+                        conflicts={conflictsByTerm[term] || new Set()}
                         globalColorMap={globalColorMap}
                         onRemoveItem={removeItem}
                       />
@@ -1568,7 +1898,11 @@ export default function CartPage() {
 
         </div>
       </div>
-      <Footer />
+      {!isEmbeddedPreview && <Footer />}
     </div>
   )
+}
+
+export default function CartPage() {
+  return <CartPageContent />
 }
