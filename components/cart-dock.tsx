@@ -24,6 +24,31 @@ export function CartDock() {
     previousItemCountRef.current = itemCount
   }, [itemCount])
 
+  useEffect(() => {
+    if (!isCartDockOpen) return
+
+    scrollContainerRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" })
+    let rafB: number | null = null
+    const rafA = requestAnimationFrame(() => {
+      scrollContainerRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" })
+      rafB = requestAnimationFrame(() => {
+        scrollContainerRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" })
+      })
+    })
+
+    const timer = window.setTimeout(() => {
+      scrollContainerRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" })
+    }, 140)
+
+    return () => {
+      cancelAnimationFrame(rafA)
+      if (rafB !== null) {
+        cancelAnimationFrame(rafB)
+      }
+      window.clearTimeout(timer)
+    }
+  }, [isCartDockOpen])
+
   return (
     <Sheet open={isCartDockOpen} onOpenChange={setIsCartDockOpen} modal={false}>
       <SheetContent
