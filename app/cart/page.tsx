@@ -91,9 +91,9 @@ function useIsTabletOrBelow() {
 }
 
 const TERM_DISPLAY_MAP: Record<string, { label: string; period: string }> = {
-  fall: { label: "Fall Semester", period: "September - December" },
-  winter: { label: "Winter Semester", period: "January - April" },
-  summer: { label: "Summer Semester", period: "May - August" },
+  fall: { label: "Fall", period: "September - December" },
+  winter: { label: "Winter", period: "January - April" },
+  summer: { label: "Summer", period: "May - August" },
   year: { label: "Full Year", period: "September - April" },
 }
 
@@ -812,6 +812,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
   const previousItemCountRef = useRef(0)
   const previousItemIdsRef = useRef<Set<string>>(new Set())
   const previousItemsSnapshotRef = useRef<CartItem[]>([])
+  const hasInitializedEmbeddedScrollRef = useRef(false)
 
   useEffect(() => {
     if (forcedEmbeddedMode) {
@@ -845,6 +846,14 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
     if (!isEmbeddedPreview) {
       previousItemIdsRef.current = new Set(items.map((item) => item.id))
       previousItemsSnapshotRef.current = items
+      hasInitializedEmbeddedScrollRef.current = false
+      return
+    }
+
+    if (!hasInitializedEmbeddedScrollRef.current) {
+      previousItemIdsRef.current = new Set(items.map((item) => item.id))
+      previousItemsSnapshotRef.current = items
+      hasInitializedEmbeddedScrollRef.current = true
       return
     }
 
@@ -1158,7 +1167,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
 
   if (isEmbeddedPreview) {
     return (
-      <div className="bg-background px-2 py-2 space-y-3">
+      <div className="bg-background px-2 py-1.5 space-y-3">
         {items.length === 0 ? (
           <div className="flex items-center justify-center min-h-[calc(100vh-11rem)]">
             <Card className="p-6 sm:p-12 text-center max-w-sm">
@@ -1183,6 +1192,17 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
           </div>
         ) : (
           <>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={handleSaveAsPdf} className="border-red-500 dark:border-red-400 border-2 text-xs font-semibold">
+                <Download className="h-3.5 w-3.5 mr-1" />
+                PDF
+              </Button>
+              <Button variant="destructive" onClick={clearCart} className="h-8 text-xs font-semibold shadow-sm">
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                Clear
+              </Button>
+            </div>
+
             {allConflicts.size > 0 && (
               <Card className="p-3 border-destructive bg-destructive/5">
                 <div className="flex items-start gap-2">
@@ -1195,7 +1215,6 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
             )}
 
             <div>
-              <h2 className="text-lg font-bold mb-2">Your Schedule</h2>
               <div ref={scheduleRef} className="space-y-3">
                 {displayTerms.includes("fall") && displayTerms.includes("winter") && (
                   <div className="grid grid-cols-1 gap-3">
@@ -1238,17 +1257,6 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="w-full">
-                <Download className="h-4 w-4 mr-2" />
-                Save as PDF
-              </Button>
-              <Button variant="outline" size="sm" onClick={clearCart} className="w-full">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Clear Cart
-              </Button>
-            </div>
-
             <div className="space-y-6">
               {displayTerms.map((term) => {
                 const termItems = itemsByTerm[term]
@@ -1264,11 +1272,11 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                 return (
                   <Card key={term} className="overflow-hidden">
                     <div className="p-4 md:p-5 bg-muted/40 border-b border-border">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg md:text-xl font-bold">{termInfo.label}</h2>
+                      <div className="flex flex-nowrap items-center gap-2 min-w-0">
+                        <h2 className="text-lg md:text-xl font-bold truncate">{termInfo.label}</h2>
                         {termInfo.period && <Badge variant="secondary">{termInfo.period}</Badge>}
-                        <Badge variant="outline">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
-                        <div className="ml-auto flex items-center gap-2">
+                        <Badge variant="outline" className="shrink-0">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
+                        <div className="ml-auto flex items-center gap-2 shrink-0">
                           {termConflictCount > 0 && (
                             <Badge variant="destructive">
                               <AlertTriangle className="h-3.5 w-3.5 mr-1" />
@@ -1647,11 +1655,11 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                   <motion.div key={term} variants={cardVariant}>
                     <Card className="overflow-hidden">
                     <div className="p-4 md:p-5 bg-muted/40 border-b border-border">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg md:text-xl font-bold">{termInfo.label}</h2>
+                      <div className="flex flex-nowrap items-center gap-2 min-w-0">
+                        <h2 className="text-lg md:text-xl font-bold truncate">{termInfo.label}</h2>
                         {termInfo.period && <Badge variant="secondary">{termInfo.period}</Badge>}
-                        <Badge variant="outline">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
-                        <div className="ml-auto flex items-center gap-2">
+                        <Badge variant="outline" className="shrink-0">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
+                        <div className="ml-auto flex items-center gap-2 shrink-0">
                           {termConflictCount > 0 && (
                             <Badge variant="destructive">
                               <AlertTriangle className="h-3.5 w-3.5 mr-1" />
