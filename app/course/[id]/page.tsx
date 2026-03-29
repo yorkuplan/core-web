@@ -94,7 +94,7 @@ const parseActivityTimes = (rawTimes: string): TimeSlot[] => {
 export default function CoursePage() {
   const params = useParams();
   const courseCode = getIDFromParams({ id: params.id as string });
-  const { addItem, removeItem, isInCart, setIsCartDockOpen } = useCart();
+  const { addItem, removeItem, isInCart, setIsCartDockOpen, canDock } = useCart();
   const [offerings, setOfferings] = useState<CourseOffering[]>([]);
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -114,6 +114,7 @@ export default function CoursePage() {
   const courseDisplayCode = formatCourseCode(selectedOffering?.code ?? courseCode);
 
   const openCartSidePreview = () => {
+    if (!canDock) return;
     setIsCartDockOpen(true);
   };
 

@@ -63,14 +63,14 @@ const cardVariant = {
 }
 
 const COURSE_COLORS = [
-  { bg: "bg-red-100 dark:bg-red-900/40", border: "border-red-300 dark:border-red-700", text: "text-red-800 dark:text-red-200", print: "#fee2e2" },
-  { bg: "bg-blue-100 dark:bg-blue-900/40", border: "border-blue-300 dark:border-blue-700", text: "text-blue-800 dark:text-blue-200", print: "#dbeafe" },
-  { bg: "bg-emerald-100 dark:bg-emerald-900/40", border: "border-emerald-300 dark:border-emerald-700", text: "text-emerald-800 dark:text-emerald-200", print: "#d1fae5" },
-  { bg: "bg-amber-100 dark:bg-amber-900/40", border: "border-amber-300 dark:border-amber-700", text: "text-amber-800 dark:text-amber-200", print: "#fef3c7" },
-  { bg: "bg-purple-100 dark:bg-purple-900/40", border: "border-purple-300 dark:border-purple-700", text: "text-purple-800 dark:text-purple-200", print: "#f3e8ff" },
-  { bg: "bg-pink-100 dark:bg-pink-900/40", border: "border-pink-300 dark:border-pink-700", text: "text-pink-800 dark:text-pink-200", print: "#fce7f3" },
-  { bg: "bg-cyan-100 dark:bg-cyan-900/40", border: "border-cyan-300 dark:border-cyan-700", text: "text-cyan-800 dark:text-cyan-200", print: "#cffafe" },
-  { bg: "bg-orange-100 dark:bg-orange-900/40", border: "border-orange-300 dark:border-orange-700", text: "text-orange-800 dark:text-orange-200", print: "#ffedd5" },
+  { bg: "bg-red-100 dark:bg-red-950/75", border: "border-red-300 dark:border-red-700", text: "text-red-800 dark:text-red-100", print: "#fee2e2" },
+  { bg: "bg-blue-100 dark:bg-blue-950/75", border: "border-blue-300 dark:border-blue-700", text: "text-blue-800 dark:text-blue-100", print: "#dbeafe" },
+  { bg: "bg-emerald-100 dark:bg-emerald-950/75", border: "border-emerald-300 dark:border-emerald-700", text: "text-emerald-800 dark:text-emerald-100", print: "#d1fae5" },
+  { bg: "bg-amber-100 dark:bg-amber-950/75", border: "border-amber-300 dark:border-amber-700", text: "text-amber-800 dark:text-amber-100", print: "#fef3c7" },
+  { bg: "bg-purple-100 dark:bg-purple-950/75", border: "border-purple-300 dark:border-purple-700", text: "text-purple-800 dark:text-purple-100", print: "#f3e8ff" },
+  { bg: "bg-pink-100 dark:bg-pink-950/75", border: "border-pink-300 dark:border-pink-700", text: "text-pink-800 dark:text-pink-100", print: "#fce7f3" },
+  { bg: "bg-cyan-100 dark:bg-cyan-950/75", border: "border-cyan-300 dark:border-cyan-700", text: "text-cyan-800 dark:text-cyan-100", print: "#cffafe" },
+  { bg: "bg-orange-100 dark:bg-orange-950/75", border: "border-orange-300 dark:border-orange-700", text: "text-orange-800 dark:text-orange-100", print: "#ffedd5" },
 ]
 
 const SLOT_HEIGHT = 48
@@ -556,9 +556,10 @@ function detectConflicts(blocks: ScheduleBlock[]): Set<string> {
 function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, denseMode = false, onRemoveItem }: { termItems: CartItem[]; termKey: string; conflicts: Set<string>; globalColorMap: Record<string, number>; denseMode?: boolean; onRemoveItem?: (id: string) => void }) {
   const isMobile = useIsMobile()
   const isTabletOrBelow = useIsTabletOrBelow()
+  const isDenseMobile = denseMode && isMobile
   const isSummerTerm = termKey === "summer" || termKey === "summer1" || termKey === "summer2"
   const isCompactTerm = termKey === "fall" || termKey === "winter" || (isTabletOrBelow && isSummerTerm)
-  const compactSlotHeight = denseMode ? (isMobile ? 18 : isTabletOrBelow ? 16 : 15) : (isMobile ? 36 : isTabletOrBelow ? 34 : 32)
+  const compactSlotHeight = denseMode ? (isMobile ? 22 : isTabletOrBelow ? 16 : 15) : (isMobile ? 36 : isTabletOrBelow ? 34 : 32)
   const [activeBlock, setActiveBlock] = useState<ScheduleBlock | null>(null)
   const blocks = buildScheduleBlocks(termItems, globalColorMap)
 
@@ -575,13 +576,13 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
   const { startHour, endHour } = getScheduleHours(blocks)
   const halfHourRows = Math.max(4, (endHour - startHour) * 2)
   const slotHeight = denseMode
-    ? (isCompactTerm ? compactSlotHeight : (isMobile ? 20 : 22))
+    ? (isCompactTerm ? compactSlotHeight : (isMobile ? 24 : 22))
     : (isCompactTerm ? compactSlotHeight : (isMobile ? 40 : SLOT_HEIGHT))
   const visibleMonthWindow = getVisibleMonthWindow(termKey)
   const runRowHeight = denseMode ? 16 : (isCompactTerm ? 24 : (isMobile ? 24 : 28))
   const runBubbleHeight = denseMode ? 12 : (isCompactTerm ? 18 : (isMobile ? 18 : 22))
-  const timeColumnWidth = denseMode ? 28 : (isCompactTerm ? 40 : (isMobile ? 48 : 60))
-  const dayColumnMinWidth = denseMode ? (isMobile ? 64 : 60) : (isCompactTerm ? (isMobile ? 92 : isTabletOrBelow ? 88 : 80) : (isMobile ? 100 : 140))
+  const timeColumnWidth = denseMode ? (isMobile ? 34 : 28) : (isCompactTerm ? 40 : (isMobile ? 48 : 60))
+  const dayColumnMinWidth = denseMode ? (isMobile ? 76 : 60) : (isCompactTerm ? (isMobile ? 92 : isTabletOrBelow ? 88 : 80) : (isMobile ? 100 : 140))
   const showTapDetails = isTabletOrBelow
 
   // Build term-specific legend from the global map
@@ -689,7 +690,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
           <div className="grid gap-0" style={{ gridTemplateColumns: `${timeColumnWidth}px repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
             <div className={denseMode ? "h-4" : (isCompactTerm ? "h-8" : "h-10")} />
             {dayColumns.map((day) => (
-              <div key={day} className={`flex items-center justify-center font-semibold border-b border-border bg-muted/50 ${denseMode ? "h-4 text-[10px]" : (isCompactTerm ? "h-8 text-xs" : "h-10 text-sm")}`}>
+              <div key={day} className={`flex items-center justify-center font-semibold border-b border-border bg-muted/50 ${denseMode ? (isDenseMobile ? "h-6 text-xs" : "h-4 text-[10px]") : (isCompactTerm ? "h-8 text-xs" : "h-10 text-sm")}`}>
                 {day}
               </div>
             ))}
@@ -701,9 +702,9 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                 const hour = startHour + Math.floor(i / 2)
                 const isHour = i % 2 === 0
                 return (
-                  <div key={i} className={`flex items-start justify-end ${denseMode ? "pr-0.5 text-[9px]" : (isCompactTerm ? "pr-1 text-xs" : "pr-2 text-xs")} text-muted-foreground`} style={{ height: slotHeight }}>
+                  <div key={i} className={`flex items-start justify-end ${denseMode ? (isDenseMobile ? "pr-1 text-[10px]" : "pr-0.5 text-[9px]") : (isCompactTerm ? "pr-1 text-xs" : "pr-2 text-xs")} text-muted-foreground`} style={{ height: slotHeight }}>
                     {isHour && (
-                      <span className={denseMode ? "-mt-0.5 text-[9px]" : (isCompactTerm ? "-mt-1 text-xs" : "-mt-2")}>
+                      <span className={denseMode ? (isDenseMobile ? "-mt-1 text-[10px]" : "-mt-0.5 text-[9px]") : (isCompactTerm ? "-mt-1 text-xs" : "-mt-2")}>
                         {hour > 12 ? `${hour - 12}PM` : hour === 12 ? "12PM" : `${hour}AM`}
                       </span>
                     )}
@@ -724,12 +725,15 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                     const heightCompact = (block.endTime - block.startTime) * 2 * slotHeight
                     const color = COURSE_COLORS[block.colorIndex]
                     const hasConflict = conflicts && conflicts.has(block.item.id)
+                    const denseMobileCode = block.item.courseCode.replace(/\s+/g, "")
+                    const denseMobileType = normalizeComponentType(block.item.type) || block.item.typeLabel
+                    const denseMobileLocation = block.item.location.split(",")[0]?.trim() || block.item.location
                     return (
                       <div
                         key={`${block.item.id}-${idx}`}
                         data-schedule-item-id={block.item.id}
                         data-schedule-course-code={block.item.courseCode}
-                        className={`absolute left-1 right-1 rounded-md border overflow-hidden ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${denseMode ? "px-1 py-0.5" : (isCompactTerm ? "px-1.5 py-1" : "px-2 py-1")} ${showTapDetails ? "cursor-pointer" : ""}`}
+                        className={`absolute left-1 right-1 rounded-md border overflow-visible ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${denseMode ? (isDenseMobile ? "px-1.5 py-1" : "px-1 py-0.5") : (isCompactTerm ? "px-1.5 py-1" : "px-2 py-1")} ${showTapDetails ? "cursor-pointer" : ""}`}
                         style={{ top: topCompact, height: heightCompact }}
                         role={showTapDetails ? "button" : undefined}
                         tabIndex={showTapDetails ? 0 : undefined}
@@ -742,11 +746,19 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                           }
                         } : undefined}
                       >
-                        <div className="flex items-start justify-between gap-1">
-                          <div className="flex-1 min-w-0">
-                            <p className={`font-bold truncate ${denseMode ? "text-[10px]" : "text-xs"}`}>{block.item.courseCode}</p>
-                            <p className={`truncate ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>{block.item.typeLabel}</p>
-                            {heightCompact > (denseMode ? 32 : 50) && <p className={`truncate opacity-75 ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>{block.item.location}</p>}
+                        <div className="flex items-start gap-1">
+                          <div className="flex-1 min-w-0 pr-1">
+                            <p className={`${isDenseMobile ? "font-bold leading-tight text-[11px]" : `font-bold truncate ${denseMode ? "text-[10px]" : "text-xs"}`}`}>
+                              {isDenseMobile ? denseMobileCode : block.item.courseCode}
+                            </p>
+                            <p className={`${isDenseMobile ? "leading-tight text-[10px]" : `truncate ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}`}>
+                              {isDenseMobile ? denseMobileType : block.item.typeLabel}
+                            </p>
+                            {heightCompact > (denseMode ? 40 : 50) && (
+                              <p className={`${isDenseMobile ? "leading-tight text-[10px] opacity-80" : `truncate opacity-80 ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}`}>
+                                {isDenseMobile ? denseMobileLocation : block.item.location}
+                              </p>
+                            )}
                           </div>
                           {onRemoveItem && (
                             <button
@@ -754,10 +766,10 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                                 e.stopPropagation()
                                 onRemoveItem(block.item.id)
                               }}
-                              className="shrink-0 p-0.5 hover:bg-current hover:bg-opacity-20 rounded transition-colors"
+                              className={`absolute -top-2 -right-2 z-20 rounded-full border border-red-400/90 bg-background/95 text-red-500 shadow-sm backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors ${denseMode ? "h-5 w-5" : "h-6 w-6"}`}
                               aria-label={`Remove ${block.item.courseCode}`}
                             >
-                              <X className={denseMode ? "w-3 h-3" : "w-4 h-4"} />
+                              <X className={denseMode ? "w-3 h-3" : "w-3.5 h-3.5"} />
                             </button>
                           )}
                         </div>
@@ -808,6 +820,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
   const [isEmbeddedPreview, setIsEmbeddedPreview] = useState(forcedEmbeddedMode)
   const [hasResolvedEmbedMode, setHasResolvedEmbedMode] = useState(forcedEmbeddedMode)
   const { items, removeItem, clearCart } = useCart()
+  const isMobile = useIsMobile()
   const scheduleRef = useRef<HTMLDivElement>(null)
   const previousItemCountRef = useRef(0)
   const previousItemIdsRef = useRef<Set<string>>(new Set())
@@ -912,6 +925,10 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
       window.location.origin,
     )
     return true
+  }
+
+  const scrollToSchedule = () => {
+    scheduleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
   // Group items by course code
@@ -1165,6 +1182,8 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
     pdf.save("YUPlan-Schedule.pdf")
   }
 
+  const showMobileActionBar = !isEmbeddedPreview && isMobile && items.length > 0
+
   if (isEmbeddedPreview) {
     return (
       <div className="bg-background px-2 py-1.5 space-y-3">
@@ -1272,11 +1291,11 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                 return (
                   <Card key={term} className="overflow-hidden">
                     <div className="p-4 md:p-5 bg-muted/40 border-b border-border">
-                      <div className="flex flex-nowrap items-center gap-2 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
                         <h2 className="text-lg md:text-xl font-bold truncate">{termInfo.label}</h2>
                         {termInfo.period && <Badge variant="secondary">{termInfo.period}</Badge>}
                         <Badge variant="outline" className="shrink-0">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
-                        <div className="ml-auto flex items-center gap-2 shrink-0">
+                        <div className="w-full sm:w-auto sm:ml-auto flex items-center gap-2">
                           {termConflictCount > 0 && (
                             <Badge variant="destructive">
                               <AlertTriangle className="h-3.5 w-3.5 mr-1" />
@@ -1285,7 +1304,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                           )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                              <Button variant="outline" size="sm" className="w-full sm:w-auto text-destructive hover:text-destructive">
                                 <Trash2 className="h-4 w-4 mr-1.5" />
                                 Clear semester
                               </Button>
@@ -1353,7 +1372,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Remove {courseCode}</span>
@@ -1382,8 +1401,8 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                               </AlertDialog>
                             </div>
 
-                            <AccordionTrigger className="hover:no-underline py-2 text-xs text-muted-foreground">
-                              Show course components
+                            <AccordionTrigger className="hover:no-underline py-3 text-sm text-muted-foreground text-left">
+                              Show {sortedCourseItems.length} component{sortedCourseItems.length !== 1 && "s"}
                             </AccordionTrigger>
 
                             <AccordionContent>
@@ -1433,7 +1452,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                          className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
                                           onClick={() => removeItem(item.id)}
                                         >
                                           <Trash2 className="h-4 w-4" />
@@ -1462,7 +1481,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
   return (
     <div className={`${isEmbeddedPreview ? "bg-background" : "min-h-screen bg-background flex flex-col"}`}>
       {!isEmbeddedPreview && <Header showSearch />}
-      <div className={isEmbeddedPreview ? "px-2 py-2" : "container mx-auto px-3 sm:px-4 py-6 sm:py-8 flex-1 w-full"}>
+      <div className={isEmbeddedPreview ? "px-2 py-2" : `container mx-auto px-3 sm:px-4 py-6 sm:py-8 flex-1 w-full ${showMobileActionBar ? "pb-28" : ""}`}>
         <div className={isEmbeddedPreview ? "w-full" : "max-w-6xl mx-auto"}>
           {/* Page Header */}
           {!isEmbeddedPreview && (
@@ -1655,11 +1674,11 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                   <motion.div key={term} variants={cardVariant}>
                     <Card className="overflow-hidden">
                     <div className="p-4 md:p-5 bg-muted/40 border-b border-border">
-                      <div className="flex flex-nowrap items-center gap-2 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
                         <h2 className="text-lg md:text-xl font-bold truncate">{termInfo.label}</h2>
                         {termInfo.period && <Badge variant="secondary">{termInfo.period}</Badge>}
                         <Badge variant="outline" className="shrink-0">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
-                        <div className="ml-auto flex items-center gap-2 shrink-0">
+                        <div className="w-full sm:w-auto sm:ml-auto flex items-center gap-2">
                           {termConflictCount > 0 && (
                             <Badge variant="destructive">
                               <AlertTriangle className="h-3.5 w-3.5 mr-1" />
@@ -1668,7 +1687,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                           )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                              <Button variant="outline" size="sm" className="w-full sm:w-auto text-destructive hover:text-destructive">
                                 <Trash2 className="h-4 w-4 mr-1.5" />
                                 Clear semester
                               </Button>
@@ -1736,7 +1755,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Remove {courseCode}</span>
@@ -1765,8 +1784,8 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                               </AlertDialog>
                             </div>
 
-                            <AccordionTrigger className="hover:no-underline py-2 text-xs text-muted-foreground">
-                              Show course components
+                            <AccordionTrigger className="hover:no-underline py-3 text-sm text-muted-foreground text-left">
+                              Show {sortedCourseItems.length} component{sortedCourseItems.length !== 1 && "s"}
                             </AccordionTrigger>
 
                             <AccordionContent>
@@ -1816,7 +1835,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                          className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
                                           onClick={() => removeItem(item.id)}
                                         >
                                           <Trash2 className="h-4 w-4" />
@@ -1852,7 +1871,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                 variants={fadeInUp}
               >
                 <h2 className="text-xl sm:text-2xl font-bold">Your Schedule</h2>
-                <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="w-full sm:w-auto shadow-md shadow-primary">
+                <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="hidden sm:inline-flex w-full sm:w-auto shadow-md shadow-primary">
                   <Download className="h-4 w-4 mr-2" />
                   Save as PDF
                 </Button>
@@ -1906,6 +1925,23 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
 
         </div>
       </div>
+      {showMobileActionBar && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
+          <div className="mx-auto flex w-full max-w-6xl gap-2 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
+            <Button variant="outline" size="sm" onClick={scrollToSchedule} className="flex-1">
+              View Schedule
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="flex-1 shadow-md shadow-primary">
+              <Download className="h-4 w-4 mr-2" />
+              Save PDF
+            </Button>
+            <Button variant="destructive" size="sm" onClick={clearCart} className="flex-1">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
       {!isEmbeddedPreview && <Footer />}
     </div>
   )

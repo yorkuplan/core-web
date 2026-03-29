@@ -15,6 +15,7 @@ export function CartDock() {
   const { isCartDockOpen, setIsCartDockOpen, canDock, dockWidth, itemCount } = useCart()
   const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const previousItemCountRef = useRef(itemCount)
+  const isMobileSheet = !canDock
 
   useEffect(() => {
     const previousCount = previousItemCountRef.current
@@ -50,14 +51,15 @@ export function CartDock() {
   }, [isCartDockOpen])
 
   return (
-    <Sheet open={isCartDockOpen} onOpenChange={setIsCartDockOpen} modal={false}>
+    <Sheet open={isCartDockOpen} onOpenChange={setIsCartDockOpen} modal={isMobileSheet}>
       <SheetContent
         side="right"
-        showOverlay={false}
-        className="w-[92vw] sm:max-w-140 p-0 gap-0"
+        showOverlay={isMobileSheet}
+        overlayClassName="bg-background/0 backdrop-blur-none transition-[opacity,backdrop-filter,background-color] duration-300 ease-out data-[state=open]:bg-background/20 data-[state=open]:backdrop-blur-sm"
+        className="w-[90vw] sm:max-w-140 p-0 gap-0"
         style={canDock ? { width: `${dockWidth}px`, maxWidth: `${dockWidth}px` } : undefined}
-        onPointerDownOutside={(event) => event.preventDefault()}
-        onInteractOutside={(event) => event.preventDefault()}
+        onPointerDownOutside={canDock ? (event) => event.preventDefault() : undefined}
+        onInteractOutside={canDock ? (event) => event.preventDefault() : undefined}
       >
         <SheetHeader className="border-b border-border px-4 py-3">
           <div className="flex items-center justify-between gap-3 pr-8">

@@ -7,15 +7,11 @@ interface LayoutWrapperProps {
 }
 
 export function LayoutWrapper({ children }: LayoutWrapperProps) {
-  const { isCartDockOpen, canDock, dockWidth } = useCart()
+  const { isCartDockOpen, canDock } = useCart()
 
   return (
     <div
-      style={
-        isCartDockOpen && canDock
-          ? { paddingRight: `${dockWidth}px`, transition: "padding-right 300ms ease-in-out" }
-          : { transition: "padding-right 300ms ease-in-out" }
-      }
+      style={{ transition: isCartDockOpen && canDock ? "filter 300ms ease-in-out" : undefined }}
     >
       {children}
     </div>
