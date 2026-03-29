@@ -733,7 +733,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                         key={`${block.item.id}-${idx}`}
                         data-schedule-item-id={block.item.id}
                         data-schedule-course-code={block.item.courseCode}
-                        className={`absolute left-1 right-1 rounded-md border overflow-visible ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${denseMode ? (isDenseMobile ? "px-1.5 py-1" : "px-1 py-0.5") : (isCompactTerm ? "px-1.5 py-1" : "px-2 py-1")} ${showTapDetails ? "cursor-pointer" : ""}`}
+                        className={`absolute ${isDenseMobile ? "left-0.5 right-0.5" : "left-1 right-1"} rounded-md border overflow-visible ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${denseMode ? (isDenseMobile ? "px-1.5 py-1" : "px-1 py-0.5") : (isCompactTerm ? "px-1.5 py-1" : "px-2 py-1")} ${showTapDetails ? "cursor-pointer" : ""}`}
                         style={{ top: topCompact, height: heightCompact }}
                         role={showTapDetails ? "button" : undefined}
                         tabIndex={showTapDetails ? 0 : undefined}
@@ -747,15 +747,15 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                         } : undefined}
                       >
                         <div className="flex items-start gap-1">
-                          <div className="flex-1 min-w-0 pr-1">
-                            <p className={`${isDenseMobile ? "font-bold leading-tight text-[11px]" : `font-bold truncate ${denseMode ? "text-[10px]" : "text-xs"}`}`}>
+                          <div className="flex-1 min-w-0 pr-2">
+                            <p className={isDenseMobile ? "font-bold leading-tight text-[8px] truncate max-w-full" : (denseMode ? "font-bold truncate text-[10px]" : "font-bold truncate text-xs")}>
                               {isDenseMobile ? denseMobileCode : block.item.courseCode}
                             </p>
-                            <p className={`${isDenseMobile ? "leading-tight text-[10px]" : `truncate ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}`}>
+                            <p className={isDenseMobile ? "leading-tight text-[8px] truncate max-w-full" : `truncate ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>
                               {isDenseMobile ? denseMobileType : block.item.typeLabel}
                             </p>
                             {heightCompact > (denseMode ? 40 : 50) && (
-                              <p className={`${isDenseMobile ? "leading-tight text-[10px] opacity-80" : `truncate opacity-80 ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}`}>
+                              <p className={isDenseMobile ? "leading-tight text-[8px] opacity-80 truncate max-w-full" : `truncate opacity-80 ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>
                                 {isDenseMobile ? denseMobileLocation : block.item.location}
                               </p>
                             )}
@@ -766,7 +766,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                                 e.stopPropagation()
                                 onRemoveItem(block.item.id)
                               }}
-                              className={`absolute -top-2 -right-2 z-20 rounded-full border border-red-400/90 bg-background/95 text-red-500 shadow-sm backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors ${denseMode ? "h-5 w-5" : "h-6 w-6"}`}
+                              className={`absolute -top-3 -right-3 z-20 rounded-full border border-red-400/90 bg-background/95 text-red-500 shadow-sm backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors ${denseMode ? "h-5 w-5" : "h-6 w-6"}`}
                               aria-label={`Remove ${block.item.courseCode}`}
                             >
                               <X className={denseMode ? "w-3 h-3" : "w-3.5 h-3.5"} />
