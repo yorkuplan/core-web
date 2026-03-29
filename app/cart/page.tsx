@@ -820,7 +820,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
 export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbeddedMode?: boolean }) {
   const [isEmbeddedPreview, setIsEmbeddedPreview] = useState(forcedEmbeddedMode)
   const [hasResolvedEmbedMode, setHasResolvedEmbedMode] = useState(forcedEmbeddedMode)
-  const { items, removeItem, clearCart } = useCart()
+  const { items, removeItem, clearCart, canDock, setIsCartDockOpen } = useCart()
   const isMobile = useIsMobile()
   const scheduleRef = useRef<HTMLDivElement>(null)
   const previousItemCountRef = useRef(0)
@@ -926,6 +926,12 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
       window.location.origin,
     )
     return true
+  }
+
+  const closeMobileEmbeddedCart = () => {
+    if (isEmbeddedPreview && !canDock) {
+      setIsCartDockOpen(false)
+    }
   }
 
   const scrollToSchedule = () => {
@@ -1348,6 +1354,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                   href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`}
                                   onClick={(event) => {
                                     const href = `/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`
+                                    closeMobileEmbeddedCart()
                                     if (requestParentNavigation(href)) {
                                       event.preventDefault()
                                     }
@@ -1731,6 +1738,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                   href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`}
                                   onClick={(event) => {
                                     const href = `/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`
+                                    closeMobileEmbeddedCart()
                                     if (requestParentNavigation(href)) {
                                       event.preventDefault()
                                     }
