@@ -802,6 +802,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
           </DialogHeader>
           {activeBlock && (
             <div className="space-y-2 text-sm">
+              <p><span className="font-medium">Course:</span> {activeBlock.item.courseName}</p>
               <p><span className="font-medium">Component:</span> {activeBlock.item.typeLabel}</p>
               <p><span className="font-medium">Section:</span> {activeBlock.item.section}</p>
               <p><span className="font-medium">Day:</span> {activeBlock.item.day}</p>
