@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   Sheet,
   SheetContent,
@@ -15,7 +15,20 @@ export function CartDock() {
   const { isCartDockOpen, setIsCartDockOpen, canDock, dockWidth, itemCount } = useCart()
   const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const previousItemCountRef = useRef(itemCount)
-  const isMobileSheet = !canDock
+  const [isCoarsePointerDevice, setIsCoarsePointerDevice] = useState(false)
+  const allowOutsideDismiss = !canDock || isCoarsePointerDevice
+  const shouldBlockOutsideDismiss = canDock && !allowOutsideDismiss
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const mediaQuery = window.matchMedia("(hover: none) and (pointer: coarse)")
+    const update = () => setIsCoarsePointerDevice(mediaQuery.matches)
+
+    update()
+    mediaQuery.addEventListener("change", update)
+    return () => mediaQuery.removeEventListener("change", update)
+  }, [])
 
   useEffect(() => {
     const previousCount = previousItemCountRef.current
@@ -51,15 +64,15 @@ export function CartDock() {
   }, [isCartDockOpen])
 
   return (
-    <Sheet open={isCartDockOpen} onOpenChange={setIsCartDockOpen} modal={isMobileSheet}>
+    <Sheet open={isCartDockOpen} onOpenChange={setIsCartDockOpen} modal={allowOutsideDismiss}>
       <SheetContent
         side="right"
-        showOverlay={isMobileSheet}
+        showOverlay={allowOutsideDismiss}
         overlayClassName="bg-background/0 backdrop-blur-none transition-[opacity,backdrop-filter,background-color] duration-300 ease-out data-[state=open]:bg-background/20 data-[state=open]:backdrop-blur-sm"
         className="w-[90vw] sm:max-w-140 p-0 gap-0"
         style={canDock ? { width: `${dockWidth}px`, maxWidth: `${dockWidth}px` } : undefined}
-        onPointerDownOutside={canDock ? (event) => event.preventDefault() : undefined}
-        onInteractOutside={canDock ? (event) => event.preventDefault() : undefined}
+        onPointerDownOutside={shouldBlockOutsideDismiss ? (event) => event.preventDefault() : undefined}
+        onInteractOutside={shouldBlockOutsideDismiss ? (event) => event.preventDefault() : undefined}
       >
         <SheetHeader className="border-b border-border px-4 py-3">
           <div className="flex items-center justify-between gap-3 pr-8">
