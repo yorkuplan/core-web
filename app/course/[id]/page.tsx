@@ -41,7 +41,7 @@ import {
 } from "@/lib/api/courses";
 import { useCart } from "@/components/cart-context";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { BlurredHero } from "@/components/blurred-hero";
@@ -482,7 +482,7 @@ export default function CoursePage() {
     fetchReviews();
   }, [courseCode]);
 
-  const refetchReviews = async () => {
+  const refetchReviews = useCallback(async () => {
     try {
       setIsLoadingReviews(true);
       const data = await coursesApi.getReviews(courseCode, {
@@ -497,7 +497,34 @@ export default function CoursePage() {
     } finally {
       setIsLoadingReviews(false);
     }
-  };
+  }, [courseCode]);
+
+  useEffect(() => {
+    const onWindowFocus = () => {
+      void refetchReviews();
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void refetchReviews();
+      }
+    };
+
+    // Keep review data fresh without persisting it long-term.
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void refetchReviews();
+      }
+    }, 60_000);
+
+    window.addEventListener("focus", onWindowFocus);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", onWindowFocus);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.clearInterval(intervalId);
+    };
+  }, [refetchReviews]);
 
   return (
     <div

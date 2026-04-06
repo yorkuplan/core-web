@@ -15,6 +15,10 @@ export async function GET(request: NextRequest) {
   return fetchApiData(
     `/courses/search?q=${encodeURIComponent(query)}`,
     "Failed to search courses",
-    "Failed to search courses:"
+    "Failed to search courses:",
+    {
+      cache: "default",
+      fallbackCacheControl: "public, max-age=21600, stale-while-revalidate=86400",
+    }
   )
 }

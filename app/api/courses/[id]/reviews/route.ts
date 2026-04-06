@@ -53,6 +53,7 @@ export async function POST(
     // Make request to backend API using the utility function
     const response = await fetchFromApi(`/courses/${id}/reviews`, {
       method: "POST",
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
       },
@@ -111,6 +112,7 @@ export async function GET(
     const response = await fetchFromApi(
       `/courses/${id}/reviews?${queryParams}`,
       {
+        cache: "no-store",
         headers: {
           "Content-Type": "application/json",
         },
@@ -118,7 +120,11 @@ export async function GET(
     )
 
     const data = await response.json()
-    return NextResponse.json(data)
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    })
   } catch (error) {
     console.error("Error fetching reviews:", error)
     return NextResponse.json(
