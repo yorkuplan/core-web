@@ -348,11 +348,6 @@ export default function HomePage() {
                   )}
                 </div>
 
-                <p className="text-center text-sm sm:text-base font-semibold text-white pb-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">
-                  <span className="text-white">5800+</span> courses ·{" "}
-                  <span className="text-white">10</span> faculties · filters on
-                  the courses page
-                </p>
               </motion.div>
 
               <motion.div
