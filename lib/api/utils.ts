@@ -19,6 +19,18 @@ export interface ApiErrorResponse {
   error: string
 }
 
+const CACHE_HEADER_ALLOWLIST = [
+  "cache-control",
+  "etag",
+  "last-modified",
+  "expires",
+  "vary",
+] as const
+
+type FetchApiDataOptions = RequestInit & {
+  fallbackCacheControl?: string
+}
+
 /**
  * Makes a fetch request to the backend API and handles errors uniformly
  */
@@ -38,10 +50,7 @@ export async function fetchFromApi(
   const url = `${apiUrl}${endpoint}`
   
   try {
-    const response = await fetch(url, {
-      cache: "no-store",
-      ...options,
-    })
+    const response = await fetch(url, options)
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'No error body')
@@ -83,10 +92,11 @@ export function handleApiError(
 export async function fetchApiData<T>(
   endpoint: string,
   errorMessage: string,
-  consoleContext?: string
+  consoleContext?: string,
+  options?: FetchApiDataOptions
 ): Promise<NextResponse<T | ApiErrorResponse>> {
   try {
-    const response = await fetchFromApi(endpoint)
+    const response = await fetchFromApi(endpoint, options)
     
     // Check if response has content before parsing
     const contentType = response.headers.get("content-type")
@@ -104,7 +114,18 @@ export async function fetchApiData<T>(
       throw new Error("API returned empty response")
     }
     
-    return NextResponse.json(data)
+    const responseHeaders = new Headers()
+    for (const headerName of CACHE_HEADER_ALLOWLIST) {
+      const value = response.headers.get(headerName)
+      if (value) {
+        responseHeaders.set(headerName, value)
+      }
+    }
+    if (!responseHeaders.get("cache-control") && options?.fallbackCacheControl) {
+      responseHeaders.set("cache-control", options.fallbackCacheControl)
+    }
+
+    return NextResponse.json(data, { headers: responseHeaders })
   } catch (error) {
     return handleApiError(error, errorMessage, consoleContext)
   }

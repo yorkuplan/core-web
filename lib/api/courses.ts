@@ -1,6 +1,12 @@
 import { apiClient } from "./client"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api"
+const CATALOG_CACHE_VERSION = process.env.NEXT_PUBLIC_CATALOG_CACHE_VERSION || "v1"
+
+const withCatalogCacheVersion = (endpoint: string): string => {
+  const separator = endpoint.includes("?") ? "&" : "?"
+  return `${endpoint}${separator}cv=${encodeURIComponent(CATALOG_CACHE_VERSION)}`
+}
 
 const DAY_MAP: Record<string, string> = {
   M: "Monday",
@@ -268,7 +274,12 @@ export interface SubmitReviewBody {
 
 export const coursesApi = {
   async getAllCourses(): Promise<Course[]> {
-    const response = await apiClient.get<CoursesResponse | Course[]>("/courses")
+    const response = await apiClient.get<CoursesResponse | Course[]>(
+      withCatalogCacheVersion("/courses"),
+      {
+        cache: "default",
+      },
+    )
 
     if (Array.isArray(response)) {
       return response
@@ -287,8 +298,12 @@ export const coursesApi = {
   },
 
   async searchCourses(query: string): Promise<Course[]> {
-    const endpoint = `/courses/search?q=${encodeURIComponent(query)}`
-    const response = await apiClient.get<CoursesResponse | Course[]>(endpoint)
+    const endpoint = withCatalogCacheVersion(
+      `/courses/search?q=${encodeURIComponent(query)}`,
+    )
+    const response = await apiClient.get<CoursesResponse | Course[]>(endpoint, {
+      cache: "default",
+    })
 
     if (Array.isArray(response)) {
       return dedupeCoursesByCode(response)
@@ -310,7 +325,9 @@ export const coursesApi = {
     const normalized = courseCode.trim().toLowerCase()
     const response = await apiClient.get<
       CoursesByCodeResponse | CourseOffering[]
-    >(`/courses/${encodeURIComponent(normalized)}`)
+    >(withCatalogCacheVersion(`/courses/${encodeURIComponent(normalized)}`), {
+      cache: "default",
+    })
 
     // Some environments may return the array directly
     if (Array.isArray(response)) {
@@ -330,7 +347,8 @@ export const coursesApi = {
 
   async getSectionsByCourseId(courseId: string): Promise<Section[]> {
     const response = await apiClient.get<SectionsResponse | Section[]>(
-      `/sections/${courseId}`,
+      withCatalogCacheVersion(`/sections/${courseId}`),
+      { cache: "default" },
     )
 
     if (Array.isArray(response)) {
@@ -351,7 +369,8 @@ export const coursesApi = {
 
   async getInstructorsByCourseId(courseId: string): Promise<Instructor[]> {
     const response = await apiClient.get<InstructorsResponse | Instructor[]>(
-      `/instructors/${courseId}`,
+      withCatalogCacheVersion(`/instructors/${courseId}`),
+      { cache: "default" },
     )
 
     if (Array.isArray(response)) {
@@ -388,13 +407,14 @@ export const coursesApi = {
       queryParams.append("course_code_range", params.course_code_range)
     }
 
-    // Add cache-busting timestamp to ensure fresh requests
-    queryParams.append("_t", Date.now().toString())
-
     const queryString = queryParams.toString()
-    const endpoint = `/courses/paginated?${queryString}`
+    const endpoint = withCatalogCacheVersion(
+      `/courses/paginated${queryString ? `?${queryString}` : ""}`,
+    )
 
-    const response = await apiClient.get<PaginatedCoursesResponse>(endpoint)
+    const response = await apiClient.get<PaginatedCoursesResponse>(endpoint, {
+      cache: "default",
+    })
 
     // Ensure the response has the expected structure
     if (!response || !response.data) {
@@ -429,7 +449,9 @@ export const coursesApi = {
     const queryString = queryParams.toString()
     const endpoint = `/courses/${encodeURIComponent(normalized)}/reviews${queryString ? `?${queryString}` : ""}`
 
-    const response = await apiClient.get<ReviewsResponse>(endpoint)
+    const response = await apiClient.get<ReviewsResponse>(endpoint, {
+      cache: "no-store",
+    })
     return response
   },
 

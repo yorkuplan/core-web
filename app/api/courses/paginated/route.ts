@@ -21,6 +21,10 @@ export async function GET(request: NextRequest) {
   return fetchApiData(
     endpoint,
     "Failed to fetch paginated courses",
-    "Failed to fetch paginated courses:"
+    "Failed to fetch paginated courses:",
+    {
+      cache: "default",
+      fallbackCacheControl: "public, max-age=21600, stale-while-revalidate=86400",
+    }
   )
 }
