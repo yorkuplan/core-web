@@ -196,7 +196,9 @@ export default function HomePage() {
 
       <div className="grow flex flex-col">
         <BlurredHero
-          className="pt-6 sm:pt-10 md:pt-12 pb-12 sm:pb-16 md:pb-20"
+          className="pt-14 sm:pt-20 md:pt-24 pb-12 sm:pb-16 md:pb-20"
+          imageClassName="object-[center_72%] lg:object-[center_68%]"
+          contrastOverlayClassName="from-black/35 via-black/20 to-background sm:from-black/30 sm:via-black/15"
           priority
         >
           <div className="container mx-auto px-4 sm:px-6 md:px-8">
@@ -209,14 +211,16 @@ export default function HomePage() {
                 viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
                 variants={staggerContainer}
               >
-                <motion.p
-                  className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-white/90"
-                  variants={fadeInUp}
-                >
-                  Fall/Winter 2025-2026
-                  <span className="mx-2 text-white/50">·</span>
-                  Built for YorkU students
-                </motion.p>
+                <motion.div className="flex justify-center" variants={fadeInUp}>
+                  <Badge
+                    variant="default"
+                    className="h-auto min-h-0 max-w-[min(100%,42rem)] flex-wrap justify-center rounded-full border-transparent px-3 py-1.5 text-center text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] shadow-md whitespace-normal"
+                  >
+                    <span>Fall/Winter 2025-2026</span>
+                    <span className="text-primary-foreground/75 px-1">·</span>
+                    <span>Built for YorkU students</span>
+                  </Badge>
+                </motion.div>
 
                 <motion.h1
                   className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight text-white drop-shadow-sm flex justify-center"
@@ -268,7 +272,7 @@ export default function HomePage() {
 
               {/* Search directly under hero CTAs — wide bar */}
               <motion.div
-                className="w-full max-w-2xl sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-3"
+                className="w-full max-w-2xl sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-4"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.05 }}
@@ -344,7 +348,7 @@ export default function HomePage() {
                   )}
                 </div>
 
-                <p className="text-center text-sm sm:text-base font-semibold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">
+                <p className="text-center text-sm sm:text-base font-semibold text-white pb-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">
                   <span className="text-white">5800+</span> courses ·{" "}
                   <span className="text-white">10</span> faculties · filters on
                   the courses page
@@ -352,34 +356,19 @@ export default function HomePage() {
               </motion.div>
 
               <motion.div
-                className="w-full max-w-6xl mx-auto"
+                className="w-full max-w-6xl mx-auto mt-10 sm:mt-14 md:mt-16"
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
                 transition={{ duration: 0.5, delay: 0.05 }}
               >
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-white drop-shadow-sm">
-                      Upcoming deadlines and closures
-                    </h2>
-                    <p className="text-sm sm:text-base text-white/80">
-                      Key dates for this term and beyond
-                    </p>
-                  </div>
-                  <a
-                    href="https://www.yorku.ca/registrar/important-dates/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full sm:w-auto"
-                  >
-                    <Button
-                      variant="outline"
-                      className="w-full sm:w-auto bg-background/90 text-foreground border-border shadow-md hover:bg-background"
-                    >
-                      Academic calendar
-                    </Button>
-                  </a>
+                <div className="mb-6 sm:mb-8 text-center sm:text-left">
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-white drop-shadow-sm">
+                    Upcoming deadlines and closures
+                  </h2>
+                  <p className="text-sm sm:text-base text-white/80">
+                    Key dates for this term and beyond
+                  </p>
                 </div>
 
                 <motion.div
@@ -398,17 +387,18 @@ export default function HomePage() {
                         variants={cardVariant}
                       >
                         <Card className="p-4 sm:p-5 h-full flex flex-col bg-background/95 backdrop-blur-sm border-border hover:shadow-lg transition-all hover:border-primary/40">
-                          <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2 shrink-0">
-                            <h3 className="font-bold text-base sm:text-lg leading-snug text-foreground line-clamp-3 min-h-0">
+                          {/* Fixed-height title row so dates align across cards in a row */}
+                          <div className="flex items-start justify-between gap-2 sm:gap-3 min-h-[4.5rem] sm:min-h-[5rem]">
+                            <h3 className="font-bold text-base sm:text-lg leading-snug text-foreground line-clamp-2 flex-1 min-w-0 pr-1">
                               {event.title}
                             </h3>
                             <Badge
-                              className={`shrink-0 text-[10px] sm:text-xs ${getUrgencyTone(delta)}`}
+                              className={`shrink-0 self-start text-[10px] sm:text-xs ${getUrgencyTone(delta)}`}
                             >
                               {formatCountdown(delta)}
                             </Badge>
                           </div>
-                          <div className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground mb-3">
+                          <div className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground mt-2 mb-3">
                             <Calendar className="h-4 w-4 shrink-0 mt-0.5 opacity-80" />
                             <span className="leading-snug">
                               {formatDateWithWeekday(event.startsOn, event.dateLabel)}
