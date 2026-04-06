@@ -9,12 +9,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import {
-  Search,
-  BookOpen,
-  Sparkles,
-  MessageSquareText,
-} from "lucide-react"
+import { Search, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import {
@@ -206,23 +201,83 @@ export default function HomePage() {
           priority
         >
           <div className="container mx-auto px-4 sm:px-6 md:px-8">
-            <div className="flex flex-col items-center gap-8 sm:gap-9 md:gap-10">
-              {/* Search-first: primary focal point above the fold */}
+            <div className="flex flex-col items-center gap-7 sm:gap-8 md:gap-9">
+              {/* Hero: eyebrow → headline → subhead → single CTA row (matches reference; no duplicate buttons) */}
               <motion.div
-                className="w-full max-w-2xl sm:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto space-y-4 sm:space-y-5"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45 }}
+                className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-5 text-center"
+                initial="initial"
+                whileInView="animate"
+                viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
+                variants={staggerContainer}
               >
-                <div className="text-center space-y-2 sm:space-y-2.5 px-1">
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight drop-shadow-sm text-balance">
-                    Find your next class
-                  </h1>
-                  <p className="text-sm sm:text-base text-white/75 max-w-lg mx-auto">
-                    Search YorkU courses by code, name, or faculty.
-                  </p>
-                </div>
+                <motion.p
+                  className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-primary"
+                  variants={fadeInUp}
+                >
+                  <span className="text-white/50 font-normal tracking-wider mr-1">
+                    #
+                  </span>
+                  Fall/Winter 2025-2026
+                  <span className="mx-2 text-white/35">·</span>
+                  Built for YorkU students
+                </motion.p>
 
+                <motion.h1
+                  className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight text-white drop-shadow-sm flex justify-center"
+                  variants={fadeInUp}
+                >
+                  <span className="sr-only">{heroText}</span>
+                  <span aria-hidden className="relative inline-block text-left">
+                    <span className="invisible whitespace-nowrap">
+                      {heroText}
+                    </span>
+                    <span className="absolute left-0 top-0 whitespace-nowrap">
+                      {typedHeroText}
+                      {typedHeroText.length < heroText.length && (
+                        <span
+                          className="ml-1 inline-block w-[0.08em] h-[1em] bg-white/85 align-[-0.12em] animate-pulse"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </span>
+                  </span>
+                </motion.h1>
+                <motion.p
+                  className="text-sm sm:text-base md:text-lg text-white/80 text-pretty max-w-xl mx-auto"
+                  variants={fadeInUp}
+                >
+                  Reviews, section comparisons, and fast search—so you can plan
+                  with confidence.
+                </motion.p>
+
+                <motion.div
+                  className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center pt-1"
+                  variants={fadeInUp}
+                >
+                  <Link href="/courses" className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto shadow-md">
+                      Browse Courses
+                    </Button>
+                  </Link>
+                  <Link href="#how-it-works" className="w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto bg-white/10 text-white border-white/30 hover:bg-white/20"
+                    >
+                      How it works
+                    </Button>
+                  </Link>
+                </motion.div>
+              </motion.div>
+
+              {/* Search directly under hero CTAs — wide bar */}
+              <motion.div
+                className="w-full max-w-2xl sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.05 }}
+              >
+                <h2 className="sr-only">Search courses</h2>
                 <div className="relative w-full">
                   <InputGroup className="h-14 sm:h-[3.75rem] md:h-16 text-base sm:text-lg bg-background shadow-2xl border-0 ring-2 ring-white/25 dark:ring-white/15 rounded-full pl-1 pr-1 sm:pl-2 sm:pr-2">
                     <InputGroupAddon
@@ -293,102 +348,10 @@ export default function HomePage() {
                   )}
                 </div>
 
-                <p className="text-center text-xs sm:text-sm text-white/65">
-                  <span className="font-medium text-white/90">5800+</span> courses
-                  across 10 faculties · refine with filters on the courses page
+                <p className="text-center text-xs sm:text-sm text-white/60">
+                  <span className="font-medium text-white/85">5800+</span> courses
+                  · 10 faculties · filters on the courses page
                 </p>
-              </motion.div>
-
-              {/* Secondary story + actions — visually lighter so search stays dominant */}
-              <motion.div
-                className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-5 text-center border-t border-white/15 pt-8 sm:pt-9"
-                initial="initial"
-                whileInView="animate"
-                viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
-                variants={staggerContainer}
-              >
-                <motion.p
-                  className="text-[11px] sm:text-xs font-medium uppercase tracking-wider text-white/55"
-                  variants={fadeInUp}
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    Fall/Winter 2025-2026
-                  </span>
-                  <span className="mx-2 text-white/35">·</span>
-                  Built for YorkU students
-                </motion.p>
-
-                <motion.h2
-                  className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight text-white/95 drop-shadow-sm flex justify-center"
-                  variants={fadeInUp}
-                >
-                  <span className="sr-only">{heroText}</span>
-                  <span aria-hidden className="relative inline-block text-left">
-                    <span className="invisible whitespace-nowrap">
-                      {heroText}
-                    </span>
-                    <span className="absolute left-0 top-0 whitespace-nowrap">
-                      {typedHeroText}
-                      {typedHeroText.length < heroText.length && (
-                        <span
-                          className="ml-1 inline-block w-[0.08em] h-[1em] bg-white/85 align-[-0.12em] animate-pulse"
-                          aria-hidden="true"
-                        />
-                      )}
-                    </span>
-                  </span>
-                </motion.h2>
-                <motion.p
-                  className="text-sm sm:text-base text-white/75 text-pretty max-w-md mx-auto"
-                  variants={fadeInUp}
-                >
-                  Reviews, section comparisons, and fast search—so you can plan
-                  with confidence.
-                </motion.p>
-
-                <motion.div
-                  className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center"
-                  variants={fadeInUp}
-                >
-                  <Link href="/courses" className="w-full sm:w-auto">
-                    <Button className="w-full sm:w-auto shadow-md">
-                      Browse Courses
-                    </Button>
-                  </Link>
-                  <Link href="#how-it-works" className="w-full sm:w-auto">
-                    <Button
-                      variant="outline"
-                      className="w-full sm:w-auto bg-white/10 text-white border-white/30 hover:bg-white/20"
-                    >
-                      How it works
-                    </Button>
-                  </Link>
-                </motion.div>
-
-                <motion.div
-                  className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[11px] sm:text-xs text-white/70"
-                  variants={fadeInUp}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    <MessageSquareText className="h-3.5 w-3.5 shrink-0 opacity-90" />
-                    Student reviews
-                  </span>
-                  <span className="text-white/35" aria-hidden>
-                    ·
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <BookOpen className="h-3.5 w-3.5 shrink-0 opacity-90" />
-                    Compare sections
-                  </span>
-                  <span className="text-white/35" aria-hidden>
-                    ·
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Search className="h-3.5 w-3.5 shrink-0 opacity-90" />
-                    Instant search
-                  </span>
-                </motion.div>
               </motion.div>
 
               <motion.div
