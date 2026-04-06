@@ -10,7 +10,11 @@ export async function GET(
     return fetchApiData(
       `/courses/${courseCode}`,
       "Failed to fetch course",
-      `Failed to fetch course ${courseCode}:`
+      `Failed to fetch course ${courseCode}:`,
+      {
+        cache: "default",
+        fallbackCacheControl: "public, max-age=21600, stale-while-revalidate=86400",
+      }
     )
   } catch {
     return NextResponse.json(
