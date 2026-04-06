@@ -9,7 +9,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { Search, BookOpen } from "lucide-react"
+import { Search, BookOpen, Calendar } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import {
@@ -90,7 +90,6 @@ export default function HomePage() {
   const nextFourImportantDates = (
     upcomingImportantDates.length > 0 ? upcomingImportantDates : IMPORTANT_DATES
   ).slice(0, 4)
-  const [nextEvent, ...followingEvents] = nextFourImportantDates
 
   useEffect(() => {
     async function fetchCourses() {
@@ -211,14 +210,11 @@ export default function HomePage() {
                 variants={staggerContainer}
               >
                 <motion.p
-                  className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-primary"
+                  className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-white/90"
                   variants={fadeInUp}
                 >
-                  <span className="text-white/50 font-normal tracking-wider mr-1">
-                    #
-                  </span>
                   Fall/Winter 2025-2026
-                  <span className="mx-2 text-white/35">·</span>
+                  <span className="mx-2 text-white/50">·</span>
                   Built for YorkU students
                 </motion.p>
 
@@ -348,71 +344,86 @@ export default function HomePage() {
                   )}
                 </div>
 
-                <p className="text-center text-xs sm:text-sm text-white/60">
-                  <span className="font-medium text-white/85">5800+</span> courses
-                  · 10 faculties · filters on the courses page
+                <p className="text-center text-sm sm:text-base font-semibold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">
+                  <span className="text-white">5800+</span> courses ·{" "}
+                  <span className="text-white">10</span> faculties · filters on
+                  the courses page
                 </p>
               </motion.div>
 
               <motion.div
-                className="w-full max-w-2xl lg:max-w-3xl mx-auto"
+                className="w-full max-w-6xl mx-auto"
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
                 transition={{ duration: 0.5, delay: 0.05 }}
               >
-                <Card className="p-2.5 sm:p-4 md:p-5 bg-background/90 backdrop-blur-sm border-primary/15">
-                  <div className="mb-2.5 sm:mb-3">
-                    <h3 className="text-base sm:text-lg font-semibold leading-tight">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-white drop-shadow-sm">
                       Upcoming deadlines and closures
-                    </h3>
+                    </h2>
+                    <p className="text-sm sm:text-base text-white/80">
+                      Key dates for this term and beyond
+                    </p>
                   </div>
-                  <div className="space-y-1.5 sm:space-y-2 min-h-42">
-                    {nextEvent && (
-                      <div className="rounded-lg border border-border/70 p-2.5 sm:p-3 bg-muted/30">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-[11px] sm:text-xs font-medium text-muted-foreground mb-0.5 sm:mb-1">
-                              Next up
-                            </p>
-                            <p className="text-[13px] sm:text-sm font-semibold text-foreground line-clamp-2 leading-snug">
-                              {nextEvent.title}
-                            </p>
-                            <p className="text-[11px] sm:text-xs text-muted-foreground">
-                              {formatDateWithWeekday(nextEvent.startsOn, nextEvent.dateLabel)}
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            <Badge className={`text-[9px] sm:text-[10px] ${getUrgencyTone(getDayDelta(new Date(`${nextEvent.startsOn}T00:00:00`), now))}`}>
-                              {formatCountdown(getDayDelta(new Date(`${nextEvent.startsOn}T00:00:00`), now))}
-                            </Badge>
-                            <Badge variant="secondary" className="text-[9px] sm:text-[10px]">
-                              {nextEvent.kind}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                  <a
+                    href="https://www.yorku.ca/registrar/important-dates/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto"
+                  >
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto bg-background/90 text-foreground border-border shadow-md hover:bg-background"
+                    >
+                      Academic calendar
+                    </Button>
+                  </a>
+                </div>
 
-                    {followingEvents.map((event) => (
-                      <div key={`${event.title}-${event.startsOn}`} className="rounded-lg border border-border/70 px-2.5 sm:px-3 py-1.5 sm:py-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="text-[13px] sm:text-sm font-semibold text-foreground line-clamp-1 leading-snug">
+                <motion.div
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"
+                  initial="initial"
+                  whileInView="animate"
+                  viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
+                  variants={staggerContainer}
+                >
+                  {nextFourImportantDates.map((event) => {
+                    const eventDate = new Date(`${event.startsOn}T00:00:00`)
+                    const delta = getDayDelta(eventDate, now)
+                    return (
+                      <motion.div
+                        key={`${event.title}-${event.startsOn}`}
+                        variants={cardVariant}
+                      >
+                        <Card className="p-4 sm:p-5 h-full flex flex-col bg-background/95 backdrop-blur-sm border-border hover:shadow-lg transition-all hover:border-primary/40">
+                          <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2 shrink-0">
+                            <h3 className="font-bold text-base sm:text-lg leading-snug text-foreground line-clamp-3 min-h-0">
                               {event.title}
-                            </div>
-                            <div className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2">
-                              {formatDateWithWeekday(event.startsOn, event.dateLabel)}
-                            </div>
+                            </h3>
+                            <Badge
+                              className={`shrink-0 text-[10px] sm:text-xs ${getUrgencyTone(delta)}`}
+                            >
+                              {formatCountdown(delta)}
+                            </Badge>
                           </div>
-                          <Badge className={`text-[9px] sm:text-[10px] shrink-0 ${getUrgencyTone(getDayDelta(new Date(`${event.startsOn}T00:00:00`), now))}`}>
-                            {formatCountdown(getDayDelta(new Date(`${event.startsOn}T00:00:00`), now))}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
+                          <div className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground mb-3">
+                            <Calendar className="h-4 w-4 shrink-0 mt-0.5 opacity-80" />
+                            <span className="leading-snug">
+                              {formatDateWithWeekday(event.startsOn, event.dateLabel)}
+                            </span>
+                          </div>
+                          <div className="mt-auto pt-3 border-t border-border flex justify-end">
+                            <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                              {event.kind}
+                            </Badge>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    )
+                  })}
+                </motion.div>
               </motion.div>
             </div>
           </div>
