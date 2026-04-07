@@ -9,15 +9,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import {
-  Search,
-  BookOpen,
-  Sparkles,
-  Calendar,
-  Info,
-  MessageSquareText,
-  Users,
-} from "lucide-react"
+import { Search, BookOpen, Calendar } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import {
@@ -65,10 +57,14 @@ function formatCountdown(deltaDays: number): string {
   return `In ${deltaDays} days`
 }
 
-function getUrgencyTone(deltaDays: number): string {
-  if (deltaDays <= 3) return "bg-destructive/15 text-destructive"
-  if (deltaDays <= 10) return "bg-amber-500/15 text-amber-700 dark:text-amber-300"
-  return "bg-primary/10 text-primary"
+function getCountdownBadgeClass(deltaDays: number): string {
+  if (deltaDays <= 2) {
+    return "bg-destructive/10 text-destructive border-destructive/25"
+  }
+  if (deltaDays <= 7) {
+    return "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
+  }
+  return "bg-muted text-muted-foreground border-border"
 }
 
 function formatDateWithWeekday(startsOn: string, dateLabel: string): string {
@@ -98,7 +94,6 @@ export default function HomePage() {
   const nextFourImportantDates = (
     upcomingImportantDates.length > 0 ? upcomingImportantDates : IMPORTANT_DATES
   ).slice(0, 4)
-  const [nextEvent, ...followingEvents] = nextFourImportantDates
 
   useEffect(() => {
     async function fetchCourses() {
@@ -205,62 +200,63 @@ export default function HomePage() {
 
       <div className="grow flex flex-col">
         <BlurredHero
-          className="pt-10 sm:pt-14 md:pt-20 pb-12 sm:pb-16 md:pb-20"
+          className="pt-12 sm:pt-20 md:pt-24 pb-10 sm:pb-16 md:pb-20"
+          imageClassName="object-[center_72%] lg:object-[center_68%]"
+          contrastOverlayClassName="from-black/35 via-black/20 to-background sm:from-black/30 sm:via-black/15"
           priority
         >
           <div className="container mx-auto px-4 sm:px-6 md:px-8">
-            <div className="grid gap-6 sm:gap-10 lg:grid-cols-2 lg:items-center">
+            <div className="flex flex-col items-center gap-6 sm:gap-8 md:gap-9">
+              {/* Hero: eyebrow → headline → subhead → single CTA row (matches reference; no duplicate buttons) */}
               <motion.div
-                className="space-y-6 text-center lg:text-left"
+                className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-5 text-center"
                 initial="initial"
                 whileInView="animate"
                 viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
                 variants={staggerContainer}
               >
-                <motion.div
-                  className="flex flex-wrap items-center gap-2 justify-center lg:justify-start"
-                  variants={fadeInUp}
-                >
-                  <span className="inline-flex items-center gap-2 rounded-full bg-primary/90 px-3 py-1 text-xs sm:text-sm font-semibold text-primary-foreground shadow-md">
-                    <Sparkles className="h-4 w-4" />
-                    Fall/Winter 2025-2026
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs sm:text-sm text-white/90">
-                    Built for YorkU students
-                  </span>
+                <motion.div className="flex justify-center" variants={fadeInUp}>
+                  <Badge
+                    variant="default"
+                    className="h-auto min-h-0 max-w-[min(100%,42rem)] flex-wrap justify-center rounded-full border-transparent px-3 py-1.5 text-center text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] shadow-md whitespace-normal"
+                  >
+                    <span>Fall/Winter 2025-2026</span>
+                  </Badge>
                 </motion.div>
 
                 <motion.h1
-                  className="text-2xl md:text-4xl lg:text-4xl font-bold leading-tight text-white drop-shadow-sm"
+                  className="text-[2rem] sm:text-3xl md:text-4xl font-bold leading-tight text-white drop-shadow-sm flex justify-center"
                   variants={fadeInUp}
                 >
                   <span className="sr-only">{heroText}</span>
-                  <span aria-hidden className="relative block">
-                    <span className="invisible whitespace-nowrap">
-                      {heroText}
-                    </span>
-                    <span className="absolute inset-0 whitespace-nowrap">
-                      {typedHeroText}
-                      {typedHeroText.length < heroText.length && (
-                        <span
-                          className="ml-1 inline-block w-[0.08em] h-[1em] bg-white/85 align-[-0.12em] animate-pulse"
-                          aria-hidden="true"
-                        />
-                      )}
+                  <span aria-hidden className="relative inline-block text-center sm:text-left">
+                    <span className="sm:hidden">{heroText}</span>
+                    <span className="hidden sm:block">
+                      <span className="invisible whitespace-nowrap">
+                        {heroText}
+                      </span>
+                      <span className="absolute left-0 top-0 whitespace-nowrap">
+                        {typedHeroText}
+                        {typedHeroText.length < heroText.length && (
+                          <span
+                            className="ml-1 inline-block w-[0.08em] h-[1em] bg-white/85 align-[-0.12em] animate-pulse"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </span>
                     </span>
                   </span>
                 </motion.h1>
                 <motion.p
-                  className="text-sm sm:text-base md:text-xl text-white/85 text-pretty max-w-xl mx-auto lg:mx-0"
+                  className="text-sm sm:text-base md:text-lg text-white/80 text-pretty max-w-xl mx-auto"
                   variants={fadeInUp}
                 >
-                  Explore YorkU courses with ease. View detailed course info,
-                  compare sections, read student reviews, and make informed
-                  decisions.
+                  Reviews, section comparisons, and fast search—so you can plan
+                  with confidence.
                 </motion.p>
 
                 <motion.div
-                  className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center lg:justify-start"
+                  className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center pt-1"
                   variants={fadeInUp}
                 >
                   <Link href="/courses" className="w-full sm:w-auto">
@@ -268,187 +264,149 @@ export default function HomePage() {
                       Browse Courses
                     </Button>
                   </Link>
-                  <Link href="#how-it-works" className="w-full sm:w-auto">
-                    <Button
-                      variant="outline"
-                      className="w-full sm:w-auto bg-white/10 text-white border-white/30 hover:bg-white/20"
-                    >
-                      How it works
-                    </Button>
-                  </Link>
-                </motion.div>
 
-                <motion.div
-                  className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-foreground/80 justify-center lg:justify-start"
-                  variants={fadeInUp}
-                >
-                  <span className="inline-flex items-center gap-2 rounded-full bg-white/85 text-slate-900 ring-1 ring-black/5 px-3 py-1 dark:bg-white/10 dark:text-white/85 dark:ring-white/10">
-                    <MessageSquareText className="h-4 w-4" />
-                    Student reviews inside
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-white/85 text-slate-900 ring-1 ring-black/5 px-3 py-1 dark:bg-white/10 dark:text-white/85 dark:ring-white/10">
-                    <BookOpen className="h-4 w-4" />
-                    Compare sections easily
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-white/85 text-slate-900 ring-1 ring-black/5 px-3 py-1 dark:bg-white/10 dark:text-white/85 dark:ring-white/10">
-                    <Search className="h-4 w-4" />
-                    Fast course search
-                  </span>
                 </motion.div>
               </motion.div>
 
+              {/* Search directly under hero CTAs — wide bar */}
               <motion.div
-                className="space-y-3 sm:space-y-4"
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
-                transition={{ duration: 0.6 }}
+                className="w-full max-w-2xl sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-3 sm:space-y-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.05 }}
               >
-                <Card className="p-3 sm:p-4 md:p-5 bg-background/95 backdrop-blur border-primary/20 shadow-2xl overflow-visible">
-                  <div className="flex items-center justify-between mb-1">
-                    <div>
-                      <h3 className="text-base sm:text-lg font-semibold">
-                        Find your next class
-                      </h3>
-                    </div>
-                  </div>
+                <h2 className="sr-only">Search courses</h2>
+                <div className="relative w-full">
+                  <InputGroup className="h-12 sm:h-[3.75rem] md:h-16 text-sm sm:text-lg bg-background dark:bg-background shadow-2xl border-0 ring-2 ring-white/25 dark:ring-white/15 rounded-full pl-1 pr-1 sm:pl-2 sm:pr-2">
+                    <InputGroupAddon
+                      align="inline-start"
+                      className="text-primary pl-3 sm:pl-6"
+                    >
+                      <Search className="h-5 w-5 sm:h-7 sm:w-7 text-primary" />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="search"
+                      placeholder="Try ECON 1000, computer science, LA&PS…"
+                      className="text-xs sm:text-lg text-foreground placeholder:text-xs sm:placeholder:text-lg placeholder:text-muted-foreground py-2.5 sm:py-4"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() => {
+                        setTimeout(() => {
+                          setIsFocused(false)
+                          setShowResults(false)
+                        }, 200)
+                      }}
+                      autoComplete="off"
+                      enterKeyHint="search"
+                    />
+                  </InputGroup>
 
-                  <div className="relative">
-                    <InputGroup className="h-10 sm:h-11 text-sm bg-background border-primary/30">
-                      <InputGroupAddon
-                        align="inline-start"
-                        className="text-primary"
-                      >
-                        <Search className="h-6 w-6 text-primary/90" />
-                      </InputGroupAddon>
-                      <InputGroupInput
-                        type="search"
-                        placeholder="Search by code, name, faculty..."
-                        className="text-sm text-foreground"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => {
-                          setTimeout(() => {
-                            setIsFocused(false)
-                            setShowResults(false)
-                          }, 200)
-                        }}
-                      />
-                    </InputGroup>
-
-                    {showResults && isFocused && (
-                      <Card className="absolute top-full mt-2 w-full max-h-[50vh] sm:max-h-100 overflow-y-auto z-50 shadow-xl border-border bg-card text-left">
-                        {isSearching ? (
-                          <div className="p-4 sm:p-6 text-muted-foreground">
-                            <div className="animate-pulse">Searching...</div>
-                          </div>
-                        ) : searchResults.length === 0 ? (
-                          <div className="p-4 sm:p-6 text-muted-foreground text-sm sm:text-base">
-                            No courses found for &quot;{searchQuery}&quot;
-                          </div>
-                        ) : (
-                          <div className="divide-y divide-border">
-                            {searchResults.map((course) => (
-                              <Link
-                                key={course.id}
-                                href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
-                                className="block p-3 sm:p-4 hover:bg-muted/70 transition-colors text-left"
-                                onMouseDown={(e) => e.preventDefault()}
-                              >
-                                <div className="flex items-start justify-between gap-2 sm:gap-4">
-                                  <div className="flex-1 min-w-0 text-left">
-                                    <h4 className="font-semibold text-foreground mb-1 text-sm sm:text-base text-left">
-                                      {formatCourseCode(course.code)}
-                                    </h4>
-                                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 text-left">
-                                      {course.name}
-                                    </p>
-                                  </div>
-                                  <Badge
-                                    variant="secondary"
-                                    className="shrink-0 text-xs sm:text-sm"
-                                  >
-                                    {course.credits} credit
-                                    {course.credits === 1 ? "" : "s"}
-                                  </Badge>
+                  {showResults && isFocused && (
+                    <Card className="absolute top-full left-0 right-0 mt-2 max-h-[45vh] sm:max-h-100 overflow-y-auto z-50 shadow-xl border-border bg-card text-left rounded-xl">
+                      {isSearching ? (
+                        <div className="p-4 sm:p-6 text-muted-foreground">
+                          <div className="animate-pulse">Searching...</div>
+                        </div>
+                      ) : searchResults.length === 0 ? (
+                        <div className="p-4 sm:p-6 text-muted-foreground text-sm sm:text-base">
+                          No courses found for &quot;{searchQuery}&quot;
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-border">
+                          {searchResults.map((course) => (
+                            <Link
+                              key={course.id}
+                              href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
+                              className="block p-3 sm:p-4 hover:bg-muted/70 transition-colors text-left"
+                              onMouseDown={(e) => e.preventDefault()}
+                            >
+                              <div className="flex items-start justify-between gap-2 sm:gap-4">
+                                <div className="flex-1 min-w-0 text-left">
+                                  <h4 className="font-semibold text-foreground mb-1 text-sm sm:text-base text-left">
+                                    {formatCourseCode(course.code)}
+                                  </h4>
+                                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 text-left">
+                                    {course.name}
+                                  </p>
                                 </div>
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </Card>
-                    )}
-                  </div>
+                                <Badge
+                                  variant="secondary"
+                                  className="shrink-0 text-xs sm:text-sm"
+                                >
+                                  {course.credits} credit
+                                  {course.credits === 1 ? "" : "s"}
+                                </Badge>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </Card>
+                  )}
+                </div>
 
-                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
-                    <div className="rounded-lg bg-muted/40 px-3 py-2">
-                      <div className="text-sm font-semibold text-foreground">
-                        5800+ courses
-                      </div>
-                      10 faculties
-                    </div>
-                    <div className="rounded-lg bg-muted/40 px-3 py-2">
-                      <div className="text-sm font-semibold text-foreground">
-                        Instant filters
-                      </div>
-                      Level, term, credits
-                    </div>
-                  </div>
-                </Card>
+              </motion.div>
 
-                <Card className="p-2.5 sm:p-4 md:p-5 bg-background/90">
-                  <div className="mb-2.5 sm:mb-3">
-                    <h3 className="text-base sm:text-lg font-semibold leading-tight">
+              <motion.div
+                className="w-full max-w-6xl mx-auto mt-8 sm:mt-14 md:mt-16"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
+                transition={{ duration: 0.5, delay: 0.05 }}
+              >
+                <div className="mb-6 sm:mb-8 flex flex-col gap-3 text-center sm:text-left sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h2 className="text-xl sm:text-3xl font-bold mb-2 text-white drop-shadow-sm">
                       Upcoming deadlines and closures
-                    </h3>
+                    </h2>
+                    <p className="text-sm sm:text-base text-white/80">
+                      Key dates for this term, shown in date order
+                    </p>
                   </div>
-                  <div className="space-y-1.5 sm:space-y-2 min-h-42">
-                    {nextEvent && (
-                      <div className="rounded-lg border border-border/70 p-2.5 sm:p-3 bg-muted/30">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-[11px] sm:text-xs font-medium text-muted-foreground mb-0.5 sm:mb-1">
-                              Next up
-                            </p>
-                            <p className="text-[13px] sm:text-sm font-semibold text-foreground line-clamp-2 leading-snug">
-                              {nextEvent.title}
-                            </p>
-                            <p className="text-[11px] sm:text-xs text-muted-foreground">
-                              {formatDateWithWeekday(nextEvent.startsOn, nextEvent.dateLabel)}
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            <Badge className={`text-[9px] sm:text-[10px] ${getUrgencyTone(getDayDelta(new Date(`${nextEvent.startsOn}T00:00:00`), now))}`}>
-                              {formatCountdown(getDayDelta(new Date(`${nextEvent.startsOn}T00:00:00`), now))}
-                            </Badge>
-                            <Badge variant="secondary" className="text-[9px] sm:text-[10px]">
-                              {nextEvent.kind}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                </div>
 
-                    {followingEvents.map((event) => (
-                      <div key={`${event.title}-${event.startsOn}`} className="rounded-lg border border-border/70 px-2.5 sm:px-3 py-1.5 sm:py-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="text-[13px] sm:text-sm font-semibold text-foreground line-clamp-1 leading-snug">
-                              {event.title}
-                            </div>
-                            <div className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2">
-                              {formatDateWithWeekday(event.startsOn, event.dateLabel)}
-                            </div>
+                <motion.div
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"
+                  initial="initial"
+                  whileInView="animate"
+                  viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
+                  variants={staggerContainer}
+                >
+                  {nextFourImportantDates.map((event) => {
+                    const eventDate = new Date(`${event.startsOn}T00:00:00`)
+                    const delta = getDayDelta(eventDate, now)
+
+                    return (
+                      <motion.div
+                        key={`${event.title}-${event.startsOn}`}
+                        variants={cardVariant}
+                      >
+                        <Card className="p-3 sm:p-4 h-full flex flex-col gap-2.5 bg-card/95 backdrop-blur-sm border-border hover:shadow-lg transition-all hover:border-primary/30">
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              className={`text-[10px] sm:text-xs border px-2 py-0.5 ${getCountdownBadgeClass(delta)}`}
+                            >
+                              {formatCountdown(delta)}
+                            </Badge>
                           </div>
-                          <Badge className={`text-[9px] sm:text-[10px] shrink-0 ${getUrgencyTone(getDayDelta(new Date(`${event.startsOn}T00:00:00`), now))}`}>
-                            {formatCountdown(getDayDelta(new Date(`${event.startsOn}T00:00:00`), now))}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
+
+                          <h3 className="font-semibold text-[1.05rem] sm:text-lg leading-snug text-foreground line-clamp-2">
+                            {event.title}
+                          </h3>
+
+                          <div className="flex items-start gap-2 text-[11px] sm:text-sm text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5 shrink-0 mt-0.5 opacity-80" />
+                            <span className="leading-snug line-clamp-2">
+                              {formatDateWithWeekday(event.startsOn, event.dateLabel)}
+                            </span>
+                          </div>
+
+                        </Card>
+                      </motion.div>
+                    )
+                  })}
+                </motion.div>
               </motion.div>
             </div>
           </div>
@@ -495,7 +453,7 @@ export default function HomePage() {
               </div>
             ) : (
               <motion.div
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
                 initial="initial"
                 whileInView="animate"
                 viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
@@ -506,14 +464,14 @@ export default function HomePage() {
                     <Link
                       href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
                     >
-                      <Card className="p-4 sm:p-5 hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer group flex flex-col h-full">
-                        <div className="flex items-start justify-between mb-2 shrink-0 gap-2 sm:gap-3">
+                      <Card className="p-3 sm:p-5 hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer group flex flex-col h-full">
+                        <div className="flex items-start justify-between mb-1.5 sm:mb-2 shrink-0 gap-2 sm:gap-3">
                           <div className="flex-1 min-w-0 pr-2">
-                            <h3 className="font-bold text-lg sm:text-xl mb-0.5 group-hover:text-primary transition-colors line-clamp-1">
+                            <h3 className="font-bold text-lg sm:text-xl mb-0 group-hover:text-primary transition-colors line-clamp-1">
                               {formatCourseCode(course.code)}
                             </h3>
                             <p
-                              className="text-xs sm:text-sm text-foreground font-medium line-clamp-3 min-h-15 sm:min-h-17 leading-snug"
+                              className="text-xs sm:text-sm text-foreground font-medium line-clamp-2 sm:line-clamp-3 sm:min-h-17 leading-snug"
                               title={course.name}
                             >
                               {course.name}
@@ -528,7 +486,7 @@ export default function HomePage() {
                           </Badge>
                         </div>
 
-                        <div className="flex items-start gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-2 shrink-0">
+                        <div className="flex items-start gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-1.5 sm:mb-2 shrink-0">
                           <div className="flex items-start gap-1 min-w-0">
                             <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 shrink-0 mt-0.5" />
                             <span className="min-w-0 leading-snug whitespace-normal wrap-break-word">
@@ -539,14 +497,14 @@ export default function HomePage() {
                           </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-2.5 border-t border-border mt-auto gap-2">
-                          <p className="text-xs sm:text-sm text-muted-foreground truncate flex-1 min-w-0">
+                        <div className="flex flex-row items-center justify-between pt-2 border-t border-border mt-auto gap-2">
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate flex-1 min-w-0 pr-2">
                             {course.instructor}
                           </p>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="group-hover:bg-primary group-hover:text-primary-foreground w-full sm:w-auto text-xs sm:text-sm shadow-md hover:shadow-lg border-2 sm:border-2"
+                            className="group-hover:bg-primary group-hover:text-primary-foreground h-8 px-3 text-xs sm:text-sm shadow-md hover:shadow-lg border-2 sm:border-2 shrink-0"
                           >
                             View Details
                           </Button>
@@ -573,7 +531,7 @@ export default function HomePage() {
               transition={{ duration: 0.5 }}
             >
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold">How it works</h2>
+                <h2 className="text-xl sm:text-3xl font-bold">How it works</h2>
                 <p className="text-sm sm:text-base text-muted-foreground">
                   A clear, three-step flow to build your schedule.
                 </p>
@@ -622,7 +580,7 @@ export default function HomePage() {
 
         <section className="container mx-auto px-4 sm:px-6 md:px-8 pb-12 sm:pb-16">
           <motion.div
-            className="max-w-6xl mx-auto rounded-2xl bg-linear-to-r from-primary/15 via-primary/10 to-background p-4 sm:p-8 md:p-10 flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-6"
+            className="max-w-6xl mx-auto rounded-2xl border border-border bg-card p-4 sm:p-8 md:p-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6 shadow-sm"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
@@ -632,10 +590,10 @@ export default function HomePage() {
               <p className="text-xs sm:text-sm uppercase tracking-widest text-primary">
                 Ready to start?
               </p>
-              <h2 className="text-2xl sm:text-3xl font-bold mt-2">
+              <h2 className="text-xl sm:text-3xl font-bold mt-2 text-foreground">
                 Build your schedule with confidence.
               </h2>
-              <p className="text-sm sm:text-base text-muted-foreground mt-2">
+              <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-2xl">
                 Explore courses and lock your plan in minutes.
               </p>
             </div>

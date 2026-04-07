@@ -2,6 +2,10 @@
 
 import * as React from 'react'
 import * as RechartsPrimitive from 'recharts'
+import type {
+  NameType as RechartsNameType,
+  ValueType as RechartsValueType,
+} from 'recharts/types/component/DefaultTooltipContent'
 
 import { cn } from '@/lib/utils'
 
@@ -104,6 +108,15 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
+type TooltipValue = RechartsValueType
+type TooltipName = RechartsNameType
+type LegendPayloadItem = {
+  value?: string | number
+  dataKey?: string | number
+  color?: string
+  [key: string]: unknown
+}
+
 function ChartTooltipContent({
   active,
   payload,
@@ -118,7 +131,7 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}: RechartsPrimitive.TooltipContentProps<any, any> &
+}: RechartsPrimitive.TooltipContentProps<TooltipValue, TooltipName> &
   React.ComponentProps<'div'> & {
     hideLabel?: boolean
     hideIndicator?: boolean
@@ -186,7 +199,7 @@ function ChartTooltipContent({
 
           return (
             <div
-              key={item.dataKey}
+              key={`${item.name ?? index}`}
               className={cn(
                 '[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5',
                 indicator === 'dot' && 'items-center',
@@ -258,7 +271,7 @@ function ChartLegendContent({
   nameKey,
 }: React.ComponentProps<'div'> &
   {
-    payload?: any[]
+    payload?: LegendPayloadItem[]
     verticalAlign?: string
     hideIcon?: boolean
     nameKey?: string

@@ -240,7 +240,7 @@ export default function AboutPage() {
                       Instructor insights
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Learn who's teaching before enrolling.
+                      Learn who&apos;s teaching before enrolling.
                     </p>
                   </div>
                 </div>
