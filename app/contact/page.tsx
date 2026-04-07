@@ -104,7 +104,7 @@ export default function ContactPage() {
             className="text-4xl sm:text-5xl lg:text-6xl font-bold text-balance bg-linear-to-b from-foreground to-foreground/70 bg-clip-text "
             variants={fadeInUp}
           >
-            We'd Love to Hear From You
+            We&apos;d Love to Hear From You
           </motion.h1>
           <motion.p
             className="text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed text-pretty max-w-2xl mx-auto"
@@ -134,7 +134,7 @@ export default function ContactPage() {
                 How can we help?
               </h2>
               <p className="text-muted-foreground">
-                Choose from the options below and we'll get back to you as soon
+                Choose from the options below and we&apos;ll get back to you as soon
                 as possible.
               </p>
             </div>
@@ -188,7 +188,7 @@ export default function ContactPage() {
                       Feature Suggestions
                     </h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Have a feature idea? We'd love to hear it!
+                      Have a feature idea? We&apos;d love to hear it!
                     </p>
                   </div>
                 </div>
@@ -267,7 +267,7 @@ export default function ContactPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.4 }}
                   >
-                    We've received your message and will get back to you soon.
+                    We&apos;ve received your message and will get back to you soon.
                     Your feedback helps us improve YuPlan.
                   </motion.p>
                   <motion.div
@@ -291,7 +291,7 @@ export default function ContactPage() {
                       Send us a message
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Fill out the form below and we'll get back to you.
+                      Fill out the form below and we&apos;ll get back to you.
                     </p>
                   </div>
 
