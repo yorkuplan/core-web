@@ -57,10 +57,14 @@ function formatCountdown(deltaDays: number): string {
   return `In ${deltaDays} days`
 }
 
-function getUrgencyTone(deltaDays: number): string {
-  if (deltaDays <= 3) return "bg-destructive/15 text-destructive"
-  if (deltaDays <= 10) return "bg-amber-500/15 text-amber-700 dark:text-amber-300"
-  return "bg-primary/10 text-primary"
+function getCountdownBadgeClass(deltaDays: number): string {
+  if (deltaDays <= 2) {
+    return "bg-destructive/10 text-destructive border-destructive/25"
+  }
+  if (deltaDays <= 7) {
+    return "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
+  }
+  return "bg-muted text-muted-foreground border-border"
 }
 
 function formatDateWithWeekday(startsOn: string, dateLabel: string): string {
@@ -217,8 +221,6 @@ export default function HomePage() {
                     className="h-auto min-h-0 max-w-[min(100%,42rem)] flex-wrap justify-center rounded-full border-transparent px-3 py-1.5 text-center text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] shadow-md whitespace-normal"
                   >
                     <span>Fall/Winter 2025-2026</span>
-                    <span className="text-primary-foreground/75 px-1">·</span>
-                    <span>Built for YorkU students</span>
                   </Badge>
                 </motion.div>
 
@@ -259,14 +261,7 @@ export default function HomePage() {
                       Browse Courses
                     </Button>
                   </Link>
-                  <Link href="#how-it-works" className="w-full sm:w-auto">
-                    <Button
-                      variant="outline"
-                      className="w-full sm:w-auto bg-white/10 text-white border-white/30 hover:bg-white/20"
-                    >
-                      How it works
-                    </Button>
-                  </Link>
+
                 </motion.div>
               </motion.div>
 
@@ -357,13 +352,20 @@ export default function HomePage() {
                 viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
                 transition={{ duration: 0.5, delay: 0.05 }}
               >
-                <div className="mb-6 sm:mb-8 text-center sm:text-left">
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-white drop-shadow-sm">
-                    Upcoming deadlines and closures
-                  </h2>
-                  <p className="text-sm sm:text-base text-white/80">
-                    Key dates for this term and beyond
-                  </p>
+                <div className="mb-6 sm:mb-8 flex flex-col gap-3 text-center sm:text-left sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-white drop-shadow-sm">
+                      Upcoming deadlines and closures
+                    </h2>
+                    <p className="text-sm sm:text-base text-white/80">
+                      Key dates for this term, shown in date order
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center sm:justify-end gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {nextFourImportantDates.length} events
+                    </Badge>
+                  </div>
                 </div>
 
                 <motion.div
@@ -376,34 +378,32 @@ export default function HomePage() {
                   {nextFourImportantDates.map((event) => {
                     const eventDate = new Date(`${event.startsOn}T00:00:00`)
                     const delta = getDayDelta(eventDate, now)
+
                     return (
                       <motion.div
                         key={`${event.title}-${event.startsOn}`}
                         variants={cardVariant}
                       >
-                        <Card className="p-4 sm:p-5 h-full flex flex-col bg-background/95 backdrop-blur-sm border-border hover:shadow-lg transition-all hover:border-primary/40">
-                          {/* Fixed-height title row so dates align across cards in a row */}
-                          <div className="flex items-start justify-between gap-2 sm:gap-3 min-h-[4.5rem] sm:min-h-[5rem]">
-                            <h3 className="font-bold text-base sm:text-lg leading-snug text-foreground line-clamp-2 flex-1 min-w-0 pr-1">
-                              {event.title}
-                            </h3>
+                        <Card className="p-3 sm:p-4 h-full flex flex-col gap-2.5 bg-card/95 backdrop-blur-sm border-border hover:shadow-lg transition-all hover:border-primary/30">
+                          <div className="flex items-center gap-2">
                             <Badge
-                              className={`shrink-0 self-start text-[10px] sm:text-xs ${getUrgencyTone(delta)}`}
+                              className={`text-[10px] sm:text-xs border px-2 py-0.5 ${getCountdownBadgeClass(delta)}`}
                             >
                               {formatCountdown(delta)}
                             </Badge>
                           </div>
-                          <div className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground mt-2 mb-3">
-                            <Calendar className="h-4 w-4 shrink-0 mt-0.5 opacity-80" />
-                            <span className="leading-snug">
+
+                          <h3 className="font-semibold text-sm sm:text-lg leading-snug text-foreground line-clamp-2">
+                            {event.title}
+                          </h3>
+
+                          <div className="flex items-start gap-2 text-[11px] sm:text-sm text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5 shrink-0 mt-0.5 opacity-80" />
+                            <span className="leading-snug line-clamp-2">
                               {formatDateWithWeekday(event.startsOn, event.dateLabel)}
                             </span>
                           </div>
-                          <div className="mt-auto pt-3 border-t border-border flex justify-end">
-                            <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                              {event.kind}
-                            </Badge>
-                          </div>
+
                         </Card>
                       </motion.div>
                     )
@@ -582,7 +582,7 @@ export default function HomePage() {
 
         <section className="container mx-auto px-4 sm:px-6 md:px-8 pb-12 sm:pb-16">
           <motion.div
-            className="max-w-6xl mx-auto rounded-2xl bg-linear-to-r from-primary/15 via-primary/10 to-background p-4 sm:p-8 md:p-10 flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-6"
+            className="max-w-6xl mx-auto rounded-2xl border border-border bg-card p-5 sm:p-8 md:p-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6 shadow-sm"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
@@ -592,10 +592,10 @@ export default function HomePage() {
               <p className="text-xs sm:text-sm uppercase tracking-widest text-primary">
                 Ready to start?
               </p>
-              <h2 className="text-2xl sm:text-3xl font-bold mt-2">
+              <h2 className="text-2xl sm:text-3xl font-bold mt-2 text-foreground">
                 Build your schedule with confidence.
               </h2>
-              <p className="text-sm sm:text-base text-muted-foreground mt-2">
+              <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-2xl">
                 Explore courses and lock your plan in minutes.
               </p>
             </div>
