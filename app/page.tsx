@@ -200,13 +200,13 @@ export default function HomePage() {
 
       <div className="grow flex flex-col">
         <BlurredHero
-          className="pt-14 sm:pt-20 md:pt-24 pb-12 sm:pb-16 md:pb-20"
+          className="pt-12 sm:pt-20 md:pt-24 pb-10 sm:pb-16 md:pb-20"
           imageClassName="object-[center_72%] lg:object-[center_68%]"
           contrastOverlayClassName="from-black/35 via-black/20 to-background sm:from-black/30 sm:via-black/15"
           priority
         >
           <div className="container mx-auto px-4 sm:px-6 md:px-8">
-            <div className="flex flex-col items-center gap-7 sm:gap-8 md:gap-9">
+            <div className="flex flex-col items-center gap-6 sm:gap-8 md:gap-9">
               {/* Hero: eyebrow → headline → subhead → single CTA row (matches reference; no duplicate buttons) */}
               <motion.div
                 className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-5 text-center"
@@ -225,22 +225,25 @@ export default function HomePage() {
                 </motion.div>
 
                 <motion.h1
-                  className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight text-white drop-shadow-sm flex justify-center"
+                  className="text-[2rem] sm:text-3xl md:text-4xl font-bold leading-tight text-white drop-shadow-sm flex justify-center"
                   variants={fadeInUp}
                 >
                   <span className="sr-only">{heroText}</span>
-                  <span aria-hidden className="relative inline-block text-left">
-                    <span className="invisible whitespace-nowrap">
-                      {heroText}
-                    </span>
-                    <span className="absolute left-0 top-0 whitespace-nowrap">
-                      {typedHeroText}
-                      {typedHeroText.length < heroText.length && (
-                        <span
-                          className="ml-1 inline-block w-[0.08em] h-[1em] bg-white/85 align-[-0.12em] animate-pulse"
-                          aria-hidden="true"
-                        />
-                      )}
+                  <span aria-hidden className="relative inline-block text-center sm:text-left">
+                    <span className="sm:hidden">{heroText}</span>
+                    <span className="hidden sm:block">
+                      <span className="invisible whitespace-nowrap">
+                        {heroText}
+                      </span>
+                      <span className="absolute left-0 top-0 whitespace-nowrap">
+                        {typedHeroText}
+                        {typedHeroText.length < heroText.length && (
+                          <span
+                            className="ml-1 inline-block w-[0.08em] h-[1em] bg-white/85 align-[-0.12em] animate-pulse"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </span>
                     </span>
                   </span>
                 </motion.h1>
@@ -267,24 +270,24 @@ export default function HomePage() {
 
               {/* Search directly under hero CTAs — wide bar */}
               <motion.div
-                className="w-full max-w-2xl sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-4"
+                className="w-full max-w-2xl sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-3 sm:space-y-4"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.05 }}
               >
                 <h2 className="sr-only">Search courses</h2>
                 <div className="relative w-full">
-                  <InputGroup className="h-14 sm:h-[3.75rem] md:h-16 text-base sm:text-lg bg-background shadow-2xl border-0 ring-2 ring-white/25 dark:ring-white/15 rounded-full pl-1 pr-1 sm:pl-2 sm:pr-2">
+                  <InputGroup className="h-12 sm:h-[3.75rem] md:h-16 text-sm sm:text-lg bg-background dark:bg-background shadow-2xl border-0 ring-2 ring-white/25 dark:ring-white/15 rounded-full pl-1 pr-1 sm:pl-2 sm:pr-2">
                     <InputGroupAddon
                       align="inline-start"
-                      className="text-primary pl-4 sm:pl-6"
+                      className="text-primary pl-3 sm:pl-6"
                     >
-                      <Search className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+                      <Search className="h-5 w-5 sm:h-7 sm:w-7 text-primary" />
                     </InputGroupAddon>
                     <InputGroupInput
                       type="search"
                       placeholder="Try ECON 1000, computer science, LA&PS…"
-                      className="text-base sm:text-lg text-foreground placeholder:text-muted-foreground py-3 sm:py-4"
+                      className="text-xs sm:text-lg text-foreground placeholder:text-xs sm:placeholder:text-lg placeholder:text-muted-foreground py-2.5 sm:py-4"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onFocus={() => setIsFocused(true)}
@@ -300,7 +303,7 @@ export default function HomePage() {
                   </InputGroup>
 
                   {showResults && isFocused && (
-                    <Card className="absolute top-full left-0 right-0 mt-2 max-h-[50vh] sm:max-h-100 overflow-y-auto z-50 shadow-xl border-border bg-card text-left rounded-xl">
+                    <Card className="absolute top-full left-0 right-0 mt-2 max-h-[45vh] sm:max-h-100 overflow-y-auto z-50 shadow-xl border-border bg-card text-left rounded-xl">
                       {isSearching ? (
                         <div className="p-4 sm:p-6 text-muted-foreground">
                           <div className="animate-pulse">Searching...</div>
@@ -346,7 +349,7 @@ export default function HomePage() {
               </motion.div>
 
               <motion.div
-                className="w-full max-w-6xl mx-auto mt-10 sm:mt-14 md:mt-16"
+                className="w-full max-w-6xl mx-auto mt-8 sm:mt-14 md:mt-16"
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
@@ -354,17 +357,12 @@ export default function HomePage() {
               >
                 <div className="mb-6 sm:mb-8 flex flex-col gap-3 text-center sm:text-left sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-white drop-shadow-sm">
+                    <h2 className="text-xl sm:text-3xl font-bold mb-2 text-white drop-shadow-sm">
                       Upcoming deadlines and closures
                     </h2>
                     <p className="text-sm sm:text-base text-white/80">
                       Key dates for this term, shown in date order
                     </p>
-                  </div>
-                  <div className="flex items-center justify-center sm:justify-end gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {nextFourImportantDates.length} events
-                    </Badge>
                   </div>
                 </div>
 
@@ -393,7 +391,7 @@ export default function HomePage() {
                             </Badge>
                           </div>
 
-                          <h3 className="font-semibold text-sm sm:text-lg leading-snug text-foreground line-clamp-2">
+                          <h3 className="font-semibold text-[1.05rem] sm:text-lg leading-snug text-foreground line-clamp-2">
                             {event.title}
                           </h3>
 
@@ -455,7 +453,7 @@ export default function HomePage() {
               </div>
             ) : (
               <motion.div
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
                 initial="initial"
                 whileInView="animate"
                 viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
@@ -466,14 +464,14 @@ export default function HomePage() {
                     <Link
                       href={`/course/${course.code?.replace(/\s+/g, "").toLowerCase()}`}
                     >
-                      <Card className="p-4 sm:p-5 hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer group flex flex-col h-full">
-                        <div className="flex items-start justify-between mb-2 shrink-0 gap-2 sm:gap-3">
+                      <Card className="p-3 sm:p-5 hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer group flex flex-col h-full">
+                        <div className="flex items-start justify-between mb-1.5 sm:mb-2 shrink-0 gap-2 sm:gap-3">
                           <div className="flex-1 min-w-0 pr-2">
-                            <h3 className="font-bold text-lg sm:text-xl mb-0.5 group-hover:text-primary transition-colors line-clamp-1">
+                            <h3 className="font-bold text-lg sm:text-xl mb-0 group-hover:text-primary transition-colors line-clamp-1">
                               {formatCourseCode(course.code)}
                             </h3>
                             <p
-                              className="text-xs sm:text-sm text-foreground font-medium line-clamp-3 min-h-15 sm:min-h-17 leading-snug"
+                              className="text-xs sm:text-sm text-foreground font-medium line-clamp-2 sm:line-clamp-3 sm:min-h-17 leading-snug"
                               title={course.name}
                             >
                               {course.name}
@@ -488,7 +486,7 @@ export default function HomePage() {
                           </Badge>
                         </div>
 
-                        <div className="flex items-start gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-2 shrink-0">
+                        <div className="flex items-start gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-1.5 sm:mb-2 shrink-0">
                           <div className="flex items-start gap-1 min-w-0">
                             <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 shrink-0 mt-0.5" />
                             <span className="min-w-0 leading-snug whitespace-normal wrap-break-word">
@@ -499,14 +497,14 @@ export default function HomePage() {
                           </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-2.5 border-t border-border mt-auto gap-2">
-                          <p className="text-xs sm:text-sm text-muted-foreground truncate flex-1 min-w-0">
+                        <div className="flex flex-row items-center justify-between pt-2 border-t border-border mt-auto gap-2">
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate flex-1 min-w-0 pr-2">
                             {course.instructor}
                           </p>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="group-hover:bg-primary group-hover:text-primary-foreground w-full sm:w-auto text-xs sm:text-sm shadow-md hover:shadow-lg border-2 sm:border-2"
+                            className="group-hover:bg-primary group-hover:text-primary-foreground h-8 px-3 text-xs sm:text-sm shadow-md hover:shadow-lg border-2 sm:border-2 shrink-0"
                           >
                             View Details
                           </Button>
@@ -533,7 +531,7 @@ export default function HomePage() {
               transition={{ duration: 0.5 }}
             >
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold">How it works</h2>
+                <h2 className="text-xl sm:text-3xl font-bold">How it works</h2>
                 <p className="text-sm sm:text-base text-muted-foreground">
                   A clear, three-step flow to build your schedule.
                 </p>
@@ -582,7 +580,7 @@ export default function HomePage() {
 
         <section className="container mx-auto px-4 sm:px-6 md:px-8 pb-12 sm:pb-16">
           <motion.div
-            className="max-w-6xl mx-auto rounded-2xl border border-border bg-card p-5 sm:p-8 md:p-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6 shadow-sm"
+            className="max-w-6xl mx-auto rounded-2xl border border-border bg-card p-4 sm:p-8 md:p-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6 shadow-sm"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: false, margin: "-50px 0px -10px 0px" }}
@@ -592,7 +590,7 @@ export default function HomePage() {
               <p className="text-xs sm:text-sm uppercase tracking-widest text-primary">
                 Ready to start?
               </p>
-              <h2 className="text-2xl sm:text-3xl font-bold mt-2 text-foreground">
+              <h2 className="text-xl sm:text-3xl font-bold mt-2 text-foreground">
                 Build your schedule with confidence.
               </h2>
               <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-2xl">
