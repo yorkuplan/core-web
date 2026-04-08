@@ -39,6 +39,8 @@ import {
   AlertTriangle,
   ShoppingCart,
   X,
+  Copy,
+  Check,
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useRef, useEffect } from "react"
@@ -564,7 +566,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
   const isDenseMobile = denseMode && isMobile
   const isSummerTerm = termKey === "summer" || termKey === "summer1" || termKey === "summer2"
   const isCompactTerm = termKey === "fall" || termKey === "winter" || (isTabletOrBelow && isSummerTerm)
-  const compactSlotHeight = denseMode ? (isMobile ? 24 : isTabletOrBelow ? 18 : 18) : (isMobile ? 36 : isTabletOrBelow ? 34 : 32)
+  const compactSlotHeight = denseMode ? (isMobile ? 30 : isTabletOrBelow ? 23 : 23) : (isMobile ? 36 : isTabletOrBelow ? 34 : 32)
   const [activeBlock, setActiveBlock] = useState<ScheduleBlock | null>(null)
   const blocks = buildScheduleBlocks(termItems, globalColorMap)
 
@@ -581,7 +583,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
   const { startHour, endHour } = getScheduleHours(blocks)
   const halfHourRows = Math.max(4, (endHour - startHour) * 2)
   const slotHeight = denseMode
-    ? (isCompactTerm ? compactSlotHeight : (isMobile ? 24 : 22))
+    ? (isCompactTerm ? compactSlotHeight : (isMobile ? 30 : 28))
     : (isCompactTerm ? compactSlotHeight : (isMobile ? 40 : SLOT_HEIGHT))
   const visibleMonthWindow = getVisibleMonthWindow(termKey)
   const runRowHeight = denseMode ? 16 : (isCompactTerm ? 24 : (isMobile ? 24 : 28))
@@ -731,18 +733,21 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                     const heightCompact = (block.endTime - block.startTime) * 2 * slotHeight
                     const showLocationLine = denseMode ? false : heightCompact > 50
                     const showTypeLine = denseMode ? false : true
+                    const showDenseTypeLine = denseMode && heightCompact >= 34
+                    const showDenseLocationLine = denseMode && heightCompact >= 48
                     const color = COURSE_COLORS[block.colorIndex]
                     const hasConflict = conflicts && conflicts.has(block.item.id)
                     const denseMobileCode = block.item.courseCode.replace(/\s+/g, "")
                     const denseMobileType = normalizeComponentType(block.item.type) || block.item.typeLabel
                     const denseMobileLocation = block.item.location.split(",")[0]?.trim() || block.item.location
-                    const denseMetaText = `${isDenseMobile ? denseMobileType : block.item.typeLabel} • ${isDenseMobile ? denseMobileLocation : block.item.location}`
+                    const denseTypeText = isDenseMobile ? denseMobileType : block.item.typeLabel
+                    const denseLocationText = isDenseMobile ? denseMobileLocation : block.item.location
                     const blockContent = (
                       <div
                         key={`${block.item.id}-${idx}`}
                         data-schedule-item-id={block.item.id}
                         data-schedule-course-code={block.item.courseCode}
-                        className={`absolute ${isDenseMobile ? "left-0.5 right-0.5" : "left-1 right-1"} rounded-md border overflow-visible ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${denseMode ? (isDenseMobile ? "px-1.5 py-1" : "px-1 py-0.5") : (isCompactTerm ? "px-1.5 py-1" : "px-2 py-1")} ${showTapDetails ? "cursor-pointer" : ""}`}
+                        className={`absolute ${isDenseMobile ? "left-0.5 right-0.5" : "left-1 right-1"} rounded-md border overflow-visible ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${denseMode ? "px-1 py-0.5" : (isCompactTerm ? "px-1.5 py-1" : "px-2 py-1")} ${showTapDetails ? "cursor-pointer" : ""}`}
                         style={{ top: topCompact, height: heightCompact }}
                         role={showTapDetails ? "button" : undefined}
                         tabIndex={showTapDetails ? 0 : undefined}
@@ -760,9 +765,14 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                             <p className={isDenseMobile ? "font-bold leading-tight text-[8px] truncate max-w-full" : (denseMode ? "font-bold leading-tight truncate text-[10px]" : "font-bold truncate text-xs")}>
                               {isDenseMobile ? denseMobileCode : block.item.courseCode}
                             </p>
-                            {denseMode && (
-                              <p className={isDenseMobile ? "leading-tight text-[8px] opacity-90 truncate max-w-full" : "leading-tight text-[9px] opacity-90 truncate"}>
-                                {denseMetaText}
+                            {showDenseTypeLine && (
+                              <p className={isDenseMobile ? "leading-tight text-[7px] opacity-90 truncate max-w-full" : "leading-tight text-[8px] opacity-90 truncate"}>
+                                {denseTypeText}
+                              </p>
+                            )}
+                            {showDenseLocationLine && (
+                              <p className={isDenseMobile ? "leading-tight text-[7px] opacity-90 truncate max-w-full" : "leading-tight text-[8px] opacity-90 truncate"}>
+                                {denseLocationText}
                               </p>
                             )}
                             {showLocationLine && (
@@ -782,6 +792,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                                 e.stopPropagation()
                                 onRemoveItem(block.item.id)
                               }}
+                              data-pdf-hide="remove"
                               className={`absolute -top-3 -right-3 z-20 rounded-full border border-red-400/90 bg-background/95 text-red-500 shadow-sm backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors ${denseMode ? "h-5 w-5" : "h-6 w-6"}`}
                               aria-label={`Remove ${block.item.courseCode}`}
                             >
@@ -803,6 +814,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                               <p className="font-semibold leading-tight">{block.item.courseCode}</p>
                               <p className="text-muted-foreground leading-tight">{block.item.courseName}</p>
                               <p><span className="font-medium">Component:</span> {block.item.typeLabel}</p>
+                              {Boolean(block.item.catalogNumber?.trim()) && <p><span className="font-medium">Cat #:</span> {block.item.catalogNumber?.trim()}</p>}
                               <p><span className="font-medium">Section:</span> {block.item.section}</p>
                               <p><span className="font-medium">Day:</span> {block.item.day}</p>
                               <p><span className="font-medium">Time:</span> {block.item.time}</p>
@@ -846,6 +858,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
             <div className="space-y-2 text-sm">
               <p><span className="font-medium">Course:</span> {activeBlock.item.courseName}</p>
               <p><span className="font-medium">Component:</span> {activeBlock.item.typeLabel}</p>
+              {activeBlock.item.catalogNumber?.trim() && <p><span className="font-medium">Cat #:</span> {activeBlock.item.catalogNumber.trim()}</p>}
               <p><span className="font-medium">Section:</span> {activeBlock.item.section}</p>
               <p><span className="font-medium">Day:</span> {activeBlock.item.day}</p>
               <p><span className="font-medium">Time:</span> {activeBlock.item.time}</p>
@@ -862,6 +875,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
 export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbeddedMode?: boolean }) {
   const [isEmbeddedPreview, setIsEmbeddedPreview] = useState(forcedEmbeddedMode)
   const [hasResolvedEmbedMode, setHasResolvedEmbedMode] = useState(forcedEmbeddedMode)
+  const [copiedCatalogCode, setCopiedCatalogCode] = useState<string | null>(null)
   const { items, removeItem, clearCart, canDock, setIsCartDockOpen } = useCart()
   const isMobile = useIsMobile()
   const scheduleRef = useRef<HTMLDivElement>(null)
@@ -978,6 +992,32 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
 
   const scrollToSchedule = () => {
     scheduleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  const handleCopyCatalogCode = async (catalogCode: string) => {
+    if (!catalogCode.trim()) return
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(catalogCode)
+      } else {
+        const textArea = document.createElement("textarea")
+        textArea.value = catalogCode
+        textArea.style.position = "fixed"
+        textArea.style.left = "-999999px"
+        textArea.style.top = "-999999px"
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        document.execCommand("copy")
+        document.body.removeChild(textArea)
+      }
+
+      setCopiedCatalogCode(catalogCode)
+      window.setTimeout(() => setCopiedCatalogCode(null), 1800)
+    } catch {
+      // silently ignore clipboard errors in constrained browsers
+    }
   }
 
   // Group items by course code
@@ -1134,6 +1174,115 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
       pdf.setTextColor(0, 0, 0)
     }
 
+    const appendDetailedItemsPages = () => {
+      if (items.length === 0) return
+
+      const contentTop = margin + headerHeight + 2
+      const contentBottom = pageHeight - margin
+      const lineHeight = 5
+      const details = [...items].sort((a, b) => {
+        const termCompare = getTermDisplayInfo(a.term || "").label.localeCompare(getTermDisplayInfo(b.term || "").label)
+        if (termCompare !== 0) return termCompare
+        const courseCompare = a.courseCode.localeCompare(b.courseCode)
+        if (courseCompare !== 0) return courseCompare
+        return a.time.localeCompare(b.time)
+      })
+
+      pdf.addPage()
+      drawPdfHeader()
+      let y = contentTop
+
+      pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(14)
+      pdf.text("Schedule Details (Full Information)", margin, y)
+      y += 8
+
+      const writeWrappedLine = (label: string, value: string, isBold = false) => {
+        const fullText = `${label}${value}`
+        const wrapped = pdf.splitTextToSize(fullText, pageWidth - margin * 2)
+        if (y + wrapped.length * lineHeight > contentBottom) {
+          pdf.addPage()
+          drawPdfHeader()
+          y = contentTop
+        }
+
+        pdf.setFont("helvetica", isBold ? "bold" : "normal")
+        pdf.setFontSize(10)
+        pdf.text(wrapped, margin, y)
+        y += wrapped.length * lineHeight
+      }
+
+      details.forEach((item, index) => {
+        if (y + 44 > contentBottom) {
+          pdf.addPage()
+          drawPdfHeader()
+          y = contentTop
+        }
+
+        const termLabel = getTermDisplayInfo(item.term || "unspecified").label
+        const relatedComponentItems = items.filter(
+          (entry) =>
+            entry.courseCode === item.courseCode &&
+            entry.term === item.term &&
+            entry.section === item.section &&
+            normalizeComponentType(entry.type) === normalizeComponentType(item.type),
+        )
+        const catalogCodes = Array.from(
+          new Set(
+            relatedComponentItems
+              .flatMap((entry) =>
+                entry.catalogNumbers && entry.catalogNumbers.length > 0
+                  ? entry.catalogNumbers
+                  : [entry.catalogNumber || ""],
+              )
+              .map((code) => code.trim())
+              .filter(Boolean),
+          ),
+        )
+
+        writeWrappedLine(`${index + 1}. `, `${item.courseCode} - ${item.courseName}`, true)
+        writeWrappedLine("   Term: ", termLabel)
+        writeWrappedLine("   Component: ", `${item.typeLabel} (${item.type})`)
+        if (catalogCodes.length > 0) {
+          writeWrappedLine("   Cat #: ", catalogCodes.join(" | "))
+        }
+        writeWrappedLine("   Section: ", item.section)
+        writeWrappedLine("   Day: ", item.day)
+        writeWrappedLine("   Time: ", item.time)
+        writeWrappedLine("   Location: ", item.location || "TBA")
+        writeWrappedLine("   Instructor: ", item.instructor || "TBA")
+        y += 2
+      })
+    }
+
+    const preparePdfClone = (clonedDoc: Document) => {
+      // Force light theme for higher contrast in exported PDF
+      clonedDoc.documentElement.classList.remove("dark")
+      clonedDoc.body.classList.remove("dark")
+
+      // Ensure schedule grids render fully without horizontal-scroll clipping artifacts.
+      clonedDoc.querySelectorAll<HTMLElement>(".overflow-x-auto").forEach((el) => {
+        el.style.overflowX = "visible"
+      })
+      clonedDoc.querySelectorAll<HTMLElement>(".min-w-175").forEach((el) => {
+        el.style.minWidth = "0"
+        el.style.width = "100%"
+      })
+
+      // Remove floating remove buttons from exported schedule visuals.
+      clonedDoc.querySelectorAll<HTMLElement>("[aria-label^='Remove ']").forEach((el) => {
+        el.style.display = "none"
+      })
+      clonedDoc.querySelectorAll<HTMLElement>("[data-pdf-hide='remove']").forEach((el) => {
+        el.style.display = "none"
+      })
+
+      // Keep block lines stable in exports to avoid layout mangling.
+      clonedDoc.querySelectorAll<HTMLElement>("[data-schedule-item-id] p").forEach((el) => {
+        el.style.whiteSpace = "nowrap"
+      })
+    }
+
     const renderSchedulePage = async (element: HTMLElement) => {
       if (pageCount > 0) pdf.addPage()
 
@@ -1141,11 +1290,9 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
         scale: 1.8,
         useCORS: true,
         backgroundColor: "#ffffff",
-        onclone: (clonedDoc) => {
-          // Force light theme for higher contrast in exported PDF
-          clonedDoc.documentElement.classList.remove("dark")
-          clonedDoc.body.classList.remove("dark")
-        },
+        windowWidth: 1800,
+        windowHeight: 1200,
+        onclone: preparePdfClone,
       })
 
       drawPdfHeader()
@@ -1171,53 +1318,12 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
 
     let pageCount = 0
 
-    // Check if fall and winter are rendered side-by-side
-    const fallWinterGrid = scheduleRef.current.querySelector<HTMLElement>(".fall-winter-grid")
-    
-    if (fallWinterGrid) {
-      // Both fall and winter exist - render them side-by-side
-      // Force wide viewport so lg:grid-cols-2 activates
-      if (pageCount > 0) pdf.addPage()
+    // Render fall and winter individually to maximize legibility in the exported schedule blocks.
+    const hasFall = scheduleRef.current.querySelector<HTMLElement>("[data-term-schedule='fall']")
+    const hasWinter = scheduleRef.current.querySelector<HTMLElement>("[data-term-schedule='winter']")
 
-      const canvas = await html2canvas(fallWinterGrid, {
-        scale: 1.8,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        windowWidth: 1400, // Force wide enough for lg breakpoint
-        windowHeight: 1200,
-        onclone: (clonedDoc) => {
-          clonedDoc.documentElement.classList.remove("dark")
-          clonedDoc.body.classList.remove("dark")
-        },
-      })
-
-      drawPdfHeader()
-
-      const imgData = canvas.toDataURL("image/jpeg", 0.9)
-      const availableW = pageWidth - margin * 2
-      const contentTop = margin + headerHeight
-      const availableH = pageHeight - contentTop - margin
-      const imgRatio = canvas.width / canvas.height
-      let drawW = availableW
-      let drawH = drawW / imgRatio
-
-      if (drawH > availableH) {
-        drawH = availableH
-        drawW = drawH * imgRatio
-      }
-
-      const offsetX = margin + (availableW - drawW) / 2
-      const offsetY = contentTop + (availableH - drawH) / 2
-      pdf.addImage(imgData, "JPEG", offsetX, offsetY, drawW, drawH)
-      pageCount++
-    } else {
-      // Fall and winter don't exist together - render individually if they exist
-      const hasFall = scheduleRef.current.querySelector<HTMLElement>("[data-term-schedule='fall']")
-      const hasWinter = scheduleRef.current.querySelector<HTMLElement>("[data-term-schedule='winter']")
-      
-      if (hasFall) await renderSchedulePage(hasFall)
-      if (hasWinter) await renderSchedulePage(hasWinter)
-    }
+    if (hasFall) await renderSchedulePage(hasFall)
+    if (hasWinter) await renderSchedulePage(hasWinter)
 
     // Render all other term schedules (not fall/winter)
     const allTermElements = scheduleRef.current.querySelectorAll<HTMLElement>("[data-term-schedule]")
@@ -1227,6 +1333,8 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
 
       await renderSchedulePage(termEl)
     }
+
+    appendDetailedItemsPages()
 
     pdf.save("YUPlan-Schedule.pdf")
   }
@@ -1460,6 +1568,24 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                 {sortedCourseItems.map((item) => (
                                   <div key={item.id} className="p-3 rounded-md border border-border bg-background flex items-start gap-3">
                                     <div className="flex-1 min-w-0">
+                                      {(() => {
+                                        const relatedComponentItems = courseItems.filter(
+                                          (entry) =>
+                                            entry.section === item.section &&
+                                            normalizeComponentType(entry.type) === normalizeComponentType(item.type),
+                                        )
+                                        const catalogCodes = relatedComponentItems
+                                          .flatMap((entry) =>
+                                            entry.catalogNumbers && entry.catalogNumbers.length > 0
+                                              ? entry.catalogNumbers
+                                              : [entry.catalogNumber || ""],
+                                          )
+                                          .map((code) => code.trim())
+                                          .filter(Boolean)
+                                        const uniqueCatalogCodes = Array.from(new Set(catalogCodes))
+
+                                        return (
+                                          <>
                                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
                                         <Badge variant="outline" className="text-xs">Section {item.section}</Badge>
                                         <Badge variant="secondary" className="text-xs">{item.typeLabel}</Badge>
@@ -1470,6 +1596,33 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                           </Badge>
                                         )}
                                       </div>
+
+                                      {uniqueCatalogCodes.length > 0 && (
+                                        <div className="mb-1.5 max-w-full overflow-x-auto pb-1">
+                                          <div className="flex w-max items-center gap-1">
+                                            {uniqueCatalogCodes.map((catalogCode) => (
+                                              <button
+                                                key={`${item.id}-${catalogCode}`}
+                                                type="button"
+                                                onClick={() => handleCopyCatalogCode(catalogCode)}
+                                                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-mono font-medium text-primary hover:bg-primary/20 transition-colors"
+                                                title="Copy catalog code"
+                                                aria-label={`Copy catalog code ${catalogCode}`}
+                                              >
+                                                <span>{catalogCode}</span>
+                                                {copiedCatalogCode === catalogCode ? (
+                                                  <Check className="h-3 w-3" />
+                                                ) : (
+                                                  <Copy className="h-3 w-3 opacity-70" />
+                                                )}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                          </>
+                                        )
+                                      })()}
 
                                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                                         <span className="flex items-center gap-1">
@@ -1844,6 +1997,24 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                 {sortedCourseItems.map((item) => (
                                   <div key={item.id} className="p-3 rounded-md border border-border bg-background flex items-start gap-3">
                                     <div className="flex-1 min-w-0">
+                                      {(() => {
+                                        const relatedComponentItems = courseItems.filter(
+                                          (entry) =>
+                                            entry.section === item.section &&
+                                            normalizeComponentType(entry.type) === normalizeComponentType(item.type),
+                                        )
+                                        const catalogCodes = relatedComponentItems
+                                          .flatMap((entry) =>
+                                            entry.catalogNumbers && entry.catalogNumbers.length > 0
+                                              ? entry.catalogNumbers
+                                              : [entry.catalogNumber || ""],
+                                          )
+                                          .map((code) => code.trim())
+                                          .filter(Boolean)
+                                        const uniqueCatalogCodes = Array.from(new Set(catalogCodes))
+
+                                        return (
+                                          <>
                                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
                                         <Badge variant="outline" className="text-xs">Section {item.section}</Badge>
                                         <Badge variant="secondary" className="text-xs">{item.typeLabel}</Badge>
@@ -1854,6 +2025,33 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                           </Badge>
                                         )}
                                       </div>
+
+                                      {uniqueCatalogCodes.length > 0 && (
+                                        <div className="mb-1.5 max-w-full overflow-x-auto pb-1">
+                                          <div className="flex w-max items-center gap-1">
+                                            {uniqueCatalogCodes.map((catalogCode) => (
+                                              <button
+                                                key={`${item.id}-${catalogCode}`}
+                                                type="button"
+                                                onClick={() => handleCopyCatalogCode(catalogCode)}
+                                                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-mono font-medium text-primary hover:bg-primary/20 transition-colors"
+                                                title="Copy catalog code"
+                                                aria-label={`Copy catalog code ${catalogCode}`}
+                                              >
+                                                <span>{catalogCode}</span>
+                                                {copiedCatalogCode === catalogCode ? (
+                                                  <Check className="h-3 w-3" />
+                                                ) : (
+                                                  <Copy className="h-3 w-3 opacity-70" />
+                                                )}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                          </>
+                                        )
+                                      })()}
 
                                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                                         <span className="flex items-center gap-1">

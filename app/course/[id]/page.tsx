@@ -180,23 +180,32 @@ export default function CoursePage() {
     const groupedEntries = Array.from(grouped.entries()).sort(([a], [b]) =>
       a.localeCompare(b),
     );
+    const activityCatalogNumbers = parseCatalogNumbers(activity.catalog_number)
+      .map((value) => value.trim())
+      .filter(Boolean)
 
-    return groupedEntries.map(([timeRange, meta], idx) => ({
-      id: `${courseCodeCompact}-${section.id}-${activity.id}-${idx + 1}`,
-      courseCode: courseDisplayCode,
-      courseName: selectedOffering?.name ?? "",
-      section: section.letter,
-      instructor: getInstructorName(section.id),
-      type: activity.course_type,
-      typeLabel,
-      day: Array.from(meta.days).join("/"),
-      time: timeRange,
-      location:
-        meta.locations.size > 0
-          ? Array.from(meta.locations).join(" / ")
-          : "TBA",
-      term: selectedOffering?.term ?? "",
-    }));
+    return groupedEntries.map(([timeRange, meta], idx) => {
+      const catalogCode = activityCatalogNumbers[idx] || activityCatalogNumbers[0] || ""
+
+      return {
+        id: `${courseCodeCompact}-${section.id}-${activity.id}-${idx + 1}`,
+        courseCode: courseDisplayCode,
+        courseName: selectedOffering?.name ?? "",
+        catalogNumber: catalogCode,
+        catalogNumbers: activityCatalogNumbers,
+        section: section.letter,
+        instructor: getInstructorName(section.id),
+        type: activity.course_type,
+        typeLabel,
+        day: Array.from(meta.days).join("/"),
+        time: timeRange,
+        location:
+          meta.locations.size > 0
+            ? Array.from(meta.locations).join(" / ")
+            : "TBA",
+        term: selectedOffering?.term ?? "",
+      }
+    });
   };
 
   const getSectionPrimaryActivities = (section: Section): Activity[] =>

@@ -22,6 +22,8 @@ export interface CartItem {
   id: string
   courseCode: string
   courseName: string
+  catalogNumber?: string
+  catalogNumbers?: string[]
   section: string
   instructor: string
   type: string
@@ -45,8 +47,11 @@ type CartAction =
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "ADD_ITEM": {
-      if (state.items.some((item) => item.id === action.payload.id)) {
-        return state
+      const existingIndex = state.items.findIndex((item) => item.id === action.payload.id)
+      if (existingIndex !== -1) {
+        const updatedItems = [...state.items]
+        updatedItems[existingIndex] = { ...updatedItems[existingIndex], ...action.payload }
+        return { items: updatedItems }
       }
       return { items: [...state.items, action.payload] }
     }
