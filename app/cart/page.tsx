@@ -22,6 +22,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useCart, type CartItem } from "@/components/cart-context"
 import {
@@ -559,7 +564,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
   const isDenseMobile = denseMode && isMobile
   const isSummerTerm = termKey === "summer" || termKey === "summer1" || termKey === "summer2"
   const isCompactTerm = termKey === "fall" || termKey === "winter" || (isTabletOrBelow && isSummerTerm)
-  const compactSlotHeight = denseMode ? (isMobile ? 22 : isTabletOrBelow ? 16 : 15) : (isMobile ? 36 : isTabletOrBelow ? 34 : 32)
+  const compactSlotHeight = denseMode ? (isMobile ? 24 : isTabletOrBelow ? 18 : 18) : (isMobile ? 36 : isTabletOrBelow ? 34 : 32)
   const [activeBlock, setActiveBlock] = useState<ScheduleBlock | null>(null)
   const blocks = buildScheduleBlocks(termItems, globalColorMap)
 
@@ -584,6 +589,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
   const timeColumnWidth = denseMode ? (isMobile ? 34 : 28) : (isCompactTerm ? 40 : (isMobile ? 48 : 60))
   const dayColumnMinWidth = denseMode ? (isMobile ? 76 : 60) : (isCompactTerm ? (isMobile ? 92 : isTabletOrBelow ? 88 : 80) : (isMobile ? 100 : 140))
   const showTapDetails = isTabletOrBelow
+  const showHoverDetails = !isTabletOrBelow
 
   // Build term-specific legend from the global map
   const termCourses = new Set(termItems.map(i => i.courseCode))
@@ -723,12 +729,15 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                   {dayBlocks.map((block, idx) => {
                     const topCompact = (block.startTime - startHour) * 2 * slotHeight
                     const heightCompact = (block.endTime - block.startTime) * 2 * slotHeight
+                    const showLocationLine = denseMode ? false : heightCompact > 50
+                    const showTypeLine = denseMode ? false : true
                     const color = COURSE_COLORS[block.colorIndex]
                     const hasConflict = conflicts && conflicts.has(block.item.id)
                     const denseMobileCode = block.item.courseCode.replace(/\s+/g, "")
                     const denseMobileType = normalizeComponentType(block.item.type) || block.item.typeLabel
                     const denseMobileLocation = block.item.location.split(",")[0]?.trim() || block.item.location
-                    return (
+                    const denseMetaText = `${isDenseMobile ? denseMobileType : block.item.typeLabel} • ${isDenseMobile ? denseMobileLocation : block.item.location}`
+                    const blockContent = (
                       <div
                         key={`${block.item.id}-${idx}`}
                         data-schedule-item-id={block.item.id}
@@ -746,17 +755,24 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                           }
                         } : undefined}
                       >
-                        <div className="flex items-start gap-1">
-                          <div className="flex-1 min-w-0 pr-2">
-                            <p className={isDenseMobile ? "font-bold leading-tight text-[8px] truncate max-w-full" : (denseMode ? "font-bold truncate text-[10px]" : "font-bold truncate text-xs")}>
+                        <div className="flex h-full items-start gap-1 overflow-hidden">
+                          <div className="flex-1 min-w-0 pr-2 overflow-hidden">
+                            <p className={isDenseMobile ? "font-bold leading-tight text-[8px] truncate max-w-full" : (denseMode ? "font-bold leading-tight truncate text-[10px]" : "font-bold truncate text-xs")}>
                               {isDenseMobile ? denseMobileCode : block.item.courseCode}
                             </p>
-                            <p className={isDenseMobile ? "leading-tight text-[8px] truncate max-w-full" : `truncate ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>
-                              {isDenseMobile ? denseMobileType : block.item.typeLabel}
-                            </p>
-                            {heightCompact > (denseMode ? 40 : 50) && (
-                              <p className={isDenseMobile ? "leading-tight text-[8px] opacity-80 truncate max-w-full" : `truncate opacity-80 ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>
+                            {denseMode && (
+                              <p className={isDenseMobile ? "leading-tight text-[8px] opacity-90 truncate max-w-full" : "leading-tight text-[9px] opacity-90 truncate"}>
+                                {denseMetaText}
+                              </p>
+                            )}
+                            {showLocationLine && (
+                              <p className={isDenseMobile ? "leading-tight text-[8px] opacity-90 truncate max-w-full" : `leading-tight truncate opacity-90 ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>
                                 {isDenseMobile ? denseMobileLocation : block.item.location}
+                              </p>
+                            )}
+                            {showTypeLine && (
+                              <p className={isDenseMobile ? "leading-tight text-[8px] truncate max-w-full" : `leading-tight truncate ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>
+                                {isDenseMobile ? denseMobileType : block.item.typeLabel}
                               </p>
                             )}
                           </div>
@@ -774,6 +790,32 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                           )}
                         </div>
                       </div>
+                    )
+
+                    if (showHoverDetails) {
+                      return (
+                        <HoverCard key={`${block.item.id}-${idx}`} openDelay={120} closeDelay={80}>
+                          <HoverCardTrigger asChild>
+                            {blockContent}
+                          </HoverCardTrigger>
+                          <HoverCardContent side="top" align="start" className="w-72 p-3">
+                            <div className="space-y-1.5 text-sm">
+                              <p className="font-semibold leading-tight">{block.item.courseCode}</p>
+                              <p className="text-muted-foreground leading-tight">{block.item.courseName}</p>
+                              <p><span className="font-medium">Component:</span> {block.item.typeLabel}</p>
+                              <p><span className="font-medium">Section:</span> {block.item.section}</p>
+                              <p><span className="font-medium">Day:</span> {block.item.day}</p>
+                              <p><span className="font-medium">Time:</span> {block.item.time}</p>
+                              <p><span className="font-medium">Location:</span> {block.item.location}</p>
+                              <p><span className="font-medium">Instructor:</span> {block.item.instructor}</p>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
+                      )
+                    }
+
+                    return (
+                      blockContent
                     )
                   })}
                 </div>
