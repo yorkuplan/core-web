@@ -688,7 +688,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
       )}
 
       {showTapDetails && (
-        <p className="mb-2 text-xs text-muted-foreground">
+        <p data-pdf-hide="tap-hint" className="mb-2 text-xs text-muted-foreground">
           Tap a class block to view full details.
         </p>
       )}
@@ -1274,6 +1274,9 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
         el.style.display = "none"
       })
       clonedDoc.querySelectorAll<HTMLElement>("[data-pdf-hide='remove']").forEach((el) => {
+        el.style.display = "none"
+      })
+      clonedDoc.querySelectorAll<HTMLElement>("[data-pdf-hide='tap-hint']").forEach((el) => {
         el.style.display = "none"
       })
 
