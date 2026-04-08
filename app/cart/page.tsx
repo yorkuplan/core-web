@@ -1195,6 +1195,52 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
     }
   }
 
+  const removeCourseByCode = (courseCode: string) => {
+    const sameCourseItems = items.filter((entry) => entry.courseCode === courseCode)
+    const uniqueIds = new Set(sameCourseItems.map((entry) => entry.id))
+    for (const id of uniqueIds) {
+      removeItem(id)
+    }
+  }
+
+  const handleComponentDelete = (itemId: string) => {
+    const target = items.find((entry) => entry.id === itemId)
+    if (!target) return
+
+    const sameCourseItems = items.filter((entry) => entry.courseCode === target.courseCode)
+    const remainingAfterDelete = sameCourseItems.filter((entry) => entry.id !== itemId)
+    const hadSecondaryBeforeDelete = sameCourseItems.some((entry) =>
+      SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(entry.type)),
+    )
+
+    // A course cannot exist without any components.
+    if (remainingAfterDelete.length === 0) {
+      removeCourseByCode(target.courseCode)
+      return
+    }
+
+    // Secondary components cannot exist without a top-level (primary) component.
+    const hasPrimaryRemaining = remainingAfterDelete.some((entry) =>
+      PRIMARY_COMPONENT_TYPES.has(normalizeComponentType(entry.type)),
+    )
+    const hasSecondaryRemaining = remainingAfterDelete.some((entry) =>
+      SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(entry.type)),
+    )
+
+    // If this course had secondary components, deleting the last one should remove the whole course.
+    if (hadSecondaryBeforeDelete && !hasSecondaryRemaining) {
+      removeCourseByCode(target.courseCode)
+      return
+    }
+
+    if (hasSecondaryRemaining && !hasPrimaryRemaining) {
+      removeCourseByCode(target.courseCode)
+      return
+    }
+
+    removeItem(itemId)
+  }
+
   const handleSaveAsPdf = async () => {
     if (!scheduleRef.current) return
     const { default: html2canvas } = await import("html2canvas-pro")
@@ -1492,7 +1538,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                       conflicts={conflictsByTerm["fall"] || new Set()}
                       globalColorMap={globalColorMap}
                       denseMode={true}
-                      onRemoveItem={removeItem}
+                      onRemoveItem={handleComponentDelete}
                     />
                     <ScheduleTimetable
                       termItems={itemsByTerm["winter"] || []}
@@ -1500,7 +1546,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                       conflicts={conflictsByTerm["winter"] || new Set()}
                       globalColorMap={globalColorMap}
                       denseMode={true}
-                      onRemoveItem={removeItem}
+                      onRemoveItem={handleComponentDelete}
                     />
                   </div>
                 )}
@@ -1517,7 +1563,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                         conflicts={conflictsByTerm[term] || new Set()}
                         globalColorMap={globalColorMap}
                         denseMode={true}
-                        onRemoveItem={removeItem}
+                        onRemoveItem={handleComponentDelete}
                       />
                     </div>
                   )
@@ -1748,7 +1794,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                           variant="ghost"
                                           size="icon"
                                           className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
-                                          onClick={() => removeItem(item.id)}
+                                          onClick={() => handleComponentDelete(item.id)}
                                         >
                                           <Trash2 className="h-4 w-4" />
                                           <span className="sr-only">Remove {item.typeLabel}</span>
@@ -1893,7 +1939,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                       conflicts={conflictsByTerm["fall"] || new Set()}
                       globalColorMap={globalColorMap}
                       denseMode={true}
-                      onRemoveItem={removeItem}
+                      onRemoveItem={handleComponentDelete}
                     />
                     <ScheduleTimetable
                       termItems={itemsByTerm["winter"] || []}
@@ -1901,7 +1947,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                       conflicts={conflictsByTerm["winter"] || new Set()}
                       globalColorMap={globalColorMap}
                       denseMode={true}
-                      onRemoveItem={removeItem}
+                      onRemoveItem={handleComponentDelete}
                     />
                   </motion.div>
                 )}
@@ -1920,7 +1966,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                         conflicts={conflictsByTerm[term] || new Set()}
                         globalColorMap={globalColorMap}
                         denseMode={true}
-                        onRemoveItem={removeItem}
+                        onRemoveItem={handleComponentDelete}
                       />
                     </motion.div>
                   )
@@ -2179,7 +2225,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                           variant="ghost"
                                           size="icon"
                                           className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
-                                          onClick={() => removeItem(item.id)}
+                                          onClick={() => handleComponentDelete(item.id)}
                                         >
                                           <Trash2 className="h-4 w-4" />
                                           <span className="sr-only">Remove {item.typeLabel}</span>
@@ -2232,14 +2278,14 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                       termKey="fall"
                       conflicts={conflictsByTerm["fall"] || new Set()}
                       globalColorMap={globalColorMap}
-                      onRemoveItem={removeItem}
+                      onRemoveItem={handleComponentDelete}
                     />
                     <ScheduleTimetable
                       termItems={itemsByTerm["winter"] || []}
                       termKey="winter"
                       conflicts={conflictsByTerm["winter"] || new Set()}
                       globalColorMap={globalColorMap}
-                      onRemoveItem={removeItem}
+                      onRemoveItem={handleComponentDelete}
                     />
                   </motion.div>
                 )}
@@ -2257,7 +2303,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                         termKey={term}
                         conflicts={conflictsByTerm[term] || new Set()}
                         globalColorMap={globalColorMap}
-                        onRemoveItem={removeItem}
+                        onRemoveItem={handleComponentDelete}
                       />
                     </motion.div>
                   )
