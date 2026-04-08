@@ -516,6 +516,13 @@ function parseDays(dayStr: string): string[] {
     .map((d) => normalizeDayToken(d))
     .filter(Boolean)
 }
+
+function formatDecimalTime(value: number): string {
+  const hours = Math.floor(value)
+  const minutes = Math.round((value - hours) * 60)
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+}
+
 interface ScheduleBlock {
   item: CartItem
   day: string
@@ -592,6 +599,31 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
   const dayColumnMinWidth = denseMode ? (isMobile ? 76 : 60) : (isCompactTerm ? (isMobile ? 92 : isTabletOrBelow ? 88 : 80) : (isMobile ? 100 : 140))
   const showTapDetails = isTabletOrBelow
   const showHoverDetails = !isTabletOrBelow
+
+  const conflictPairs = (() => {
+    const pairs = new Map<string, { summary: string }>()
+    for (let i = 0; i < blocks.length; i++) {
+      for (let j = i + 1; j < blocks.length; j++) {
+        const a = blocks[i]
+        const b = blocks[j]
+        if (a.day !== b.day) continue
+        if (!(a.startTime < b.endTime && b.startTime < a.endTime)) continue
+
+        const overlapStart = Math.max(a.startTime, b.startTime)
+        const overlapEnd = Math.min(a.endTime, b.endTime)
+        const codes = [a.item.courseCode, b.item.courseCode].sort((x, y) => x.localeCompare(y))
+        const key = `${codes[0]}|${codes[1]}|${a.day}|${overlapStart}|${overlapEnd}`
+
+        if (!pairs.has(key)) {
+          pairs.set(key, {
+            summary: `${codes[0]} vs ${codes[1]} (${a.day} ${formatDecimalTime(overlapStart)}-${formatDecimalTime(overlapEnd)})`,
+          })
+        }
+      }
+    }
+
+    return Array.from(pairs.values())
+  })()
 
   // Build term-specific legend from the global map
   const termCourses = new Set(termItems.map(i => i.courseCode))
@@ -693,6 +725,22 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
         </p>
       )}
 
+      {conflictPairs.length > 0 && (
+        <div className="mb-2 rounded-md border border-destructive/50 bg-destructive/10 p-2">
+          <p className="text-[11px] font-semibold text-destructive">Conflicts in this schedule</p>
+          <div className="mt-1 space-y-0.5">
+            {conflictPairs.slice(0, 4).map((pair) => (
+              <p key={pair.summary} className="text-[11px] text-foreground/90 leading-tight">
+                {pair.summary}
+              </p>
+            ))}
+            {conflictPairs.length > 4 && (
+              <p className="text-[11px] text-muted-foreground">+{conflictPairs.length - 4} more conflicts</p>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <div className="min-w-175" style={{ minWidth: `${Math.max(dayColumns.length, 5) * dayColumnMinWidth}px` }}>
           <div className="grid gap-0" style={{ gridTemplateColumns: `${timeColumnWidth}px repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
@@ -737,6 +785,26 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                     const showDenseLocationLine = denseMode && heightCompact >= 48
                     const color = COURSE_COLORS[block.colorIndex]
                     const hasConflict = conflicts && conflicts.has(block.item.id)
+                    const conflictingCourseCodes = hasConflict
+                      ? Array.from(
+                          new Set(
+                            dayBlocks
+                              .filter(
+                                (candidate) =>
+                                  candidate.item.id !== block.item.id &&
+                                  block.startTime < candidate.endTime &&
+                                  candidate.startTime < block.endTime,
+                              )
+                              .map((candidate) => candidate.item.courseCode),
+                          ),
+                        )
+                      : []
+                    const conflictSummary = conflictingCourseCodes.length > 0
+                      ? conflictingCourseCodes.length === 1
+                        ? `vs ${conflictingCourseCodes[0].replace(/\s+/g, "")}`
+                        : `vs ${conflictingCourseCodes[0].replace(/\s+/g, "")} +${conflictingCourseCodes.length - 1}`
+                      : "Conflict"
+                    const showConflictBadge = hasConflict && heightCompact >= (denseMode ? 44 : 36)
                     const denseMobileCode = block.item.courseCode.replace(/\s+/g, "")
                     const denseMobileType = normalizeComponentType(block.item.type) || block.item.typeLabel
                     const denseMobileLocation = block.item.location.split(",")[0]?.trim() || block.item.location
@@ -747,8 +815,9 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                         key={`${block.item.id}-${idx}`}
                         data-schedule-item-id={block.item.id}
                         data-schedule-course-code={block.item.courseCode}
+                        data-schedule-conflict={hasConflict ? "true" : "false"}
                         className={`absolute ${isDenseMobile ? "left-0.5 right-0.5" : "left-1 right-1"} rounded-md border overflow-visible ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${denseMode ? "px-1 py-0.5" : (isCompactTerm ? "px-1.5 py-1" : "px-2 py-1")} ${showTapDetails ? "cursor-pointer" : ""}`}
-                        style={{ top: topCompact, height: heightCompact }}
+                        style={{ top: topCompact, height: heightCompact, zIndex: hasConflict ? 30 : 10, opacity: hasConflict ? 0.90 : 0.92 }}
                         role={showTapDetails ? "button" : undefined}
                         tabIndex={showTapDetails ? 0 : undefined}
                         aria-label={showTapDetails ? `View details for ${block.item.courseCode}` : undefined}
@@ -760,7 +829,12 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                           }
                         } : undefined}
                       >
-                        <div className="flex h-full items-start gap-1 overflow-hidden">
+                        {showConflictBadge && (
+                          <span className="pointer-events-none absolute right-1 top-1 max-w-[70%] truncate rounded bg-destructive/90 px-1 py-0.5 text-[9px] leading-none font-semibold text-destructive-foreground">
+                            {conflictSummary}
+                          </span>
+                        )}
+                        <div className={`flex h-full items-start gap-1 overflow-hidden ${showConflictBadge ? "pt-3" : ""}`}>
                           <div className="flex-1 min-w-0 pr-2 overflow-hidden">
                             <p className={isDenseMobile ? "font-bold leading-tight text-[8px] truncate max-w-full" : (denseMode ? "font-bold leading-tight truncate text-[10px]" : "font-bold truncate text-xs")}>
                               {isDenseMobile ? denseMobileCode : block.item.courseCode}
@@ -1171,7 +1245,9 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
       pdf.textWithLink(websiteText, websiteX, margin + 4.5, { url: websiteUrl })
       pdf.setDrawColor(220, 220, 220)
       pdf.line(margin, margin + headerHeight - 2, pageWidth - margin, margin + headerHeight - 2)
+
       pdf.setTextColor(0, 0, 0)
+      pdf.setFont("helvetica", "normal")
     }
 
     const appendDetailedItemsPages = () => {
@@ -1280,6 +1356,14 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
         el.style.display = "none"
       })
 
+      // Make overlapping classes unmistakable in exported schedule snapshots.
+      clonedDoc.querySelectorAll<HTMLElement>("[data-schedule-conflict='true']").forEach((el) => {
+        el.style.outline = "2px solid #dc2626"
+        el.style.outlineOffset = "0px"
+        el.style.boxShadow = "0 0 0 2px rgba(220, 38, 38, 0.18)"
+        el.style.zIndex = "999"
+      })
+
       // Keep block lines stable in exports to avoid layout mangling.
       clonedDoc.querySelectorAll<HTMLElement>("[data-schedule-item-id] p").forEach((el) => {
         el.style.whiteSpace = "nowrap"
@@ -1383,12 +1467,17 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
             </div>
 
             {allConflicts.size > 0 && (
-              <Card className="p-3 border-destructive bg-destructive/5">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                  <p className="text-xs text-muted-foreground">
-                    Some items overlap in time. Review your selections below.
-                  </p>
+              <Card className="p-4 border-destructive/80 bg-destructive/12 ring-1 ring-destructive/40 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-destructive/20 p-1.5 mt-0.5">
+                    <AlertTriangle className="h-4.5 w-4.5 text-destructive shrink-0" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-destructive">Schedule conflict detected</p>
+                    <p className="text-sm text-foreground/90">
+                      Some items overlap in time. Review your selections below.
+                    </p>
+                  </div>
                 </div>
               </Card>
             )}
@@ -1763,12 +1852,14 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
               animate="animate"
               variants={fadeInUp}
             >
-              <Card className="p-4 mb-6 border-destructive bg-destructive/5">
-                <div className="flex items-center gap-3">
-                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+              <Card className="p-5 mb-6 border-destructive/80 bg-destructive/12 ring-1 ring-destructive/40 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-destructive/20 p-2 mt-0.5">
+                    <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+                  </div>
                   <div>
-                    <p className="font-medium text-destructive">Schedule Conflict Detected</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-base font-semibold text-destructive">Schedule Conflict Detected</p>
+                    <p className="text-sm text-foreground/90">
                       Some items have overlapping times. Review your selections above.
                     </p>
                   </div>
