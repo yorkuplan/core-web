@@ -625,6 +625,29 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
     return Array.from(pairs.values())
   })()
 
+  const multiComponentCourses = (() => {
+    const byCourse = new Map<string, Set<string>>()
+
+    for (const item of termItems) {
+      if (!SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(item.type))) {
+        continue
+      }
+
+      if (!byCourse.has(item.courseCode)) {
+        byCourse.set(item.courseCode, new Set())
+      }
+      byCourse
+        .get(item.courseCode)
+        ?.add(`${item.section}|${item.typeLabel.trim().toUpperCase()}`)
+    }
+
+    return Array.from(byCourse.entries())
+      .filter(([, components]) => components.size > 1)
+      .map(([courseCode, components]) => ({
+        summary: `${courseCode}: ${components.size} components selected`,
+      }))
+  })()
+
   // Build term-specific legend from the global map
   const termCourses = new Set(termItems.map(i => i.courseCode))
   const courseColorMap: Record<string, number> = {}
@@ -736,6 +759,22 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
             ))}
             {conflictPairs.length > 4 && (
               <p className="text-[11px] text-muted-foreground">+{conflictPairs.length - 4} more conflicts</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {multiComponentCourses.length > 0 && (
+        <div className="mb-2 rounded-md border border-amber-500/60 bg-amber-500/12 p-2">
+          <p className="text-[11px] font-semibold text-amber-800">Multiple components selected</p>
+          <div className="mt-1 space-y-0.5">
+            {multiComponentCourses.slice(0, 4).map((entry) => (
+              <p key={entry.summary} className="text-[11px] text-foreground/90 leading-tight">
+                {entry.summary}
+              </p>
+            ))}
+            {multiComponentCourses.length > 4 && (
+              <p className="text-[11px] text-muted-foreground">+{multiComponentCourses.length - 4} more courses</p>
             )}
           </div>
         </div>
@@ -1188,6 +1227,24 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
     for (const id of s) allConflicts.add(id)
   }
 
+  const coursesWithMultipleSecondaryComponents = (() => {
+    const byCourse = new Map<string, Set<string>>()
+
+    for (const item of items) {
+      if (!SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(item.type))) continue
+      if (!byCourse.has(item.courseCode)) {
+        byCourse.set(item.courseCode, new Set())
+      }
+      byCourse
+        .get(item.courseCode)
+        ?.add(`${item.section}|${item.typeLabel.trim().toUpperCase()}`)
+    }
+
+    return Array.from(byCourse.entries())
+      .filter(([, components]) => components.size > 1)
+      .map(([courseCode]) => courseCode)
+  })()
+
   const clearTermItems = (termItems: CartItem[]) => {
     const uniqueIds = new Set(termItems.map((item) => item.id))
     for (const id of uniqueIds) {
@@ -1522,6 +1579,22 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                     <p className="text-sm font-semibold text-destructive">Schedule conflict detected</p>
                     <p className="text-sm text-foreground/90">
                       Some items overlap in time. Review your selections below.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {coursesWithMultipleSecondaryComponents.length > 0 && (
+              <Card className="p-4 border-amber-500/70 bg-amber-500/12 ring-1 ring-amber-500/35 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-amber-500/20 p-1.5 mt-0.5">
+                    <AlertTriangle className="h-4.5 w-4.5 text-amber-700 shrink-0" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">Multiple components selected</p>
+                    <p className="text-sm text-foreground/90">
+                      One or more courses include multiple secondary components. Review your selections below.
                     </p>
                   </div>
                 </div>
@@ -1907,6 +1980,28 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                     <p className="text-base font-semibold text-destructive">Schedule Conflict Detected</p>
                     <p className="text-sm text-foreground/90">
                       Some items have overlapping times. Review your selections above.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {coursesWithMultipleSecondaryComponents.length > 0 && items.length > 0 && (
+            <motion.div
+              initial="initial"
+              animate="animate"
+              variants={fadeInUp}
+            >
+              <Card className="p-5 mb-6 border-amber-500/70 bg-amber-500/12 ring-1 ring-amber-500/35 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-amber-500/20 p-2 mt-0.5">
+                    <AlertTriangle className="h-5 w-5 text-amber-700 shrink-0" />
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-amber-800">Multiple components selected</p>
+                    <p className="text-sm text-foreground/90">
+                      One or more courses include multiple secondary components. Review your selections above.
                     </p>
                   </div>
                 </div>
