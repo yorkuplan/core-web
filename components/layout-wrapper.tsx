@@ -8,7 +8,7 @@ interface LayoutWrapperProps {
 }
 
 export function LayoutWrapper({ children }: LayoutWrapperProps) {
-  const { isCartDockOpen, canDock, dockWidth } = useCart()
+  const { isCartDockOpen, canDock, dockWidth, isDockResizing } = useCart()
   const [isCoarsePointerDevice, setIsCoarsePointerDevice] = useState(false)
 
   useEffect(() => {
@@ -28,7 +28,10 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
     <div
       style={
         shouldShiftForDock
-          ? { paddingRight: `${dockWidth}px`, transition: "padding-right 300ms ease-in-out" }
+          ? {
+              paddingRight: `${dockWidth}px`,
+              transition: isDockResizing ? "none" : "padding-right 300ms ease-in-out",
+            }
           : { transition: "padding-right 300ms ease-in-out" }
       }
     >

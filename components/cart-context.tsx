@@ -3,6 +3,20 @@
 import React, { createContext, useContext, useReducer, useEffect, useRef, useState } from "react"
 
 const CART_STORAGE_KEY = "yorkuplan-cart"
+const CART_DOCK_WIDTH_STORAGE_KEY = "yorkuplan-cart-dock-width"
+
+const DEFAULT_DOCK_WIDTH = 480
+const DEFAULT_DOCK_MIN_WIDTH = 360
+const DEFAULT_DOCK_MAX_WIDTH = 760
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+const getDockWidthBounds = (viewportWidth: number) => {
+  const min = Math.max(320, Math.min(DEFAULT_DOCK_MIN_WIDTH, Math.round(viewportWidth * 0.5)))
+  const preferredMax = Math.round(viewportWidth * 0.8)
+  const max = Math.max(min + 40, Math.min(DEFAULT_DOCK_MAX_WIDTH, preferredMax))
+  return { min, max }
+}
 
 export interface CartItem {
   id: string
@@ -57,7 +71,13 @@ interface CartContextType {
   isCartDockOpen: boolean
   setIsCartDockOpen: (open: boolean) => void
   canDock: boolean
+  canResizeDock: boolean
   dockWidth: number
+  dockMinWidth: number
+  dockMaxWidth: number
+  isDockResizing: boolean
+  setDockWidth: (width: number) => void
+  setIsDockResizing: (isResizing: boolean) => void
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -67,7 +87,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [hasHydrated, setHasHydrated] = useState(false)
   const [isCartDockOpen, setIsCartDockOpen] = useState(false)
   const [canDock, setCanDock] = useState(false)
-  const [dockWidth, setDockWidth] = useState(480)
+  const [canResizeDock, setCanResizeDock] = useState(false)
+  const [dockWidth, setDockWidthState] = useState(DEFAULT_DOCK_WIDTH)
+  const [dockMinWidth, setDockMinWidth] = useState(DEFAULT_DOCK_MIN_WIDTH)
+  const [dockMaxWidth, setDockMaxWidth] = useState(DEFAULT_DOCK_MAX_WIDTH)
+  const [isDockResizing, setIsDockResizing] = useState(false)
   const itemsRef = useRef<CartItem[]>([])
   const syncChannelRef = useRef<BroadcastChannel | null>(null)
   const contextInstanceIdRef = useRef(`cart-${Date.now()}-${Math.random().toString(36).slice(2)}`)
@@ -179,13 +203,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") return
 
+    try {
+      const savedDockWidth = Number(localStorage.getItem(CART_DOCK_WIDTH_STORAGE_KEY))
+      if (Number.isFinite(savedDockWidth)) {
+        setDockWidthState(Math.round(savedDockWidth))
+      }
+    } catch {
+      // ignore invalid saved width
+    }
+
     const updateDockMetrics = () => {
-      const shouldDock = window.matchMedia("(min-width: 1024px), ((min-width: 768px) and (orientation: landscape))").matches
-      const width = Math.min(560, Math.max(420, Math.round(window.innerWidth * 0.38)))
+      const isTouchClassDevice =
+        window.matchMedia("(hover: none) and (pointer: coarse)").matches ||
+        navigator.maxTouchPoints > 0
+      const isDesktop = window.matchMedia("(min-width: 1024px)").matches && !isTouchClassDevice
+      const shouldDock = isDesktop || window.matchMedia("(min-width: 768px) and (orientation: landscape)").matches
+      const bounds = getDockWidthBounds(window.innerWidth)
+      const tabletLandscapeWidth = Math.min(560, Math.max(420, Math.round(window.innerWidth * 0.38)))
+
+      setDockMinWidth(bounds.min)
+      setDockMaxWidth(bounds.max)
       setCanDock(shouldDock)
-      setDockWidth(width)
+      setCanResizeDock(isDesktop)
+      setDockWidthState((current) => {
+        if (!isDesktop && shouldDock) {
+          return clamp(tabletLandscapeWidth, bounds.min, bounds.max)
+        }
+        return clamp(current, bounds.min, bounds.max)
+      })
       if (!shouldDock) {
         setIsCartDockOpen(false)
+        setIsDockResizing(false)
       }
     }
 
@@ -197,6 +245,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("orientationchange", updateDockMetrics)
     }
   }, [])
+
+  const setDockWidth = (width: number) => {
+    setDockWidthState((current) => {
+      const nextWidth = clamp(Math.round(width), dockMinWidth, dockMaxWidth)
+      if (nextWidth === current) return current
+
+      try {
+        localStorage.setItem(CART_DOCK_WIDTH_STORAGE_KEY, String(nextWidth))
+      } catch {
+        // ignore storage errors
+      }
+
+      return nextWidth
+    })
+  }
 
   const addItem = (item: CartItem) => dispatch({ type: "ADD_ITEM", payload: item })
   const removeItem = (id: string) => dispatch({ type: "REMOVE_ITEM", payload: id })
@@ -215,7 +278,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         isCartDockOpen,
         setIsCartDockOpen,
         canDock,
+        canResizeDock,
         dockWidth,
+        dockMinWidth,
+        dockMaxWidth,
+        isDockResizing,
+        setDockWidth,
+        setIsDockResizing,
       }}
     >
       {children}
