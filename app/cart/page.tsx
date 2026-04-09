@@ -748,6 +748,42 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
         </p>
       )}
 
+      {(conflictPairs.length > 0 || multiComponentCourses.length > 0) && (
+        <div data-pdf-show="schedule-alerts" className="hidden mb-2 space-y-2">
+          {conflictPairs.length > 0 && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-2">
+              <p className="text-[11px] font-semibold text-destructive">Conflicts in this schedule</p>
+              <div className="mt-1 space-y-0.5">
+                {conflictPairs.slice(0, 4).map((pair) => (
+                  <p key={pair.summary} className="text-[11px] text-foreground/90 leading-tight">
+                    {pair.summary}
+                  </p>
+                ))}
+                {conflictPairs.length > 4 && (
+                  <p className="text-[11px] text-muted-foreground">+{conflictPairs.length - 4} more conflicts</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {multiComponentCourses.length > 0 && (
+            <div className="rounded-md border border-amber-500/60 bg-amber-500/12 p-2">
+              <p className="text-[11px] font-semibold text-amber-800">Multiple components selected</p>
+              <div className="mt-1 space-y-0.5">
+                {multiComponentCourses.slice(0, 4).map((entry) => (
+                  <p key={entry.summary} className="text-[11px] text-foreground/90 leading-tight">
+                    {entry.summary}
+                  </p>
+                ))}
+                {multiComponentCourses.length > 4 && (
+                  <p className="text-[11px] text-muted-foreground">+{multiComponentCourses.length - 4} more courses</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <div className="min-w-175" style={{ minWidth: `${Math.max(dayColumns.length, 5) * dayColumnMinWidth}px` }}>
           <div className="grid gap-0" style={{ gridTemplateColumns: `${timeColumnWidth}px repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
@@ -1408,6 +1444,30 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
         y += wrapped.length * lineHeight
       }
 
+      if (conflictSummaries.length > 0 || multipleComponentSummaries.length > 0) {
+        pdf.setFont("helvetica", "bold")
+        pdf.setFontSize(12)
+        writeWrappedLine("", "Schedule Alerts", true)
+
+        if (conflictSummaries.length > 0) {
+          writeWrappedLine("", "Schedule conflict detected", true)
+          writeWrappedLine("", "Some items overlap in time.")
+          conflictSummaries.forEach((pair) => {
+            writeWrappedLine(" - ", pair.summary)
+          })
+          y += 2
+        }
+
+        if (multipleComponentSummaries.length > 0) {
+          writeWrappedLine("", "Multiple components selected", true)
+          writeWrappedLine("", "One or more courses include multiple secondary components.")
+          multipleComponentSummaries.forEach((entry) => {
+            writeWrappedLine(" - ", entry.summary)
+          })
+          y += 2
+        }
+      }
+
       details.forEach((item, index) => {
         if (y + 44 > contentBottom) {
           pdf.addPage()
@@ -1474,6 +1534,9 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
       })
       clonedDoc.querySelectorAll<HTMLElement>("[data-pdf-hide='tap-hint']").forEach((el) => {
         el.style.display = "none"
+      })
+      clonedDoc.querySelectorAll<HTMLElement>("[data-pdf-show='schedule-alerts']").forEach((el) => {
+        el.style.display = "block"
       })
 
       // Make overlapping classes unmistakable in exported schedule snapshots.
