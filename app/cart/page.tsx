@@ -748,38 +748,6 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
         </p>
       )}
 
-      {conflictPairs.length > 0 && (
-        <div className="mb-2 rounded-md border border-destructive/50 bg-destructive/10 p-2">
-          <p className="text-[11px] font-semibold text-destructive">Conflicts in this schedule</p>
-          <div className="mt-1 space-y-0.5">
-            {conflictPairs.slice(0, 4).map((pair) => (
-              <p key={pair.summary} className="text-[11px] text-foreground/90 leading-tight">
-                {pair.summary}
-              </p>
-            ))}
-            {conflictPairs.length > 4 && (
-              <p className="text-[11px] text-muted-foreground">+{conflictPairs.length - 4} more conflicts</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {multiComponentCourses.length > 0 && (
-        <div className="mb-2 rounded-md border border-amber-500/60 bg-amber-500/12 p-2">
-          <p className="text-[11px] font-semibold text-amber-800">Multiple components selected</p>
-          <div className="mt-1 space-y-0.5">
-            {multiComponentCourses.slice(0, 4).map((entry) => (
-              <p key={entry.summary} className="text-[11px] text-foreground/90 leading-tight">
-                {entry.summary}
-              </p>
-            ))}
-            {multiComponentCourses.length > 4 && (
-              <p className="text-[11px] text-muted-foreground">+{multiComponentCourses.length - 4} more courses</p>
-            )}
-          </div>
-        </div>
-      )}
-
       <div className="overflow-x-auto">
         <div className="min-w-175" style={{ minWidth: `${Math.max(dayColumns.length, 5) * dayColumnMinWidth}px` }}>
           <div className="grid gap-0" style={{ gridTemplateColumns: `${timeColumnWidth}px repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
@@ -1227,6 +1195,35 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
     for (const id of s) allConflicts.add(id)
   }
 
+  const conflictSummaries = (() => {
+    const pairs = new Map<string, { summary: string }>()
+
+    for (const term of displayTerms) {
+      const blocks = buildScheduleBlocks(itemsByTerm[term] || [], globalColorMap)
+      for (let i = 0; i < blocks.length; i++) {
+        for (let j = i + 1; j < blocks.length; j++) {
+          const a = blocks[i]
+          const b = blocks[j]
+          if (a.day !== b.day) continue
+          if (!(a.startTime < b.endTime && b.startTime < a.endTime)) continue
+
+          const overlapStart = Math.max(a.startTime, b.startTime)
+          const overlapEnd = Math.min(a.endTime, b.endTime)
+          const codes = [a.item.courseCode, b.item.courseCode].sort((x, y) => x.localeCompare(y))
+          const key = `${term}|${codes[0]}|${codes[1]}|${a.day}|${overlapStart}|${overlapEnd}`
+
+          if (!pairs.has(key)) {
+            pairs.set(key, {
+              summary: `${codes[0]} vs ${codes[1]} (${a.day} ${formatDecimalTime(overlapStart)}-${formatDecimalTime(overlapEnd)})`,
+            })
+          }
+        }
+      }
+    }
+
+    return Array.from(pairs.values())
+  })()
+
   const coursesWithMultipleSecondaryComponents = (() => {
     const byCourse = new Map<string, Set<string>>()
 
@@ -1243,6 +1240,26 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
     return Array.from(byCourse.entries())
       .filter(([, components]) => components.size > 1)
       .map(([courseCode]) => courseCode)
+  })()
+
+  const multipleComponentSummaries = (() => {
+    const byCourse = new Map<string, Set<string>>()
+
+    for (const item of items) {
+      if (!SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(item.type))) continue
+      if (!byCourse.has(item.courseCode)) {
+        byCourse.set(item.courseCode, new Set())
+      }
+      byCourse
+        .get(item.courseCode)
+        ?.add(`${item.section}|${item.typeLabel.trim().toUpperCase()}`)
+    }
+
+    return Array.from(byCourse.entries())
+      .filter(([, components]) => components.size > 1)
+      .map(([courseCode, components]) => ({
+        summary: `${courseCode}: ${components.size} components selected`,
+      }))
   })()
 
   const clearTermItems = (termItems: CartItem[]) => {
@@ -1580,6 +1597,18 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                     <p className="text-sm text-foreground/90">
                       Some items overlap in time. Review your selections below.
                     </p>
+                    {conflictSummaries.length > 0 && (
+                      <div className="mt-2 space-y-0.5">
+                        {conflictSummaries.slice(0, 4).map((pair) => (
+                          <p key={pair.summary} className="text-xs text-foreground/90 leading-tight">
+                            {pair.summary}
+                          </p>
+                        ))}
+                        {conflictSummaries.length > 4 && (
+                          <p className="text-xs text-muted-foreground">+{conflictSummaries.length - 4} more conflicts</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -1596,6 +1625,18 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                     <p className="text-sm text-foreground/90">
                       One or more courses include multiple secondary components. Review your selections below.
                     </p>
+                    {multipleComponentSummaries.length > 0 && (
+                      <div className="mt-2 space-y-0.5">
+                        {multipleComponentSummaries.slice(0, 4).map((entry) => (
+                          <p key={entry.summary} className="text-xs text-foreground/90 leading-tight">
+                            {entry.summary}
+                          </p>
+                        ))}
+                        {multipleComponentSummaries.length > 4 && (
+                          <p className="text-xs text-muted-foreground">+{multipleComponentSummaries.length - 4} more courses</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -1981,6 +2022,18 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                     <p className="text-sm text-foreground/90">
                       Some items have overlapping times. Review your selections above.
                     </p>
+                    {conflictSummaries.length > 0 && (
+                      <div className="mt-2 space-y-0.5">
+                        {conflictSummaries.slice(0, 4).map((pair) => (
+                          <p key={pair.summary} className="text-sm text-foreground/90 leading-tight">
+                            {pair.summary}
+                          </p>
+                        ))}
+                        {conflictSummaries.length > 4 && (
+                          <p className="text-sm text-muted-foreground">+{conflictSummaries.length - 4} more conflicts</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -2003,6 +2056,18 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                     <p className="text-sm text-foreground/90">
                       One or more courses include multiple secondary components. Review your selections above.
                     </p>
+                    {multipleComponentSummaries.length > 0 && (
+                      <div className="mt-2 space-y-0.5">
+                        {multipleComponentSummaries.slice(0, 4).map((entry) => (
+                          <p key={entry.summary} className="text-sm text-foreground/90 leading-tight">
+                            {entry.summary}
+                          </p>
+                        ))}
+                        {multipleComponentSummaries.length > 4 && (
+                          <p className="text-sm text-muted-foreground">+{multipleComponentSummaries.length - 4} more courses</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>
