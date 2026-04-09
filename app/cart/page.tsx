@@ -133,6 +133,14 @@ function normalizeMonthName(value: string): string {
   return trimmed.slice(0, 3)
 }
 
+function getItemCatalogCodes(item: CartItem): string[] {
+  const rawCodes = item.catalogNumbers && item.catalogNumbers.length > 0
+    ? item.catalogNumbers
+    : [item.catalogNumber || ""]
+
+  return Array.from(new Set(rawCodes.map((code) => code.trim()).filter(Boolean)))
+}
+
 type TermDuration = { start: string; end: string }
 
 const TERM_CODE_DURATION: Record<string, TermDuration> = {
@@ -1476,25 +1484,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
         }
 
         const termLabel = getTermDisplayInfo(item.term || "unspecified").label
-        const relatedComponentItems = items.filter(
-          (entry) =>
-            entry.courseCode === item.courseCode &&
-            entry.term === item.term &&
-            entry.section === item.section &&
-            normalizeComponentType(entry.type) === normalizeComponentType(item.type),
-        )
-        const catalogCodes = Array.from(
-          new Set(
-            relatedComponentItems
-              .flatMap((entry) =>
-                entry.catalogNumbers && entry.catalogNumbers.length > 0
-                  ? entry.catalogNumbers
-                  : [entry.catalogNumber || ""],
-              )
-              .map((code) => code.trim())
-              .filter(Boolean),
-          ),
-        )
+        const catalogCodes = getItemCatalogCodes(item)
 
         writeWrappedLine(`${index + 1}. `, `${item.courseCode} - ${item.courseName}`, true)
         writeWrappedLine("   Term: ", termLabel)
@@ -1884,20 +1874,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                   <div key={item.id} className="p-3 rounded-md border border-border bg-background flex items-start gap-3">
                                     <div className="flex-1 min-w-0">
                                       {(() => {
-                                        const relatedComponentItems = courseItems.filter(
-                                          (entry) =>
-                                            entry.section === item.section &&
-                                            normalizeComponentType(entry.type) === normalizeComponentType(item.type),
-                                        )
-                                        const catalogCodes = relatedComponentItems
-                                          .flatMap((entry) =>
-                                            entry.catalogNumbers && entry.catalogNumbers.length > 0
-                                              ? entry.catalogNumbers
-                                              : [entry.catalogNumber || ""],
-                                          )
-                                          .map((code) => code.trim())
-                                          .filter(Boolean)
-                                        const uniqueCatalogCodes = Array.from(new Set(catalogCodes))
+                                        const uniqueCatalogCodes = getItemCatalogCodes(item)
 
                                         return (
                                           <>
@@ -2361,20 +2338,7 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
                                   <div key={item.id} className="p-3 rounded-md border border-border bg-background flex items-start gap-3">
                                     <div className="flex-1 min-w-0">
                                       {(() => {
-                                        const relatedComponentItems = courseItems.filter(
-                                          (entry) =>
-                                            entry.section === item.section &&
-                                            normalizeComponentType(entry.type) === normalizeComponentType(item.type),
-                                        )
-                                        const catalogCodes = relatedComponentItems
-                                          .flatMap((entry) =>
-                                            entry.catalogNumbers && entry.catalogNumbers.length > 0
-                                              ? entry.catalogNumbers
-                                              : [entry.catalogNumber || ""],
-                                          )
-                                          .map((code) => code.trim())
-                                          .filter(Boolean)
-                                        const uniqueCatalogCodes = Array.from(new Set(catalogCodes))
+                                        const uniqueCatalogCodes = getItemCatalogCodes(item)
 
                                         return (
                                           <>
