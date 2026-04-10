@@ -918,7 +918,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                                 onRemoveItem(block.item.id)
                               }}
                               data-pdf-hide="remove"
-                              className={`absolute -top-3 -right-3 z-20 rounded-full border border-red-400/90 bg-background/95 text-red-500 shadow-sm backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors ${denseMode ? "h-5 w-5" : "h-6 w-6"}`}
+                              className={`absolute -top-3 -right-3 z-60 rounded-full border border-red-400/90 bg-background/95 text-red-500 shadow-sm backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors ${denseMode ? "h-5 w-5" : "h-6 w-6"}`}
                               aria-label={`Remove ${block.item.courseCode}`}
                             >
                               <X className={denseMode ? "w-3 h-3" : "w-3.5 h-3.5"} />
@@ -934,7 +934,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
                           <HoverCardTrigger asChild>
                             {blockContent}
                           </HoverCardTrigger>
-                          <HoverCardContent side="top" align="start" className="w-72 p-3">
+                          <HoverCardContent side="top" align="end" sideOffset={8} className="w-64 p-3">
                             <div className="space-y-1.5 text-sm">
                               <p className="font-semibold leading-tight">{block.item.courseCode}</p>
                               <p className="text-muted-foreground leading-tight">{block.item.courseName}</p>
