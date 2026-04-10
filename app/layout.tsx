@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/components/theme-provider"
 import { CartProvider } from '@/components/cart-context'
+import { CartDock } from '@/components/cart-dock'
+import { LayoutWrapper } from '@/components/layout-wrapper'
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -109,8 +111,12 @@ export default function RootLayout({
           storageKey="theme"
           disableTransitionOnChange
         >
-          <CartProvider>{children}</CartProvider>
-          
+          <CartProvider>
+            <LayoutWrapper>
+              {children}
+            </LayoutWrapper>
+            <CartDock />
+          </CartProvider>
         </ThemeProvider>
         <Analytics />
       </body>

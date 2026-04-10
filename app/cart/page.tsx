@@ -22,6 +22,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useCart, type CartItem } from "@/components/cart-context"
 import {
@@ -33,6 +38,9 @@ import {
   Download,
   AlertTriangle,
   ShoppingCart,
+  X,
+  Copy,
+  Check,
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useRef, useEffect } from "react"
@@ -62,14 +70,14 @@ const cardVariant = {
 }
 
 const COURSE_COLORS = [
-  { bg: "bg-red-100 dark:bg-red-900/40", border: "border-red-300 dark:border-red-700", text: "text-red-800 dark:text-red-200", print: "#fee2e2" },
-  { bg: "bg-blue-100 dark:bg-blue-900/40", border: "border-blue-300 dark:border-blue-700", text: "text-blue-800 dark:text-blue-200", print: "#dbeafe" },
-  { bg: "bg-emerald-100 dark:bg-emerald-900/40", border: "border-emerald-300 dark:border-emerald-700", text: "text-emerald-800 dark:text-emerald-200", print: "#d1fae5" },
-  { bg: "bg-amber-100 dark:bg-amber-900/40", border: "border-amber-300 dark:border-amber-700", text: "text-amber-800 dark:text-amber-200", print: "#fef3c7" },
-  { bg: "bg-purple-100 dark:bg-purple-900/40", border: "border-purple-300 dark:border-purple-700", text: "text-purple-800 dark:text-purple-200", print: "#f3e8ff" },
-  { bg: "bg-pink-100 dark:bg-pink-900/40", border: "border-pink-300 dark:border-pink-700", text: "text-pink-800 dark:text-pink-200", print: "#fce7f3" },
-  { bg: "bg-cyan-100 dark:bg-cyan-900/40", border: "border-cyan-300 dark:border-cyan-700", text: "text-cyan-800 dark:text-cyan-200", print: "#cffafe" },
-  { bg: "bg-orange-100 dark:bg-orange-900/40", border: "border-orange-300 dark:border-orange-700", text: "text-orange-800 dark:text-orange-200", print: "#ffedd5" },
+  { bg: "bg-red-100 dark:bg-red-950/75", border: "border-red-300 dark:border-red-700", text: "text-red-800 dark:text-red-100", print: "#fee2e2" },
+  { bg: "bg-blue-100 dark:bg-blue-950/75", border: "border-blue-300 dark:border-blue-700", text: "text-blue-800 dark:text-blue-100", print: "#dbeafe" },
+  { bg: "bg-emerald-100 dark:bg-emerald-950/75", border: "border-emerald-300 dark:border-emerald-700", text: "text-emerald-800 dark:text-emerald-100", print: "#d1fae5" },
+  { bg: "bg-amber-100 dark:bg-amber-950/75", border: "border-amber-300 dark:border-amber-700", text: "text-amber-800 dark:text-amber-100", print: "#fef3c7" },
+  { bg: "bg-purple-100 dark:bg-purple-950/75", border: "border-purple-300 dark:border-purple-700", text: "text-purple-800 dark:text-purple-100", print: "#f3e8ff" },
+  { bg: "bg-pink-100 dark:bg-pink-950/75", border: "border-pink-300 dark:border-pink-700", text: "text-pink-800 dark:text-pink-100", print: "#fce7f3" },
+  { bg: "bg-cyan-100 dark:bg-cyan-950/75", border: "border-cyan-300 dark:border-cyan-700", text: "text-cyan-800 dark:text-cyan-100", print: "#cffafe" },
+  { bg: "bg-orange-100 dark:bg-orange-950/75", border: "border-orange-300 dark:border-orange-700", text: "text-orange-800 dark:text-orange-100", print: "#ffedd5" },
 ]
 
 const SLOT_HEIGHT = 48
@@ -90,9 +98,9 @@ function useIsTabletOrBelow() {
 }
 
 const TERM_DISPLAY_MAP: Record<string, { label: string; period: string }> = {
-  fall: { label: "Fall Semester", period: "September - December" },
-  winter: { label: "Winter Semester", period: "January - April" },
-  summer: { label: "Summer Semester", period: "May - August" },
+  fall: { label: "Fall", period: "September - December" },
+  winter: { label: "Winter", period: "January - April" },
+  summer: { label: "Summer", period: "May - August" },
   year: { label: "Full Year", period: "September - April" },
 }
 
@@ -123,6 +131,14 @@ function normalizeMonthName(value: string): string {
   const trimmed = value.trim().toLowerCase()
   if (trimmed.length <= 3) return trimmed
   return trimmed.slice(0, 3)
+}
+
+function getItemCatalogCodes(item: CartItem): string[] {
+  const rawCodes = item.catalogNumbers && item.catalogNumbers.length > 0
+    ? item.catalogNumbers
+    : [item.catalogNumber || ""]
+
+  return Array.from(new Set(rawCodes.map((code) => code.trim()).filter(Boolean)))
 }
 
 type TermDuration = { start: string; end: string }
@@ -509,6 +525,12 @@ function parseDays(dayStr: string): string[] {
     .filter(Boolean)
 }
 
+function formatDecimalTime(value: number): string {
+  const hours = Math.floor(value)
+  const minutes = Math.round((value - hours) * 60)
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+}
+
 interface ScheduleBlock {
   item: CartItem
   day: string
@@ -524,6 +546,7 @@ function buildScheduleBlocks(termItems: CartItem[], globalColorMap: Record<strin
     const parsed = parseTime(item.time)
     if (!parsed) continue
     const days = parseDays(item.day)
+    if (!days || days.length === 0) continue
     for (const day of days) {
       blocks.push({
         item,
@@ -552,28 +575,86 @@ function detectConflicts(blocks: ScheduleBlock[]): Set<string> {
   return conflicts
 }
 
-function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { termItems: CartItem[]; termKey: string; conflicts: Set<string>; globalColorMap: Record<string, number> }) {
+function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, denseMode = false, onRemoveItem }: { termItems: CartItem[]; termKey: string; conflicts: Set<string>; globalColorMap: Record<string, number>; denseMode?: boolean; onRemoveItem?: (id: string) => void }) {
   const isMobile = useIsMobile()
   const isTabletOrBelow = useIsTabletOrBelow()
+  const isDenseMobile = denseMode && isMobile
   const isSummerTerm = termKey === "summer" || termKey === "summer1" || termKey === "summer2"
   const isCompactTerm = termKey === "fall" || termKey === "winter" || (isTabletOrBelow && isSummerTerm)
-  const compactSlotHeight = isMobile ? 36 : isTabletOrBelow ? 34 : 32
+  const compactSlotHeight = denseMode ? (isMobile ? 30 : isTabletOrBelow ? 23 : 23) : (isMobile ? 36 : isTabletOrBelow ? 34 : 32)
   const [activeBlock, setActiveBlock] = useState<ScheduleBlock | null>(null)
   const blocks = buildScheduleBlocks(termItems, globalColorMap)
+
+  // Prevent rendering if no items to display
+  if (termItems.length === 0 || blocks.length === 0) {
+    return null
+  }
+  
   const termInfo = getTermDisplayInfo(termKey)
   const days = orderDays(blocks.map((block) => block.day))
   const baseDays = [...DAY_DISPLAY_ORDER.slice(0, 5)]
   const dayColumns = orderDays([...baseDays, ...days])
-  const startHour = 8
-  const endHour = 21
-  const halfHourRows = (endHour - startHour) * 2
-  const slotHeight = isCompactTerm ? compactSlotHeight : (isMobile ? 40 : SLOT_HEIGHT)
+  // Dynamically calculate start/end hours based on actual courses
+  const { startHour, endHour } = getScheduleHours(blocks)
+  const halfHourRows = Math.max(4, (endHour - startHour) * 2)
+  const slotHeight = denseMode
+    ? (isCompactTerm ? compactSlotHeight : (isMobile ? 30 : 28))
+    : (isCompactTerm ? compactSlotHeight : (isMobile ? 40 : SLOT_HEIGHT))
   const visibleMonthWindow = getVisibleMonthWindow(termKey)
-  const runRowHeight = isCompactTerm ? 24 : (isMobile ? 24 : 28)
-  const runBubbleHeight = isCompactTerm ? 18 : (isMobile ? 18 : 22)
-  const timeColumnWidth = isCompactTerm ? 40 : (isMobile ? 48 : 60)
-  const dayColumnMinWidth = isCompactTerm ? (isMobile ? 92 : isTabletOrBelow ? 88 : 80) : (isMobile ? 100 : 140)
+  const runRowHeight = denseMode ? 16 : (isCompactTerm ? 24 : (isMobile ? 24 : 28))
+  const runBubbleHeight = denseMode ? 12 : (isCompactTerm ? 18 : (isMobile ? 18 : 22))
+  const timeColumnWidth = denseMode ? (isMobile ? 34 : 28) : (isCompactTerm ? 40 : (isMobile ? 48 : 60))
+  const dayColumnMinWidth = denseMode ? (isMobile ? 76 : 60) : (isCompactTerm ? (isMobile ? 92 : isTabletOrBelow ? 88 : 80) : (isMobile ? 100 : 140))
   const showTapDetails = isTabletOrBelow
+  const showHoverDetails = !isTabletOrBelow
+
+  const conflictPairs = (() => {
+    const pairs = new Map<string, { summary: string }>()
+    for (let i = 0; i < blocks.length; i++) {
+      for (let j = i + 1; j < blocks.length; j++) {
+        const a = blocks[i]
+        const b = blocks[j]
+        if (a.day !== b.day) continue
+        if (!(a.startTime < b.endTime && b.startTime < a.endTime)) continue
+
+        const overlapStart = Math.max(a.startTime, b.startTime)
+        const overlapEnd = Math.min(a.endTime, b.endTime)
+        const codes = [a.item.courseCode, b.item.courseCode].sort((x, y) => x.localeCompare(y))
+        const key = `${codes[0]}|${codes[1]}|${a.day}|${overlapStart}|${overlapEnd}`
+
+        if (!pairs.has(key)) {
+          pairs.set(key, {
+            summary: `${codes[0]} vs ${codes[1]} (${a.day} ${formatDecimalTime(overlapStart)}-${formatDecimalTime(overlapEnd)})`,
+          })
+        }
+      }
+    }
+
+    return Array.from(pairs.values())
+  })()
+
+  const multiComponentCourses = (() => {
+    const byCourse = new Map<string, Set<string>>()
+
+    for (const item of termItems) {
+      if (!SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(item.type))) {
+        continue
+      }
+
+      if (!byCourse.has(item.courseCode)) {
+        byCourse.set(item.courseCode, new Set())
+      }
+      byCourse
+        .get(item.courseCode)
+        ?.add(`${item.section}|${item.typeLabel.trim().toUpperCase()}`)
+    }
+
+    return Array.from(byCourse.entries())
+      .filter(([, components]) => components.size > 1)
+      .map(([courseCode, components]) => ({
+        summary: `${courseCode}: ${components.size} components selected`,
+      }))
+  })()
 
   // Build term-specific legend from the global map
   const termCourses = new Set(termItems.map(i => i.courseCode))
@@ -594,15 +675,15 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
     .filter((entry): entry is { courseCode: string; monthRange: { active: Set<number>; startIdx: number; endIdx: number }; colorIndex: number } => Boolean(entry))
 
   return (
-    <div data-term-schedule={termKey} className="bg-card border border-border rounded-lg overflow-hidden p-3 sm:p-4">
-      <div className={`${isCompactTerm ? "mb-2 pb-2" : "mb-4 pb-3"} border-b border-border`}>
-        <h3 className={`${isCompactTerm ? "text-lg" : "text-xl"} font-bold`}>{termInfo.label}</h3>
-        <p className="text-sm text-muted-foreground">{termInfo.period}</p>
+    <div data-term-schedule={termKey} className={`bg-card border border-border rounded-lg overflow-hidden ${denseMode ? "p-1" : "p-3 sm:p-4"}`}>
+      <div className={`${isCompactTerm || denseMode ? "mb-1 pb-1" : "mb-4 pb-3"} border-b border-border`}>
+        <h3 className={`${isCompactTerm || denseMode ? "text-sm" : "text-xl"} font-bold`}>{termInfo.label}</h3>
+        <p className={`${denseMode ? "text-[11px]" : "text-sm"} text-muted-foreground`}>{termInfo.period}</p>
       </div>
 
       {courseRuns.length > 0 && (
-        <div className={`${isCompactTerm ? "mb-2" : "mb-4"}`}>
-          <p className={`mb-2 ${isCompactTerm ? "text-[0.65rem]" : "text-xs"} text-muted-foreground`}>
+        <div className={`${isCompactTerm || denseMode ? "mb-1" : "mb-4"}`}>
+          <p className={`mb-1 ${denseMode ? "text-[0.65rem]" : (isCompactTerm ? "text-[0.65rem]" : "text-xs")} text-muted-foreground`}>
             Course Duration
           </p>
           <div className="rounded-md border border-border overflow-hidden">
@@ -610,7 +691,7 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
               {visibleMonthWindow.map((month) => (
                 <div
                   key={month.label}
-                  className={`px-1 text-center font-medium text-muted-foreground border-r border-border last:border-r-0 ${isCompactTerm ? "py-0.5 text-[0.6rem]" : "py-1 text-[0.65rem]"}`}
+                  className={`text-center font-medium text-muted-foreground border-r border-border last:border-r-0 ${denseMode ? "px-0.5 py-0.5 text-[0.6rem]" : (isCompactTerm ? "px-1 py-0.5 text-[0.6rem]" : "px-1 py-1 text-[0.65rem]")}` }
                 >
                   {month.label}
                 </div>
@@ -670,17 +751,53 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
       )}
 
       {showTapDetails && (
-        <p className="mb-2 text-xs text-muted-foreground">
+        <p data-pdf-hide="tap-hint" className="mb-2 text-xs text-muted-foreground">
           Tap a class block to view full details.
         </p>
+      )}
+
+      {(conflictPairs.length > 0 || multiComponentCourses.length > 0) && (
+        <div data-pdf-show="schedule-alerts" className="hidden mb-2 space-y-2">
+          {conflictPairs.length > 0 && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-2">
+              <p className="text-[11px] font-semibold text-destructive">Conflicts in this schedule</p>
+              <div className="mt-1 space-y-0.5">
+                {conflictPairs.slice(0, 4).map((pair) => (
+                  <p key={pair.summary} className="text-[11px] text-foreground/90 leading-tight">
+                    {pair.summary}
+                  </p>
+                ))}
+                {conflictPairs.length > 4 && (
+                  <p className="text-[11px] text-muted-foreground">+{conflictPairs.length - 4} more conflicts</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {multiComponentCourses.length > 0 && (
+            <div className="rounded-md border border-amber-500/60 bg-amber-500/12 p-2">
+              <p className="text-[11px] font-semibold text-amber-800">Multiple components selected</p>
+              <div className="mt-1 space-y-0.5">
+                {multiComponentCourses.slice(0, 4).map((entry) => (
+                  <p key={entry.summary} className="text-[11px] text-foreground/90 leading-tight">
+                    {entry.summary}
+                  </p>
+                ))}
+                {multiComponentCourses.length > 4 && (
+                  <p className="text-[11px] text-muted-foreground">+{multiComponentCourses.length - 4} more courses</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       <div className="overflow-x-auto">
         <div className="min-w-175" style={{ minWidth: `${Math.max(dayColumns.length, 5) * dayColumnMinWidth}px` }}>
           <div className="grid gap-0" style={{ gridTemplateColumns: `${timeColumnWidth}px repeat(${dayColumns.length}, minmax(0, 1fr))` }}>
-            <div className={isCompactTerm ? "h-8" : "h-10"} />
+            <div className={denseMode ? "h-4" : (isCompactTerm ? "h-8" : "h-10")} />
             {dayColumns.map((day) => (
-              <div key={day} className={`flex items-center justify-center font-semibold border-b border-border bg-muted/50 ${isCompactTerm ? "h-8 text-xs" : "h-10 text-sm"}`}>
+              <div key={day} className={`flex items-center justify-center font-semibold border-b border-border bg-muted/50 ${denseMode ? (isDenseMobile ? "h-6 text-xs" : "h-4 text-[10px]") : (isCompactTerm ? "h-8 text-xs" : "h-10 text-sm")}`}>
                 {day}
               </div>
             ))}
@@ -692,9 +809,9 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
                 const hour = startHour + Math.floor(i / 2)
                 const isHour = i % 2 === 0
                 return (
-                  <div key={i} className={`flex items-start justify-end ${isCompactTerm ? "pr-1 text-xs" : "pr-2 text-xs"} text-muted-foreground`} style={{ height: slotHeight }}>
+                  <div key={i} className={`flex items-start justify-end ${denseMode ? (isDenseMobile ? "pr-1 text-[10px]" : "pr-0.5 text-[9px]") : (isCompactTerm ? "pr-1 text-xs" : "pr-2 text-xs")} text-muted-foreground`} style={{ height: slotHeight }}>
                     {isHour && (
-                      <span className={isCompactTerm ? "-mt-1 text-xs" : "-mt-2"}>
+                      <span className={denseMode ? (isDenseMobile ? "-mt-1 text-[10px]" : "-mt-0.5 text-[9px]") : (isCompactTerm ? "-mt-1 text-xs" : "-mt-2")}>
                         {hour > 12 ? `${hour - 12}PM` : hour === 12 ? "12PM" : `${hour}AM`}
                       </span>
                     )}
@@ -713,15 +830,45 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
                   {dayBlocks.map((block, idx) => {
                     const topCompact = (block.startTime - startHour) * 2 * slotHeight
                     const heightCompact = (block.endTime - block.startTime) * 2 * slotHeight
+                    const showLocationLine = denseMode ? false : heightCompact > 50
+                    const showTypeLine = denseMode ? false : true
+                    const showDenseTypeLine = denseMode && heightCompact >= 34
+                    const showDenseLocationLine = denseMode && heightCompact >= 48
                     const color = COURSE_COLORS[block.colorIndex]
-                    const hasConflict = conflicts.has(block.item.id)
-                    return (
+                    const hasConflict = conflicts && conflicts.has(block.item.id)
+                    const conflictingCourseCodes = hasConflict
+                      ? Array.from(
+                          new Set(
+                            dayBlocks
+                              .filter(
+                                (candidate) =>
+                                  candidate.item.id !== block.item.id &&
+                                  block.startTime < candidate.endTime &&
+                                  candidate.startTime < block.endTime,
+                              )
+                              .map((candidate) => candidate.item.courseCode),
+                          ),
+                        )
+                      : []
+                    const conflictSummary = conflictingCourseCodes.length > 0
+                      ? conflictingCourseCodes.length === 1
+                        ? `vs ${conflictingCourseCodes[0].replace(/\s+/g, "")}`
+                        : `vs ${conflictingCourseCodes[0].replace(/\s+/g, "")} +${conflictingCourseCodes.length - 1}`
+                      : "Conflict"
+                    const showConflictBadge = hasConflict && heightCompact >= (denseMode ? 44 : 36)
+                    const denseMobileCode = block.item.courseCode.replace(/\s+/g, "")
+                    const denseMobileType = normalizeComponentType(block.item.type) || block.item.typeLabel
+                    const denseMobileLocation = block.item.location.split(",")[0]?.trim() || block.item.location
+                    const denseTypeText = isDenseMobile ? denseMobileType : block.item.typeLabel
+                    const denseLocationText = isDenseMobile ? denseMobileLocation : block.item.location
+                    const blockContent = (
                       <div
                         key={`${block.item.id}-${idx}`}
                         data-schedule-item-id={block.item.id}
                         data-schedule-course-code={block.item.courseCode}
-                        className={`absolute left-1 right-1 rounded-md border overflow-hidden ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${isCompactTerm ? "px-1.5 py-1" : "px-2 py-1"} ${showTapDetails ? "cursor-pointer" : ""}`}
-                        style={{ top: topCompact, height: heightCompact }}
+                        data-schedule-conflict={hasConflict ? "true" : "false"}
+                        className={`absolute ${isDenseMobile ? "left-0.5 right-0.5" : "left-1 right-1"} rounded-md border overflow-visible ${color.bg} ${color.border} ${color.text} ${hasConflict ? "ring-2 ring-destructive" : ""} ${denseMode ? "px-1 py-0.5" : (isCompactTerm ? "px-1.5 py-1" : "px-2 py-1")} ${showTapDetails ? "cursor-pointer" : ""}`}
+                        style={{ top: topCompact, height: heightCompact, zIndex: hasConflict ? 30 : 10, opacity: hasConflict ? 0.90 : 0.92 }}
                         role={showTapDetails ? "button" : undefined}
                         tabIndex={showTapDetails ? 0 : undefined}
                         aria-label={showTapDetails ? `View details for ${block.item.courseCode}` : undefined}
@@ -733,10 +880,79 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
                           }
                         } : undefined}
                       >
-                        <p className={`font-bold truncate ${isCompactTerm ? "text-xs" : "text-xs"}`}>{block.item.courseCode}</p>
-                        <p className={`truncate ${isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]"}`}>{block.item.typeLabel}</p>
-                        {heightCompact > 50 && <p className={`truncate opacity-75 ${isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]"}`}>{block.item.location}</p>}
+                        {showConflictBadge && (
+                          <span className="pointer-events-none absolute right-1 top-1 max-w-[70%] truncate rounded bg-destructive/90 px-1 py-0.5 text-[9px] leading-none font-semibold text-destructive-foreground">
+                            {conflictSummary}
+                          </span>
+                        )}
+                        <div className={`flex h-full items-start gap-1 overflow-hidden ${showConflictBadge ? "pt-3" : ""}`}>
+                          <div className="flex-1 min-w-0 pr-2 overflow-hidden">
+                            <p className={isDenseMobile ? "font-bold leading-tight text-[8px] truncate max-w-full" : (denseMode ? "font-bold leading-tight truncate text-[10px]" : "font-bold truncate text-xs")}>
+                              {isDenseMobile ? denseMobileCode : block.item.courseCode}
+                            </p>
+                            {showDenseTypeLine && (
+                              <p className={isDenseMobile ? "leading-tight text-[7px] opacity-90 truncate max-w-full" : "leading-tight text-[8px] opacity-90 truncate"}>
+                                {denseTypeText}
+                              </p>
+                            )}
+                            {showDenseLocationLine && (
+                              <p className={isDenseMobile ? "leading-tight text-[7px] opacity-90 truncate max-w-full" : "leading-tight text-[8px] opacity-90 truncate"}>
+                                {denseLocationText}
+                              </p>
+                            )}
+                            {showLocationLine && (
+                              <p className={isDenseMobile ? "leading-tight text-[8px] opacity-90 truncate max-w-full" : `leading-tight truncate opacity-90 ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>
+                                {isDenseMobile ? denseMobileLocation : block.item.location}
+                              </p>
+                            )}
+                            {showTypeLine && (
+                              <p className={isDenseMobile ? "leading-tight text-[8px] truncate max-w-full" : `leading-tight truncate ${denseMode ? "text-[9px]" : (isCompactTerm && isMobile ? "text-[11px]" : "text-[0.625rem]")}`}>
+                                {isDenseMobile ? denseMobileType : block.item.typeLabel}
+                              </p>
+                            )}
+                          </div>
+                          {onRemoveItem && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onRemoveItem(block.item.id)
+                              }}
+                              data-pdf-hide="remove"
+                              className={`absolute -top-3 -right-3 z-60 rounded-full border border-red-400/90 bg-background/95 text-red-500 shadow-sm backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors ${denseMode ? "h-5 w-5" : "h-6 w-6"}`}
+                              aria-label={`Remove ${block.item.courseCode}`}
+                            >
+                              <X className={denseMode ? "w-3 h-3" : "w-3.5 h-3.5"} />
+                            </button>
+                          )}
+                        </div>
                       </div>
+                    )
+
+                    if (showHoverDetails) {
+                      return (
+                        <HoverCard key={`${block.item.id}-${idx}`} openDelay={120} closeDelay={80}>
+                          <HoverCardTrigger asChild>
+                            {blockContent}
+                          </HoverCardTrigger>
+                          <HoverCardContent side="top" align="end" sideOffset={8} className="w-64 p-3">
+                            <div className="space-y-1.5 text-sm">
+                              <p className="font-semibold leading-tight">{block.item.courseCode}</p>
+                              <p className="text-muted-foreground leading-tight">{block.item.courseName}</p>
+                              <p><span className="font-medium">Component:</span> {block.item.typeLabel}</p>
+                              {Boolean(block.item.catalogNumber?.trim()) && <p><span className="font-medium">Cat #:</span> {block.item.catalogNumber?.trim()}</p>}
+                              <p><span className="font-medium">Section:</span> {block.item.section}</p>
+                              <p><span className="font-medium">Day:</span> {block.item.day}</p>
+                              <p><span className="font-medium">Time:</span> {block.item.time}</p>
+                              <p><span className="font-medium">Location:</span> {block.item.location}</p>
+                              <p><span className="font-medium">Instructor:</span> {block.item.instructor}</p>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
+                      )
+                    }
+
+                    return (
+                      blockContent
                     )
                   })}
                 </div>
@@ -765,7 +981,9 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
           </DialogHeader>
           {activeBlock && (
             <div className="space-y-2 text-sm">
+              <p><span className="font-medium">Course:</span> {activeBlock.item.courseName}</p>
               <p><span className="font-medium">Component:</span> {activeBlock.item.typeLabel}</p>
+              {activeBlock.item.catalogNumber?.trim() && <p><span className="font-medium">Cat #:</span> {activeBlock.item.catalogNumber.trim()}</p>}
               <p><span className="font-medium">Section:</span> {activeBlock.item.section}</p>
               <p><span className="font-medium">Day:</span> {activeBlock.item.day}</p>
               <p><span className="font-medium">Time:</span> {activeBlock.item.time}</p>
@@ -779,18 +997,153 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap }: { 
   )
 }
 
-export default function CartPage() {
-  const [isEmbeddedPreview, setIsEmbeddedPreview] = useState(false)
-  const { items, removeItem, clearCart } = useCart()
+export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbeddedMode?: boolean }) {
+  const [isEmbeddedPreview, setIsEmbeddedPreview] = useState(forcedEmbeddedMode)
+  const [hasResolvedEmbedMode, setHasResolvedEmbedMode] = useState(forcedEmbeddedMode)
+  const [copiedCatalogCode, setCopiedCatalogCode] = useState<string | null>(null)
+  const { items, removeItem, clearCart, canDock, setIsCartDockOpen } = useCart()
+  const isMobile = useIsMobile()
   const scheduleRef = useRef<HTMLDivElement>(null)
-  const previousItemsRef = useRef<CartItem[]>([])
-  const hasInitializedChangeTrackingRef = useRef(false)
+  const previousItemCountRef = useRef(0)
+  const previousItemIdsRef = useRef<Set<string>>(new Set())
+  const previousItemsSnapshotRef = useRef<CartItem[]>([])
+  const hasInitializedEmbeddedScrollRef = useRef(false)
 
   useEffect(() => {
+    if (forcedEmbeddedMode) {
+      setIsEmbeddedPreview(true)
+      setHasResolvedEmbedMode(true)
+      return
+    }
     if (typeof window === "undefined") return
     const params = new URLSearchParams(window.location.search)
     setIsEmbeddedPreview(params.get("embed") === "1")
-  }, [])
+    setHasResolvedEmbedMode(true)
+  }, [forcedEmbeddedMode])
+
+  // In the dock iframe, ensure the viewport resets when cart transitions from empty to non-empty.
+  useEffect(() => {
+    const isNestedFrame = typeof window !== "undefined" && window.parent !== window
+    if (!isEmbeddedPreview || !isNestedFrame) {
+      previousItemCountRef.current = items.length
+      return
+    }
+
+    const previousCount = previousItemCountRef.current
+    if (previousCount === 0 && items.length > 0) {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" })
+    }
+
+    previousItemCountRef.current = items.length
+  }, [items.length, isEmbeddedPreview])
+
+  useEffect(() => {
+    if (!isEmbeddedPreview) {
+      previousItemIdsRef.current = new Set(items.map((item) => item.id))
+      previousItemsSnapshotRef.current = items
+      hasInitializedEmbeddedScrollRef.current = false
+      return
+    }
+
+    if (!hasInitializedEmbeddedScrollRef.current) {
+      previousItemIdsRef.current = new Set(items.map((item) => item.id))
+      previousItemsSnapshotRef.current = items
+      hasInitializedEmbeddedScrollRef.current = true
+      return
+    }
+
+    const previousItems = previousItemsSnapshotRef.current
+    const previousIds = previousItemIdsRef.current
+    const currentIds = new Set(items.map((item) => item.id))
+
+    const addedItems = items.filter((item) => !previousIds.has(item.id))
+    const removedItems = previousItems.filter((item) => !currentIds.has(item.id))
+
+    previousItemIdsRef.current = currentIds
+    previousItemsSnapshotRef.current = items
+
+    if (addedItems.length === 0 && removedItems.length === 0) return
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (addedItems.length > 0) {
+          const target = document.querySelector<HTMLElement>(`[data-schedule-item-id="${addedItems[0].id}"]`)
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" })
+            return
+          }
+        }
+
+        if (removedItems.length > 0) {
+          const removedCourseCode = removedItems[0].courseCode
+          const scheduleBlocks = Array.from(document.querySelectorAll<HTMLElement>("[data-schedule-item-id]"))
+          const sameCourseTarget = scheduleBlocks.find(
+            (block) => block.getAttribute("data-schedule-course-code") === removedCourseCode,
+          )
+
+          if (sameCourseTarget) {
+            sameCourseTarget.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" })
+            return
+          }
+
+          if (scheduleRef.current) {
+            scheduleRef.current.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
+          }
+        }
+      })
+    })
+  }, [items, isEmbeddedPreview])
+
+  if (!hasResolvedEmbedMode) {
+    return <div className="min-h-screen bg-background" />
+  }
+
+  const requestParentNavigation = (href: string) => {
+    if (typeof window === "undefined") return false
+    if (!isEmbeddedPreview || window.parent === window) return false
+
+    window.parent.postMessage(
+      { type: "yuplan:navigate", href },
+      window.location.origin,
+    )
+    return true
+  }
+
+  const closeMobileEmbeddedCart = () => {
+    if (isEmbeddedPreview && !canDock) {
+      setIsCartDockOpen(false)
+    }
+  }
+
+  const scrollToSchedule = () => {
+    scheduleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  const handleCopyCatalogCode = async (catalogCode: string) => {
+    if (!catalogCode.trim()) return
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(catalogCode)
+      } else {
+        const textArea = document.createElement("textarea")
+        textArea.value = catalogCode
+        textArea.style.position = "fixed"
+        textArea.style.left = "-999999px"
+        textArea.style.top = "-999999px"
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        document.execCommand("copy")
+        document.body.removeChild(textArea)
+      }
+
+      setCopiedCatalogCode(catalogCode)
+      window.setTimeout(() => setCopiedCatalogCode(null), 1800)
+    } catch {
+      // silently ignore clipboard errors in constrained browsers
+    }
+  }
 
   // Group items by course code
   const groupedItems: Record<string, CartItem[]> = {}
@@ -864,9 +1217,21 @@ export default function CartPage() {
       .sort((a, b) => getTermDisplayInfo(a).label.localeCompare(getTermDisplayInfo(b).label)),
   ]
 
+  // Guard against edge cases where items exist but no displayable term is produced.
+  if (items.length > 0 && orderedTerms.length === 0) {
+    itemsByTerm.unspecified = [...items]
+  }
+  const displayTerms = orderedTerms.length > 0
+    ? orderedTerms
+    : (items.length > 0 ? ["unspecified"] : [])
+
   // Compute conflicts per term
   const conflictsByTerm: Record<string, Set<string>> = {}
-  for (const term of orderedTerms) {
+  for (const term of displayTerms) {
+    // Ensure itemsByTerm[term] exists as an array (defensive check)
+    if (!itemsByTerm[term]) {
+      itemsByTerm[term] = []
+    }
     conflictsByTerm[term] = detectConflicts(buildScheduleBlocks(itemsByTerm[term], globalColorMap))
   }
   const allConflicts = new Set<string>()
@@ -874,11 +1239,124 @@ export default function CartPage() {
     for (const id of s) allConflicts.add(id)
   }
 
+  const conflictSummaries = (() => {
+    const pairs = new Map<string, { summary: string }>()
+
+    for (const term of displayTerms) {
+      const blocks = buildScheduleBlocks(itemsByTerm[term] || [], globalColorMap)
+      for (let i = 0; i < blocks.length; i++) {
+        for (let j = i + 1; j < blocks.length; j++) {
+          const a = blocks[i]
+          const b = blocks[j]
+          if (a.day !== b.day) continue
+          if (!(a.startTime < b.endTime && b.startTime < a.endTime)) continue
+
+          const overlapStart = Math.max(a.startTime, b.startTime)
+          const overlapEnd = Math.min(a.endTime, b.endTime)
+          const codes = [a.item.courseCode, b.item.courseCode].sort((x, y) => x.localeCompare(y))
+          const key = `${term}|${codes[0]}|${codes[1]}|${a.day}|${overlapStart}|${overlapEnd}`
+
+          if (!pairs.has(key)) {
+            pairs.set(key, {
+              summary: `${codes[0]} vs ${codes[1]} (${a.day} ${formatDecimalTime(overlapStart)}-${formatDecimalTime(overlapEnd)})`,
+            })
+          }
+        }
+      }
+    }
+
+    return Array.from(pairs.values())
+  })()
+
+  const coursesWithMultipleSecondaryComponents = (() => {
+    const byCourse = new Map<string, Set<string>>()
+
+    for (const item of items) {
+      if (!SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(item.type))) continue
+      if (!byCourse.has(item.courseCode)) {
+        byCourse.set(item.courseCode, new Set())
+      }
+      byCourse
+        .get(item.courseCode)
+        ?.add(`${item.section}|${item.typeLabel.trim().toUpperCase()}`)
+    }
+
+    return Array.from(byCourse.entries())
+      .filter(([, components]) => components.size > 1)
+      .map(([courseCode]) => courseCode)
+  })()
+
+  const multipleComponentSummaries = (() => {
+    const byCourse = new Map<string, Set<string>>()
+
+    for (const item of items) {
+      if (!SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(item.type))) continue
+      if (!byCourse.has(item.courseCode)) {
+        byCourse.set(item.courseCode, new Set())
+      }
+      byCourse
+        .get(item.courseCode)
+        ?.add(`${item.section}|${item.typeLabel.trim().toUpperCase()}`)
+    }
+
+    return Array.from(byCourse.entries())
+      .filter(([, components]) => components.size > 1)
+      .map(([courseCode, components]) => ({
+        summary: `${courseCode}: ${components.size} components selected`,
+      }))
+  })()
+
   const clearTermItems = (termItems: CartItem[]) => {
     const uniqueIds = new Set(termItems.map((item) => item.id))
     for (const id of uniqueIds) {
       removeItem(id)
     }
+  }
+
+  const removeCourseByCode = (courseCode: string) => {
+    const sameCourseItems = items.filter((entry) => entry.courseCode === courseCode)
+    const uniqueIds = new Set(sameCourseItems.map((entry) => entry.id))
+    for (const id of uniqueIds) {
+      removeItem(id)
+    }
+  }
+
+  const handleComponentDelete = (itemId: string) => {
+    const target = items.find((entry) => entry.id === itemId)
+    if (!target) return
+
+    const sameCourseItems = items.filter((entry) => entry.courseCode === target.courseCode)
+    const remainingAfterDelete = sameCourseItems.filter((entry) => entry.id !== itemId)
+    const hadSecondaryBeforeDelete = sameCourseItems.some((entry) =>
+      SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(entry.type)),
+    )
+
+    // A course cannot exist without any components.
+    if (remainingAfterDelete.length === 0) {
+      removeCourseByCode(target.courseCode)
+      return
+    }
+
+    // Secondary components cannot exist without a top-level (primary) component.
+    const hasPrimaryRemaining = remainingAfterDelete.some((entry) =>
+      PRIMARY_COMPONENT_TYPES.has(normalizeComponentType(entry.type)),
+    )
+    const hasSecondaryRemaining = remainingAfterDelete.some((entry) =>
+      SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(entry.type)),
+    )
+
+    // If this course had secondary components, deleting the last one should remove the whole course.
+    if (hadSecondaryBeforeDelete && !hasSecondaryRemaining) {
+      removeCourseByCode(target.courseCode)
+      return
+    }
+
+    if (hasSecondaryRemaining && !hasPrimaryRemaining) {
+      removeCourseByCode(target.courseCode)
+      return
+    }
+
+    removeItem(itemId)
   }
 
   const handleSaveAsPdf = async () => {
@@ -931,21 +1409,155 @@ export default function CartPage() {
       pdf.textWithLink(websiteText, websiteX, margin + 4.5, { url: websiteUrl })
       pdf.setDrawColor(220, 220, 220)
       pdf.line(margin, margin + headerHeight - 2, pageWidth - margin, margin + headerHeight - 2)
+
       pdf.setTextColor(0, 0, 0)
+      pdf.setFont("helvetica", "normal")
+    }
+
+    const appendDetailedItemsPages = () => {
+      if (items.length === 0) return
+
+      const contentTop = margin + headerHeight + 2
+      const contentBottom = pageHeight - margin
+      const lineHeight = 5
+      const details = [...items].sort((a, b) => {
+        const termCompare = getTermDisplayInfo(a.term || "").label.localeCompare(getTermDisplayInfo(b.term || "").label)
+        if (termCompare !== 0) return termCompare
+        const courseCompare = a.courseCode.localeCompare(b.courseCode)
+        if (courseCompare !== 0) return courseCompare
+        return a.time.localeCompare(b.time)
+      })
+
+      pdf.addPage()
+      drawPdfHeader()
+      let y = contentTop
+
+      pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(14)
+      pdf.text("Schedule Details (Full Information)", margin, y)
+      y += 8
+
+      const writeWrappedLine = (label: string, value: string, isBold = false) => {
+        const fullText = `${label}${value}`
+        const wrapped = pdf.splitTextToSize(fullText, pageWidth - margin * 2)
+        if (y + wrapped.length * lineHeight > contentBottom) {
+          pdf.addPage()
+          drawPdfHeader()
+          y = contentTop
+        }
+
+        pdf.setFont("helvetica", isBold ? "bold" : "normal")
+        pdf.setFontSize(10)
+        pdf.text(wrapped, margin, y)
+        y += wrapped.length * lineHeight
+      }
+
+      if (conflictSummaries.length > 0 || multipleComponentSummaries.length > 0) {
+        pdf.setFont("helvetica", "bold")
+        pdf.setFontSize(12)
+        writeWrappedLine("", "Schedule Alerts", true)
+
+        if (conflictSummaries.length > 0) {
+          writeWrappedLine("", "Schedule conflict detected", true)
+          writeWrappedLine("", "Some items overlap in time.")
+          conflictSummaries.forEach((pair) => {
+            writeWrappedLine(" - ", pair.summary)
+          })
+          y += 2
+        }
+
+        if (multipleComponentSummaries.length > 0) {
+          writeWrappedLine("", "Multiple components selected", true)
+          writeWrappedLine("", "One or more courses include multiple secondary components.")
+          multipleComponentSummaries.forEach((entry) => {
+            writeWrappedLine(" - ", entry.summary)
+          })
+          y += 2
+        }
+      }
+
+      details.forEach((item, index) => {
+        if (y + 44 > contentBottom) {
+          pdf.addPage()
+          drawPdfHeader()
+          y = contentTop
+        }
+
+        const termLabel = getTermDisplayInfo(item.term || "unspecified").label
+        const catalogCodes = getItemCatalogCodes(item)
+
+        writeWrappedLine(`${index + 1}. `, `${item.courseCode} - ${item.courseName}`, true)
+        writeWrappedLine("   Term: ", termLabel)
+        writeWrappedLine("   Component: ", `${item.typeLabel} (${item.type})`)
+        if (catalogCodes.length > 0) {
+          writeWrappedLine("   Cat #: ", catalogCodes.join(" | "))
+        }
+        writeWrappedLine("   Section: ", item.section)
+        writeWrappedLine("   Day: ", item.day)
+        writeWrappedLine("   Time: ", item.time)
+        writeWrappedLine("   Location: ", item.location || "TBA")
+        writeWrappedLine("   Instructor: ", item.instructor || "TBA")
+        y += 2
+      })
+    }
+
+    const preparePdfClone = (clonedDoc: Document) => {
+      // Force light theme for higher contrast in exported PDF
+      clonedDoc.documentElement.classList.remove("dark")
+      clonedDoc.body.classList.remove("dark")
+
+      // Ensure schedule grids render fully without horizontal-scroll clipping artifacts.
+      clonedDoc.querySelectorAll<HTMLElement>(".overflow-x-auto").forEach((el) => {
+        el.style.overflowX = "visible"
+      })
+      clonedDoc.querySelectorAll<HTMLElement>(".min-w-175").forEach((el) => {
+        el.style.minWidth = "0"
+        el.style.width = "100%"
+      })
+
+      // Remove floating remove buttons from exported schedule visuals.
+      clonedDoc.querySelectorAll<HTMLElement>("[aria-label^='Remove ']").forEach((el) => {
+        el.style.display = "none"
+      })
+      clonedDoc.querySelectorAll<HTMLElement>("[data-pdf-hide='remove']").forEach((el) => {
+        el.style.display = "none"
+      })
+      clonedDoc.querySelectorAll<HTMLElement>("[data-pdf-hide='tap-hint']").forEach((el) => {
+        el.style.display = "none"
+      })
+      clonedDoc.querySelectorAll<HTMLElement>("[data-pdf-show='schedule-alerts']").forEach((el) => {
+        el.style.display = "block"
+      })
+
+      // Make overlapping classes unmistakable in exported schedule snapshots.
+      clonedDoc.querySelectorAll<HTMLElement>("[data-schedule-conflict='true']").forEach((el) => {
+        el.style.outline = "2px solid #dc2626"
+        el.style.outlineOffset = "0px"
+        el.style.boxShadow = "0 0 0 2px rgba(220, 38, 38, 0.18)"
+        el.style.zIndex = "999"
+      })
+
+      // Keep block lines stable in exports to avoid layout mangling.
+      clonedDoc.querySelectorAll<HTMLElement>("[data-schedule-item-id] p").forEach((el) => {
+        el.style.whiteSpace = "nowrap"
+      })
     }
 
     const renderSchedulePage = async (element: HTMLElement) => {
       if (pageCount > 0) pdf.addPage()
 
       const canvas = await html2canvas(element, {
-        scale: 1.5,
+        scale: 1.8,
         useCORS: true,
         backgroundColor: "#ffffff",
+        windowWidth: 1800,
+        windowHeight: 1200,
+        onclone: preparePdfClone,
       })
 
       drawPdfHeader()
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.8)
+      const imgData = canvas.toDataURL("image/jpeg", 0.9)
       const availableW = pageWidth - margin * 2
       const contentTop = margin + headerHeight
       const availableH = pageHeight - contentTop - margin
@@ -964,249 +1576,170 @@ export default function CartPage() {
       pageCount++
     }
 
-    // Check if fall and winter are displayed side-by-side
-    const fallWinterGrid = scheduleRef.current.querySelector<HTMLElement>(".fall-winter-grid")
     let pageCount = 0
 
-    // If fall/winter grid exists, render it as one page
-    if (fallWinterGrid) {
-      await renderSchedulePage(fallWinterGrid)
-    }
+    // Render fall and winter individually to maximize legibility in the exported schedule blocks.
+    const hasFall = scheduleRef.current.querySelector<HTMLElement>("[data-term-schedule='fall']")
+    const hasWinter = scheduleRef.current.querySelector<HTMLElement>("[data-term-schedule='winter']")
 
-    // Find all other term schedules (not fall/winter)
+    if (hasFall) await renderSchedulePage(hasFall)
+    if (hasWinter) await renderSchedulePage(hasWinter)
+
+    // Render all other term schedules (not fall/winter)
     const allTermElements = scheduleRef.current.querySelectorAll<HTMLElement>("[data-term-schedule]")
     for (const termEl of allTermElements) {
       const termKey = termEl.getAttribute("data-term-schedule")
-      if (fallWinterGrid && (termKey === "fall" || termKey === "winter")) continue // Skip only when fall/winter combined grid was rendered
+      if (termKey === "fall" || termKey === "winter") continue // Skip fall/winter - already rendered above
 
       await renderSchedulePage(termEl)
     }
 
+    appendDetailedItemsPages()
+
     pdf.save("YUPlan-Schedule.pdf")
   }
 
-  useEffect(() => {
-    if (!isEmbeddedPreview) {
-      previousItemsRef.current = items
-      return
-    }
+  const showMobileActionBar = !isEmbeddedPreview && isMobile && items.length > 0
 
-    if (!hasInitializedChangeTrackingRef.current) {
-      hasInitializedChangeTrackingRef.current = true
-      previousItemsRef.current = items
-      return
-    }
-
-    const previousItems = previousItemsRef.current
-    const previousIds = new Set(previousItems.map((item) => item.id))
-    const currentIds = new Set(items.map((item) => item.id))
-
-    const addedItems = items.filter((item) => !previousIds.has(item.id))
-    const removedItems = previousItems.filter((item) => !currentIds.has(item.id))
-
-    const scheduleElement = scheduleRef.current
-    if (!scheduleElement) {
-      previousItemsRef.current = items
-      return
-    }
-
-    const scheduleBlocks = Array.from(scheduleElement.querySelectorAll<HTMLElement>("[data-schedule-item-id]"))
-
-    const findBlockByItemId = (itemId: string) =>
-      scheduleBlocks.find((element) => element.getAttribute("data-schedule-item-id") === itemId) ?? null
-
-    const findBlockByCourseCode = (courseCode: string) =>
-      scheduleBlocks.find((element) => element.getAttribute("data-schedule-course-code") === courseCode) ?? null
-
-    let targetBlock: HTMLElement | null = null
-
-    for (const item of addedItems) {
-      const match = findBlockByItemId(item.id)
-      if (match) {
-        targetBlock = match
-        break
-      }
-    }
-
-    if (!targetBlock && removedItems.length > 0) {
-      targetBlock = findBlockByCourseCode(removedItems[0].courseCode)
-    }
-
-    if (targetBlock) {
-      targetBlock.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" })
-    }
-
-    previousItemsRef.current = items
-  }, [items, isEmbeddedPreview])
-
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {!isEmbeddedPreview && <Header showSearch />}
-      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 flex-1 w-full">
-        <div className="max-w-6xl mx-auto">
-          {/* Page Header */}
-          {!isEmbeddedPreview && (
-            <motion.div
-              className="mb-8"
-              initial="initial"
-              animate="animate"
-              variants={staggerContainer}
-            >
-              <motion.div variants={fadeInUp}>
-                <Link href="/courses" className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block">
-                  ← Back to courses
-                </Link>
-              </motion.div>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <motion.div variants={fadeInUp}>
-                  <h1 className="text-3xl sm:text-4xl font-bold mb-2">Your Cart</h1>
-                  <p className="text-muted-foreground">
-                    {items.length === 0
-                      ? "Your cart is empty. Add sections from a course page."
-                      : `${courseList.length} course${courseList.length === 1 ? "" : "s"} across ${orderedTerms.length} term${orderedTerms.length === 1 ? "" : "s"}`}
-                  </p>
-                </motion.div>
-                {items.length > 0 && (
-                  <motion.div
-                    className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto"
-                    variants={fadeInUp}
-                  >
-                    <Button variant="outline" size="sm" onClick={clearCart} className="w-full sm:w-auto">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Clear Cart
-                    </Button>
-                  </motion.div>
-                )}
+  if (isEmbeddedPreview) {
+    return (
+      <div className="bg-background px-2 py-1.5 space-y-3">
+        {items.length === 0 ? (
+          <div className="flex items-center justify-center min-h-[calc(100vh-11rem)]">
+            <Card className="p-6 sm:p-12 text-center max-w-sm">
+              <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShoppingCart className="h-8 w-8 text-muted-foreground" />
               </div>
-            </motion.div>
-          )}
+              <h2 className="text-xl font-semibold mb-2">No courses in your cart</h2>
+              <p className="text-muted-foreground mb-6">
+                Browse courses and add them to cart to start building your schedule.
+              </p>
+              <Link
+                href="/courses"
+                onClick={(event) => {
+                  if (requestParentNavigation("/courses")) {
+                    event.preventDefault()
+                  }
+                }}
+              >
+                <Button>Browse Courses</Button>
+              </Link>
+            </Card>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={handleSaveAsPdf} className="border-red-500 dark:border-red-400 border-2 text-xs font-semibold">
+                <Download className="h-3.5 w-3.5 mr-1" />
+                PDF
+              </Button>
+              <Button variant="destructive" onClick={clearCart} className="h-8 text-xs font-semibold shadow-sm">
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                Clear
+              </Button>
+            </div>
 
-          {/* Empty State */}
-          {items.length === 0 && (
-            <motion.div
-              initial="initial"
-              animate="animate"
-              variants={fadeInUp}
-            >
-              <Card className="p-6 sm:p-12 text-center">
-                <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ShoppingCart className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h2 className="text-xl font-semibold mb-2">No courses in your cart</h2>
-                <p className="text-muted-foreground mb-6">
-                  Browse courses and add them to cart to start building your schedule.
-                </p>
-                <Link href="/courses">
-                  <Button>Browse Courses</Button>
-                </Link>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* Conflict Warning */}
-          {allConflicts.size > 0 && items.length > 0 && (
-            <motion.div
-              initial="initial"
-              animate="animate"
-              variants={fadeInUp}
-            >
-              <Card className="p-4 mb-6 border-destructive bg-destructive/5">
-                <div className="flex items-center gap-3">
-                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+            {allConflicts.size > 0 && (
+              <Card className="p-4 border-destructive/80 bg-destructive/12 ring-1 ring-destructive/40 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-destructive/20 p-1.5 mt-0.5">
+                    <AlertTriangle className="h-4.5 w-4.5 text-destructive shrink-0" />
+                  </div>
                   <div>
-                    <p className="font-medium text-destructive">Schedule Conflict Detected</p>
-                    <p className="text-sm text-muted-foreground">
-                      Some items have overlapping times. Review your selections above.
+                    <p className="text-sm font-semibold text-destructive">Schedule conflict detected</p>
+                    <p className="text-sm text-foreground/90">
+                      Some items overlap in time. Review your selections below.
                     </p>
+                    {conflictSummaries.length > 0 && (
+                      <div className="mt-2 space-y-0.5">
+                        {conflictSummaries.slice(0, 4).map((pair) => (
+                          <p key={pair.summary} className="text-xs text-foreground/90 leading-tight">
+                            {pair.summary}
+                          </p>
+                        ))}
+                        {conflictSummaries.length > 4 && (
+                          <p className="text-xs text-muted-foreground">+{conflictSummaries.length - 4} more conflicts</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>
-            </motion.div>
-          )}
+            )}
 
-          {/* Schedule Timetables first in embedded preview */}
-          {isEmbeddedPreview && items.length > 0 && (
-            <motion.div
-              className="mb-8"
-              initial="initial"
-              animate="animate"
-              variants={staggerContainer}
-            >
-              <motion.div className="mb-4" variants={fadeInUp}>
-                <h2 className="text-xl sm:text-2xl font-bold">Your Schedule</h2>
-              </motion.div>
+            {coursesWithMultipleSecondaryComponents.length > 0 && (
+              <Card className="p-4 border-amber-500/70 bg-amber-500/12 ring-1 ring-amber-500/35 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-amber-500/20 p-1.5 mt-0.5">
+                    <AlertTriangle className="h-4.5 w-4.5 text-amber-700 shrink-0" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">Multiple components selected</p>
+                    <p className="text-sm text-foreground/90">
+                      One or more courses include multiple secondary components. Review your selections below.
+                    </p>
+                    {multipleComponentSummaries.length > 0 && (
+                      <div className="mt-2 space-y-0.5">
+                        {multipleComponentSummaries.slice(0, 4).map((entry) => (
+                          <p key={entry.summary} className="text-xs text-foreground/90 leading-tight">
+                            {entry.summary}
+                          </p>
+                        ))}
+                        {multipleComponentSummaries.length > 4 && (
+                          <p className="text-xs text-muted-foreground">+{multipleComponentSummaries.length - 4} more courses</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            )}
 
-              <div ref={scheduleRef} className="space-y-8">
-                {/* Fall and Winter side-by-side if both exist */}
-                {orderedTerms.includes("fall") && orderedTerms.includes("winter") && (
-                  <motion.div
-                    className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-4"
-                    variants={cardVariant}
-                  >
+            <div>
+              <div ref={scheduleRef} className="space-y-3">
+                {displayTerms.includes("fall") && displayTerms.includes("winter") && (
+                  <div className="grid grid-cols-1 gap-3">
                     <ScheduleTimetable
-                      termItems={itemsByTerm["fall"]}
+                      termItems={itemsByTerm["fall"] || []}
                       termKey="fall"
-                      conflicts={conflictsByTerm["fall"]}
+                      conflicts={conflictsByTerm["fall"] || new Set()}
                       globalColorMap={globalColorMap}
+                      denseMode={true}
+                      onRemoveItem={handleComponentDelete}
                     />
                     <ScheduleTimetable
-                      termItems={itemsByTerm["winter"]}
+                      termItems={itemsByTerm["winter"] || []}
                       termKey="winter"
-                      conflicts={conflictsByTerm["winter"]}
+                      conflicts={conflictsByTerm["winter"] || new Set()}
                       globalColorMap={globalColorMap}
+                      denseMode={true}
+                      onRemoveItem={handleComponentDelete}
                     />
-                  </motion.div>
+                  </div>
                 )}
 
-                {/* Individual schedules for standalone or other terms */}
-                {orderedTerms.map((term) => {
-                  // Skip if we already rendered fall/winter together
-                  if ((term === "fall" || term === "winter") && orderedTerms.includes("fall") && orderedTerms.includes("winter")) {
+                {displayTerms.map((term) => {
+                  if ((term === "fall" || term === "winter") && displayTerms.includes("fall") && displayTerms.includes("winter")) {
                     return null
                   }
                   return (
-                    <motion.div key={term} variants={cardVariant}>
+                    <div key={term}>
                       <ScheduleTimetable
-                        termItems={itemsByTerm[term]}
+                        termItems={itemsByTerm[term] || []}
                         termKey={term}
-                        conflicts={conflictsByTerm[term]}
+                        conflicts={conflictsByTerm[term] || new Set()}
                         globalColorMap={globalColorMap}
+                        denseMode={true}
+                        onRemoveItem={handleComponentDelete}
                       />
-                    </motion.div>
+                    </div>
                   )
                 })}
               </div>
-            </motion.div>
-          )}
+            </div>
 
-          {/* Embedded preview actions right after schedule */}
-          {isEmbeddedPreview && items.length > 0 && (
-            <motion.div
-              className="mb-8 flex flex-col gap-2"
-              initial="initial"
-              animate="animate"
-              variants={fadeInUp}
-            >
-              <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="w-full shadow-md shadow-primary">
-                <Download className="h-4 w-4 mr-2" />
-                Save as PDF
-              </Button>
-              <Button variant="outline" size="sm" onClick={clearCart} className="w-full">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Clear Cart
-              </Button>
-            </motion.div>
-          )}
-
-          {/* Selection Review (before schedule generation) */}
-          {orderedTerms.length > 0 && (
-            <motion.div
-              className="space-y-6 mb-8"
-              initial="initial"
-              animate="animate"
-              variants={staggerContainer}
-            >
-              {orderedTerms.map((term) => {
+            <div className="space-y-6">
+              {displayTerms.map((term) => {
                 const termItems = itemsByTerm[term]
                 const termInfo = getTermDisplayInfo(term)
                 const termGrouped: Record<string, CartItem[]> = {}
@@ -1218,14 +1751,13 @@ export default function CartPage() {
                 const termConflictCount = termItems.filter((item) => allConflicts.has(item.id)).length
 
                 return (
-                  <motion.div key={term} variants={cardVariant}>
-                    <Card className="overflow-hidden">
+                  <Card key={term} className="overflow-hidden">
                     <div className="p-4 md:p-5 bg-muted/40 border-b border-border">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg md:text-xl font-bold">{termInfo.label}</h2>
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        <h2 className="text-lg md:text-xl font-bold truncate">{termInfo.label}</h2>
                         {termInfo.period && <Badge variant="secondary">{termInfo.period}</Badge>}
-                        <Badge variant="outline">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
-                        <div className="ml-auto flex items-center gap-2">
+                        <Badge variant="outline" className="shrink-0">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
+                        <div className="w-full sm:w-auto sm:ml-auto flex items-center gap-2">
                           {termConflictCount > 0 && (
                             <Badge variant="destructive">
                               <AlertTriangle className="h-3.5 w-3.5 mr-1" />
@@ -1234,7 +1766,7 @@ export default function CartPage() {
                           )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                              <Button variant="outline" size="sm" className="w-full sm:w-auto text-destructive hover:text-destructive">
                                 <Trash2 className="h-4 w-4 mr-1.5" />
                                 Clear semester
                               </Button>
@@ -1275,6 +1807,13 @@ export default function CartPage() {
                               <div className="min-w-0 flex-1">
                                 <Link
                                   href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`}
+                                  onClick={(event) => {
+                                    const href = `/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`
+                                    closeMobileEmbeddedCart()
+                                    if (requestParentNavigation(href)) {
+                                      event.preventDefault()
+                                    }
+                                  }}
                                   className="text-base font-semibold text-primary hover:underline truncate block"
                                 >
                                   {courseCode}
@@ -1296,7 +1835,7 @@ export default function CartPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Remove {courseCode}</span>
@@ -1325,8 +1864,8 @@ export default function CartPage() {
                               </AlertDialog>
                             </div>
 
-                            <AccordionTrigger className="hover:no-underline py-2 text-xs text-muted-foreground">
-                              Show course components
+                            <AccordionTrigger className="hover:no-underline py-3 text-sm text-muted-foreground text-left">
+                              Show {sortedCourseItems.length} component{sortedCourseItems.length !== 1 && "s"}
                             </AccordionTrigger>
 
                             <AccordionContent>
@@ -1334,6 +1873,11 @@ export default function CartPage() {
                                 {sortedCourseItems.map((item) => (
                                   <div key={item.id} className="p-3 rounded-md border border-border bg-background flex items-start gap-3">
                                     <div className="flex-1 min-w-0">
+                                      {(() => {
+                                        const uniqueCatalogCodes = getItemCatalogCodes(item)
+
+                                        return (
+                                          <>
                                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
                                         <Badge variant="outline" className="text-xs">Section {item.section}</Badge>
                                         <Badge variant="secondary" className="text-xs">{item.typeLabel}</Badge>
@@ -1344,6 +1888,33 @@ export default function CartPage() {
                                           </Badge>
                                         )}
                                       </div>
+
+                                      {uniqueCatalogCodes.length > 0 && (
+                                        <div className="mb-1.5 max-w-full overflow-x-auto pb-1">
+                                          <div className="flex w-max items-center gap-1">
+                                            {uniqueCatalogCodes.map((catalogCode) => (
+                                              <button
+                                                key={`${item.id}-${catalogCode}`}
+                                                type="button"
+                                                onClick={() => handleCopyCatalogCode(catalogCode)}
+                                                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-mono font-medium text-primary hover:bg-primary/20 transition-colors"
+                                                title="Copy catalog code"
+                                                aria-label={`Copy catalog code ${catalogCode}`}
+                                              >
+                                                <span>{catalogCode}</span>
+                                                {copiedCatalogCode === catalogCode ? (
+                                                  <Check className="h-3 w-3" />
+                                                ) : (
+                                                  <Copy className="h-3 w-3 opacity-70" />
+                                                )}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                          </>
+                                        )
+                                      })()}
 
                                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                                         <span className="flex items-center gap-1">
@@ -1376,8 +1947,472 @@ export default function CartPage() {
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                          onClick={() => removeItem(item.id)}
+                                          className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
+                                          onClick={() => handleComponentDelete(item.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                          <span className="sr-only">Remove {item.typeLabel}</span>
+                                        </Button>
+                                      )
+                                    })()}
+                                  </div>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        )
+                      })}
+                    </Accordion>
+                  </Card>
+                )
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className={`${isEmbeddedPreview ? "bg-background" : "min-h-screen bg-background flex flex-col"}`}>
+      {!isEmbeddedPreview && <Header showSearch />}
+      <div className={isEmbeddedPreview ? "px-2 py-2" : `container mx-auto px-3 sm:px-4 py-6 sm:py-8 flex-1 w-full ${showMobileActionBar ? "pb-28" : ""}`}>
+        <div className={isEmbeddedPreview ? "w-full" : "max-w-6xl mx-auto"}>
+          {/* Page Header */}
+          {!isEmbeddedPreview && (
+            <motion.div
+              className="mb-8"
+              initial="initial"
+              animate="animate"
+              variants={staggerContainer}
+            >
+              <motion.div variants={fadeInUp}>
+                <Link href="/courses" className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block">
+                  ← Back to courses
+                </Link>
+              </motion.div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <motion.div variants={fadeInUp}>
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-2">Your Cart</h1>
+                  <p className="text-muted-foreground">
+                    {items.length === 0
+                      ? "Your cart is empty. Add sections from a course page."
+                      : `${courseList.length} course${courseList.length === 1 ? "" : "s"} across ${displayTerms.length} term${displayTerms.length === 1 ? "" : "s"}`}
+                  </p>
+                </motion.div>
+                {items.length > 0 && (
+                  <motion.div
+                    className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto"
+                    variants={fadeInUp}
+                  >
+                    <Button variant="outline" size="sm" onClick={clearCart} className="w-full sm:w-auto">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Clear Cart
+                    </Button>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Empty State */}
+          {items.length === 0 && (
+            <motion.div
+              initial="initial"
+              animate="animate"
+              variants={fadeInUp}
+              className={`flex items-center justify-center ${isEmbeddedPreview ? "min-h-[calc(100vh-11rem)]" : "min-h-[calc(100vh-20rem)]"}`}
+            >
+              <Card className="p-6 sm:p-12 text-center max-w-sm">
+                <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ShoppingCart className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h2 className="text-xl font-semibold mb-2">No courses in your cart</h2>
+                <p className="text-muted-foreground mb-6">
+                  Browse courses and add them to cart to start building your schedule.
+                </p>
+                <Link
+                  href="/courses"
+                  onClick={(event) => {
+                    if (requestParentNavigation("/courses")) {
+                      event.preventDefault()
+                    }
+                  }}
+                >
+                  <Button>Browse Courses</Button>
+                </Link>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Conflict Warning */}
+          {allConflicts.size > 0 && items.length > 0 && (
+            <motion.div
+              initial="initial"
+              animate="animate"
+              variants={fadeInUp}
+            >
+              <Card className="p-5 mb-6 border-destructive/80 bg-destructive/12 ring-1 ring-destructive/40 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-destructive/20 p-2 mt-0.5">
+                    <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-destructive">Schedule Conflict Detected</p>
+                    <p className="text-sm text-foreground/90">
+                      Some items have overlapping times. Review your selections above.
+                    </p>
+                    {conflictSummaries.length > 0 && (
+                      <div className="mt-2 space-y-0.5">
+                        {conflictSummaries.slice(0, 4).map((pair) => (
+                          <p key={pair.summary} className="text-sm text-foreground/90 leading-tight">
+                            {pair.summary}
+                          </p>
+                        ))}
+                        {conflictSummaries.length > 4 && (
+                          <p className="text-sm text-muted-foreground">+{conflictSummaries.length - 4} more conflicts</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {coursesWithMultipleSecondaryComponents.length > 0 && items.length > 0 && (
+            <motion.div
+              initial="initial"
+              animate="animate"
+              variants={fadeInUp}
+            >
+              <Card className="p-5 mb-6 border-amber-500/70 bg-amber-500/12 ring-1 ring-amber-500/35 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-amber-500/20 p-2 mt-0.5">
+                    <AlertTriangle className="h-5 w-5 text-amber-700 shrink-0" />
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-amber-800">Multiple components selected</p>
+                    <p className="text-sm text-foreground/90">
+                      One or more courses include multiple secondary components. Review your selections above.
+                    </p>
+                    {multipleComponentSummaries.length > 0 && (
+                      <div className="mt-2 space-y-0.5">
+                        {multipleComponentSummaries.slice(0, 4).map((entry) => (
+                          <p key={entry.summary} className="text-sm text-foreground/90 leading-tight">
+                            {entry.summary}
+                          </p>
+                        ))}
+                        {multipleComponentSummaries.length > 4 && (
+                          <p className="text-sm text-muted-foreground">+{multipleComponentSummaries.length - 4} more courses</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Schedule Timetables first in embedded preview */}
+          {isEmbeddedPreview && items.length > 0 && (
+            <motion.div
+              className="mb-8"
+              initial="initial"
+              animate="animate"
+              variants={staggerContainer}
+            >
+              <motion.div className="mb-4" variants={fadeInUp}>
+                <h2 className="text-xl sm:text-2xl font-bold">Your Schedule</h2>
+              </motion.div>
+
+              <div ref={scheduleRef} className="space-y-4">
+                {/* Fall and Winter side-by-side if both exist */}
+                {displayTerms.includes("fall") && displayTerms.includes("winter") && (
+                  <motion.div
+                    className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-3"
+                    variants={cardVariant}
+                  >
+                    <ScheduleTimetable
+                      termItems={itemsByTerm["fall"] || []}
+                      termKey="fall"
+                      conflicts={conflictsByTerm["fall"] || new Set()}
+                      globalColorMap={globalColorMap}
+                      denseMode={true}
+                      onRemoveItem={handleComponentDelete}
+                    />
+                    <ScheduleTimetable
+                      termItems={itemsByTerm["winter"] || []}
+                      termKey="winter"
+                      conflicts={conflictsByTerm["winter"] || new Set()}
+                      globalColorMap={globalColorMap}
+                      denseMode={true}
+                      onRemoveItem={handleComponentDelete}
+                    />
+                  </motion.div>
+                )}
+
+                {/* Individual schedules for standalone or other terms */}
+                {displayTerms.map((term) => {
+                  // Skip if we already rendered fall/winter together
+                  if ((term === "fall" || term === "winter") && displayTerms.includes("fall") && displayTerms.includes("winter")) {
+                    return null
+                  }
+                  return (
+                    <motion.div key={term} variants={cardVariant}>
+                      <ScheduleTimetable
+                        termItems={itemsByTerm[term] || []}
+                        termKey={term}
+                        conflicts={conflictsByTerm[term] || new Set()}
+                        globalColorMap={globalColorMap}
+                        denseMode={true}
+                        onRemoveItem={handleComponentDelete}
+                      />
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Embedded preview actions right after schedule */}
+          {isEmbeddedPreview && items.length > 0 && (
+            <motion.div
+              className="mb-8 flex flex-col gap-2"
+              initial="initial"
+              animate="animate"
+              variants={fadeInUp}
+            >
+              <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="w-full shadow-md shadow-primary">
+                <Download className="h-4 w-4 mr-2" />
+                Save as PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={clearCart} className="w-full">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear Cart
+              </Button>
+            </motion.div>
+          )}
+
+          {/* Selection Review (before schedule generation) */}
+          {displayTerms.length > 0 && (
+            <motion.div
+              className="space-y-6 mb-8"
+              initial="initial"
+              animate="animate"
+              variants={staggerContainer}
+            >
+              {displayTerms.map((term) => {
+                const termItems = itemsByTerm[term]
+                const termInfo = getTermDisplayInfo(term)
+                const termGrouped: Record<string, CartItem[]> = {}
+                for (const item of termItems) {
+                  if (!termGrouped[item.courseCode]) termGrouped[item.courseCode] = []
+                  termGrouped[item.courseCode].push(item)
+                }
+                const termCourseList = Object.keys(termGrouped).sort((a, b) => a.localeCompare(b))
+                const termConflictCount = termItems.filter((item) => allConflicts.has(item.id)).length
+
+                return (
+                  <motion.div key={term} variants={cardVariant}>
+                    <Card className="overflow-hidden">
+                    <div className="p-4 md:p-5 bg-muted/40 border-b border-border">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        <h2 className="text-lg md:text-xl font-bold truncate">{termInfo.label}</h2>
+                        {termInfo.period && <Badge variant="secondary">{termInfo.period}</Badge>}
+                        <Badge variant="outline" className="shrink-0">{termCourseList.length} course{termCourseList.length !== 1 && "s"}</Badge>
+                        <div className="w-full sm:w-auto sm:ml-auto flex items-center gap-2">
+                          {termConflictCount > 0 && (
+                            <Badge variant="destructive">
+                              <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+                              {termConflictCount} conflict{termConflictCount !== 1 && "s"}
+                            </Badge>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="w-full sm:w-auto text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4 mr-1.5" />
+                                Clear semester
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Clear {termInfo.label}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will remove all selected courses and components in this semester from your cart.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => clearTermItems(termItems)}>
+                                  Clear semester
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Accordion type="multiple" className="px-4 md:px-5">
+                      {termCourseList.map((courseCode) => {
+                        const courseItems = termGrouped[courseCode]
+                        const first = courseItems[0]
+                        const sortedCourseItems = [...courseItems].sort((a, b) => {
+                          const rankDiff = getComponentSortRank(a.type) - getComponentSortRank(b.type)
+                          if (rankDiff !== 0) return rankDiff
+                          if (a.section !== b.section) return a.section.localeCompare(b.section)
+                          return a.typeLabel.localeCompare(b.typeLabel)
+                        })
+
+                        return (
+                          <AccordionItem key={courseCode} value={`${term}-${courseCode}`}>
+                            <div className="pt-4 pb-1 min-w-0 flex items-start gap-3">
+                              <div className="min-w-0 flex-1">
+                                <Link
+                                  href={`/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`}
+                                  onClick={(event) => {
+                                    const href = `/course/${courseCode.toLowerCase().replace(/\s+/g, "")}`
+                                    closeMobileEmbeddedCart()
+                                    if (requestParentNavigation(href)) {
+                                      event.preventDefault()
+                                    }
+                                  }}
+                                  className="text-base font-semibold text-primary hover:underline truncate block"
+                                >
+                                  {courseCode}
+                                </Link>
+                                <p className="text-sm text-muted-foreground truncate">{first.courseName}</p>
+                                {first.term && (
+                                  <div className="mt-2">
+                                    <MonthRangeBar
+                                      termLabel={first.term}
+                                      compact
+                                      showLabel
+                                      activeClassName={`${COURSE_COLORS[globalColorMap[courseCode] ?? 0].bg} ${COURSE_COLORS[globalColorMap[courseCode] ?? 0].text}`}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Remove {courseCode}</span>
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remove {courseCode}?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will remove all selected components for this course from your cart.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => {
+                                        for (const courseItem of courseItems) {
+                                          removeItem(courseItem.id)
+                                        }
+                                      }}
+                                    >
+                                      Remove course
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+
+                            <AccordionTrigger className="hover:no-underline py-3 text-sm text-muted-foreground text-left">
+                              Show {sortedCourseItems.length} component{sortedCourseItems.length !== 1 && "s"}
+                            </AccordionTrigger>
+
+                            <AccordionContent>
+                              <div className="space-y-2">
+                                {sortedCourseItems.map((item) => (
+                                  <div key={item.id} className="p-3 rounded-md border border-border bg-background flex items-start gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      {(() => {
+                                        const uniqueCatalogCodes = getItemCatalogCodes(item)
+
+                                        return (
+                                          <>
+                                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                        <Badge variant="outline" className="text-xs">Section {item.section}</Badge>
+                                        <Badge variant="secondary" className="text-xs">{item.typeLabel}</Badge>
+                                        {allConflicts.has(item.id) && (
+                                          <Badge variant="destructive" className="text-xs">
+                                            <AlertTriangle className="h-3 w-3 mr-1" />
+                                            Conflict
+                                          </Badge>
+                                        )}
+                                      </div>
+
+                                      {uniqueCatalogCodes.length > 0 && (
+                                        <div className="mb-1.5 max-w-full overflow-x-auto pb-1">
+                                          <div className="flex w-max items-center gap-1">
+                                            {uniqueCatalogCodes.map((catalogCode) => (
+                                              <button
+                                                key={`${item.id}-${catalogCode}`}
+                                                type="button"
+                                                onClick={() => handleCopyCatalogCode(catalogCode)}
+                                                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-mono font-medium text-primary hover:bg-primary/20 transition-colors"
+                                                title="Copy catalog code"
+                                                aria-label={`Copy catalog code ${catalogCode}`}
+                                              >
+                                                <span>{catalogCode}</span>
+                                                {copiedCatalogCode === catalogCode ? (
+                                                  <Check className="h-3 w-3" />
+                                                ) : (
+                                                  <Copy className="h-3 w-3 opacity-70" />
+                                                )}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                          </>
+                                        )
+                                      })()}
+
+                                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                        <span className="flex items-center gap-1">
+                                          <Calendar className="h-3.5 w-3.5" />{item.day}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <Clock className="h-3.5 w-3.5" />{item.time}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <MapPin className="h-3.5 w-3.5" />{item.location}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <BookOpen className="h-3.5 w-3.5" />{item.instructor}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {(() => {
+                                      const isPrimaryComponent = PRIMARY_COMPONENT_TYPES.has(normalizeComponentType(item.type))
+                                      const hasSecondaryInSameSection = courseItems.some(
+                                        (entry) =>
+                                          entry.section === item.section &&
+                                          SECONDARY_COMPONENT_TYPES.has(normalizeComponentType(entry.type)),
+                                      )
+                                      const canRemove = !(isPrimaryComponent && hasSecondaryInSameSection)
+
+                                      if (!canRemove) return null
+
+                                      return (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
+                                          onClick={() => handleComponentDelete(item.id)}
                                         >
                                           <Trash2 className="h-4 w-4" />
                                           <span className="sr-only">Remove {item.typeLabel}</span>
@@ -1412,7 +2447,7 @@ export default function CartPage() {
                 variants={fadeInUp}
               >
                 <h2 className="text-xl sm:text-2xl font-bold">Your Schedule</h2>
-                <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="w-full sm:w-auto shadow-md shadow-primary">
+                <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="hidden sm:inline-flex w-full sm:w-auto shadow-md shadow-primary">
                   <Download className="h-4 w-4 mr-2" />
                   Save as PDF
                 </Button>
@@ -1420,39 +2455,42 @@ export default function CartPage() {
 
               <div ref={scheduleRef} className="space-y-8">
                 {/* Fall and Winter side-by-side if both exist */}
-                {orderedTerms.includes("fall") && orderedTerms.includes("winter") && (
+                {displayTerms.includes("fall") && displayTerms.includes("winter") && (
                   <motion.div
                     className="fall-winter-grid grid grid-cols-1 lg:grid-cols-2 gap-4"
                     variants={cardVariant}
                   >
                     <ScheduleTimetable
-                      termItems={itemsByTerm["fall"]}
+                      termItems={itemsByTerm["fall"] || []}
                       termKey="fall"
-                      conflicts={conflictsByTerm["fall"]}
+                      conflicts={conflictsByTerm["fall"] || new Set()}
                       globalColorMap={globalColorMap}
+                      onRemoveItem={handleComponentDelete}
                     />
                     <ScheduleTimetable
-                      termItems={itemsByTerm["winter"]}
+                      termItems={itemsByTerm["winter"] || []}
                       termKey="winter"
-                      conflicts={conflictsByTerm["winter"]}
+                      conflicts={conflictsByTerm["winter"] || new Set()}
                       globalColorMap={globalColorMap}
+                      onRemoveItem={handleComponentDelete}
                     />
                   </motion.div>
                 )}
 
                 {/* Individual schedules for standalone or other terms */}
-                {orderedTerms.map((term) => {
+                {displayTerms.map((term) => {
                   // Skip if we already rendered fall/winter together
-                  if ((term === "fall" || term === "winter") && orderedTerms.includes("fall") && orderedTerms.includes("winter")) {
+                  if ((term === "fall" || term === "winter") && displayTerms.includes("fall") && displayTerms.includes("winter")) {
                     return null
                   }
                   return (
                     <motion.div key={term} variants={cardVariant}>
                       <ScheduleTimetable
-                        termItems={itemsByTerm[term]}
+                        termItems={itemsByTerm[term] || []}
                         termKey={term}
-                        conflicts={conflictsByTerm[term]}
+                        conflicts={conflictsByTerm[term] || new Set()}
                         globalColorMap={globalColorMap}
+                        onRemoveItem={handleComponentDelete}
                       />
                     </motion.div>
                   )
@@ -1463,7 +2501,28 @@ export default function CartPage() {
 
         </div>
       </div>
-      <Footer />
+      {showMobileActionBar && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
+          <div className="mx-auto flex w-full max-w-6xl gap-2 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
+            <Button variant="outline" size="sm" onClick={scrollToSchedule} className="flex-1">
+              View Schedule
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleSaveAsPdf} className="flex-1 shadow-md shadow-primary">
+              <Download className="h-4 w-4 mr-2" />
+              Save PDF
+            </Button>
+            <Button variant="destructive" size="sm" onClick={clearCart} className="flex-1">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+      {!isEmbeddedPreview && <Footer />}
     </div>
   )
+}
+
+export default function CartPage() {
+  return <CartPageContent />
 }

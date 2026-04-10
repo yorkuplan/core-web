@@ -18,6 +18,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { coursesApi, type Course, formatCourseCode } from "@/lib/api/courses";
+import { useCart } from "@/components/cart-context";
 import Logo from "@/public/logo.webp";
 import { createPortal } from "react-dom";
 
@@ -47,6 +48,7 @@ export function Header({
   centerContent,
   rightSlotMobile,
 }: HeaderProps) {
+  const { isCartDockOpen, canDock, dockWidth } = useCart();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Course[]>([]);
@@ -54,6 +56,7 @@ export function Header({
   const [showDropdown, setShowDropdown] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [subtitleOpacity, setSubtitleOpacity] = useState(1);
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -99,6 +102,30 @@ export function Header({
       clearTimeout(timeout);
     };
   }, [mobileSearchOpen, showSearch]);
+
+  useEffect(() => {
+    const shouldFadeSubtitle = Boolean(subtitle) && !showSearch && !centerContent;
+    if (!shouldFadeSubtitle) {
+      setSubtitleOpacity(1);
+      return;
+    }
+
+    if (typeof window === "undefined") return;
+
+    const calculateOpacity = () => {
+      const dockInset = isCartDockOpen && canDock ? dockWidth : 0;
+      const effectiveWidth = window.innerWidth - dockInset;
+      const fadeStart = 980;
+      const fadeEnd = 1160;
+      const progress = (effectiveWidth - fadeStart) / (fadeEnd - fadeStart);
+      const clampedOpacity = Math.min(1, Math.max(0, progress));
+      setSubtitleOpacity(clampedOpacity);
+    };
+
+    calculateOpacity();
+    window.addEventListener("resize", calculateOpacity);
+    return () => window.removeEventListener("resize", calculateOpacity);
+  }, [subtitle, showSearch, centerContent, isCartDockOpen, canDock, dockWidth]);
 
   const resetSearchState = () => {
     setQuery("");
@@ -336,6 +363,7 @@ export function Header({
 
   const showCenterOnMobile = !showSearch && Boolean(centerContent && !rightSlotMobile);
   const useAbsoluteCenter = !showSearch && !centerContent && Boolean(subtitle);
+  const shouldFadeSubtitle = !showSearch && !centerContent && Boolean(subtitle);
 
   return (
     <>
@@ -358,7 +386,8 @@ export function Header({
                     ? "hidden md:flex xl:hidden"
                     : "hidden md:flex"
                   : ""
-              }`}
+              } ${shouldFadeSubtitle ? "transition-opacity duration-200" : ""}`}
+              style={shouldFadeSubtitle ? { opacity: subtitleOpacity } : undefined}
             >
               {center}
             </div>
@@ -440,7 +469,12 @@ export function Header({
         </div>
 
         {center && useAbsoluteCenter && (
-          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden xl:block">
+          <div
+            className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden xl:block ${
+              shouldFadeSubtitle ? "transition-opacity duration-200" : ""
+            }`}
+            style={shouldFadeSubtitle ? { opacity: subtitleOpacity } : undefined}
+          >
             {center}
           </div>
         )}
