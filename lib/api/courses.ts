@@ -126,8 +126,100 @@ export const formatCourseCode = (code: string): string => {
   return code.replace(/([A-Za-z]+)(\d+)/, "$1 $2")
 }
 
-const normalizeCourseCodeKey = (code: string): string =>
+export const normalizeCourseCodeKey = (code: string): string =>
   code.replace(/\s+/g, "").toUpperCase()
+
+const normalizeTermKey = (term: string): string => (term || "").trim().toUpperCase()
+
+/**
+ * Merges GET /courses/{code} rows that represent the same offering (e.g. cross-listed
+ * duplicates): same normalized course code and term. Sections are merged by section
+ * letter; activities deduped by id. Instructor fetches can use sourceCourseIds and
+ * sectionIdToCanonical to combine /instructors/{courseId} payloads.
+ */
+export function mergeCrossListedCourseOfferings(
+  offerings: CourseOffering[],
+): CourseOffering[] {
+  const groups = new Map<string, CourseOffering[]>()
+  for (const o of offerings) {
+    const key = `${normalizeCourseCodeKey(o.code || "")}|${normalizeTermKey(o.term)}`
+    const list = groups.get(key)
+    if (list) list.push(o)
+    else groups.set(key, [o])
+  }
+
+  const merged: CourseOffering[] = []
+
+  for (const group of groups.values()) {
+    group.sort((a, b) => a.id.localeCompare(b.id))
+    const primary = group[0]!
+
+    if (group.length === 1) {
+      merged.push({
+        ...primary,
+        sections: primary.sections?.map((s) => ({ ...s })) ?? [],
+        sourceCourseIds: [primary.id],
+      })
+      continue
+    }
+
+    const byLetter = new Map<string, Section[]>()
+    for (const o of group) {
+      for (const s of o.sections ?? []) {
+        const L = (s.letter || "").trim().toUpperCase()
+        const arr = byLetter.get(L)
+        if (arr) arr.push(s)
+        else byLetter.set(L, [s])
+      }
+    }
+
+    const sectionIdToCanonical: Record<string, string> = {}
+    const mergedSections: Section[] = []
+
+    for (const L of [...byLetter.keys()].sort((a, b) => a.localeCompare(b))) {
+      const secs = byLetter.get(L)!
+      secs.sort((a, b) => a.id.localeCompare(b.id))
+      const canonical = secs[0]!
+      for (const s of secs) {
+        sectionIdToCanonical[s.id] = canonical.id
+      }
+
+      const activitiesById = new Map<string, Activity>()
+      for (const s of secs) {
+        for (const a of s.activities ?? []) {
+          activitiesById.set(a.id, {
+            ...a,
+            section_id: canonical.id,
+          })
+        }
+      }
+
+      mergedSections.push({
+        ...canonical,
+        id: canonical.id,
+        course_id: primary.id,
+        letter: canonical.letter,
+        activities: [...activitiesById.values()],
+      })
+    }
+
+    mergedSections.sort((a, b) =>
+      (a.letter || "").localeCompare(b.letter || "", undefined, {
+        numeric: true,
+      }),
+    )
+
+    merged.push({
+      ...primary,
+      id: primary.id,
+      sections: mergedSections,
+      sourceCourseIds: group.map((g) => g.id),
+      sectionIdToCanonical,
+    })
+  }
+
+  return merged
+}
 
 const dedupeCoursesByCode = (courses: Course[]): Course[] => {
   const seen = new Set<string>()
@@ -196,6 +288,10 @@ export interface CourseOffering {
   faculty: string
   term: string
   sections: Section[]
+  /** Course ids merged into this row (cross-listed); used to load instructors from each. */
+  sourceCourseIds?: string[]
+  /** Maps raw section ids from the API to the canonical section id used after merge. */
+  sectionIdToCanonical?: Record<string, string>
 }
 
 export interface CoursesByCodeResponse {

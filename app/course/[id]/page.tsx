@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import {
   coursesApi,
+  mergeCrossListedCourseOfferings,
   type Activity,
   type Section,
   type Instructor,
@@ -378,7 +379,8 @@ export default function CoursePage() {
       try {
         setIsLoading(true);
         const data = await coursesApi.getCoursesByCode(courseCode);
-        const sorted = [...data].sort((a, b) => {
+        const merged = mergeCrossListedCourseOfferings(data);
+        const sorted = [...merged].sort((a, b) => {
           const ao = TERM_ORDER[a.term?.toUpperCase?.() || ""] ?? 999;
           const bo = TERM_ORDER[b.term?.toUpperCase?.() || ""] ?? 999;
           if (ao !== bo) return ao - bo;
@@ -402,14 +404,27 @@ export default function CoursePage() {
   useEffect(() => {
     async function fetchInstructors() {
       if (!selectedOffering?.id) return;
+      const courseIds =
+        selectedOffering.sourceCourseIds?.length &&
+        selectedOffering.sourceCourseIds.length > 0
+          ? selectedOffering.sourceCourseIds
+          : [selectedOffering.id];
+      const sectionIdToCanonical = selectedOffering.sectionIdToCanonical;
       try {
-        const instructorsData = await coursesApi.getInstructorsByCourseId(
-          selectedOffering.id,
+        const batches = await Promise.all(
+          courseIds.map((id) => coursesApi.getInstructorsByCourseId(id)),
         );
         const instructorsMap: Record<string, Instructor> = {};
-        instructorsData.forEach((instructor) => {
-          instructorsMap[instructor.section_id] = instructor;
-        });
+        for (const instructorsData of batches) {
+          for (const instructor of instructorsData) {
+            const sid =
+              sectionIdToCanonical?.[instructor.section_id] ??
+              instructor.section_id;
+            if (!instructorsMap[sid]) {
+              instructorsMap[sid] = instructor;
+            }
+          }
+        }
         setInstructorsBySection(instructorsMap);
       } catch (err) {
         console.error("Failed to fetch instructors:", err);
@@ -418,7 +433,7 @@ export default function CoursePage() {
     }
 
     fetchInstructors();
-  }, [selectedOffering?.id]);
+  }, [selectedOffering]);
 
   useEffect(() => {
     async function fetchReviews() {
