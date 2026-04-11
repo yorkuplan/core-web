@@ -220,7 +220,7 @@ export default function HomePage() {
                     variant="default"
                     className="h-auto min-h-0 max-w-[min(100%,42rem)] flex-wrap justify-center rounded-full border-transparent px-3 py-1.5 text-center text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] shadow-md whitespace-normal"
                   >
-                    <span>Fall/Winter 2025-2026</span>
+                    <span>Fall/Winter 2026-2027</span>
                   </Badge>
                 </motion.div>
 
