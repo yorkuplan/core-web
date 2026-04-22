@@ -43,7 +43,8 @@ import {
   Check,
 } from "lucide-react"
 import Link from "next/link"
-import { useState, useRef, useEffect } from "react"
+import { forwardRef, useState, useRef, useEffect } from "react"
+import { createRoot } from "react-dom/client"
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -575,13 +576,15 @@ function detectConflicts(blocks: ScheduleBlock[]): Set<string> {
   return conflicts
 }
 
-function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, denseMode = false, onRemoveItem }: { termItems: CartItem[]; termKey: string; conflicts: Set<string>; globalColorMap: Record<string, number>; denseMode?: boolean; onRemoveItem?: (id: string) => void }) {
+function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, denseMode = false, onRemoveItem, forceExpandedLayout = false }: { termItems: CartItem[]; termKey: string; conflicts: Set<string>; globalColorMap: Record<string, number>; denseMode?: boolean; onRemoveItem?: (id: string) => void; forceExpandedLayout?: boolean }) {
   const isMobile = useIsMobile()
   const isTabletOrBelow = useIsTabletOrBelow()
-  const isDenseMobile = denseMode && isMobile
+  const isLayoutCompact = forceExpandedLayout ? false : isMobile
+  const isLayoutTabletOrBelow = forceExpandedLayout ? false : isTabletOrBelow
+  const isDenseMobile = denseMode && isLayoutCompact
   const isSummerTerm = termKey === "summer" || termKey === "summer1" || termKey === "summer2"
-  const isCompactTerm = termKey === "fall" || termKey === "winter" || (isTabletOrBelow && isSummerTerm)
-  const compactSlotHeight = denseMode ? (isMobile ? 30 : isTabletOrBelow ? 23 : 23) : (isMobile ? 36 : isTabletOrBelow ? 34 : 32)
+  const isCompactTerm = forceExpandedLayout ? false : (termKey === "fall" || termKey === "winter" || (isLayoutTabletOrBelow && isSummerTerm))
+  const compactSlotHeight = denseMode ? (isLayoutCompact ? 30 : isLayoutTabletOrBelow ? 23 : 23) : (isLayoutCompact ? 36 : isLayoutTabletOrBelow ? 34 : 32)
   const [activeBlock, setActiveBlock] = useState<ScheduleBlock | null>(null)
   const blocks = buildScheduleBlocks(termItems, globalColorMap)
 
@@ -598,15 +601,15 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
   const { startHour, endHour } = getScheduleHours(blocks)
   const halfHourRows = Math.max(4, (endHour - startHour) * 2)
   const slotHeight = denseMode
-    ? (isCompactTerm ? compactSlotHeight : (isMobile ? 30 : 28))
-    : (isCompactTerm ? compactSlotHeight : (isMobile ? 40 : SLOT_HEIGHT))
+    ? (isCompactTerm ? compactSlotHeight : (isLayoutCompact ? 30 : 28))
+    : (isCompactTerm ? compactSlotHeight : (isLayoutCompact ? 40 : SLOT_HEIGHT))
   const visibleMonthWindow = getVisibleMonthWindow(termKey)
-  const runRowHeight = denseMode ? 16 : (isCompactTerm ? 24 : (isMobile ? 24 : 28))
-  const runBubbleHeight = denseMode ? 12 : (isCompactTerm ? 18 : (isMobile ? 18 : 22))
-  const timeColumnWidth = denseMode ? (isMobile ? 34 : 28) : (isCompactTerm ? 40 : (isMobile ? 48 : 60))
-  const dayColumnMinWidth = denseMode ? (isMobile ? 76 : 60) : (isCompactTerm ? (isMobile ? 92 : isTabletOrBelow ? 88 : 80) : (isMobile ? 100 : 140))
-  const showTapDetails = isTabletOrBelow
-  const showHoverDetails = !isTabletOrBelow
+  const runRowHeight = denseMode ? 16 : (isCompactTerm ? 24 : (isLayoutCompact ? 24 : 28))
+  const runBubbleHeight = denseMode ? 12 : (isCompactTerm ? 18 : (isLayoutCompact ? 18 : 22))
+  const timeColumnWidth = denseMode ? (isLayoutCompact ? 34 : 28) : (isCompactTerm ? 40 : (isLayoutCompact ? 48 : 60))
+  const dayColumnMinWidth = denseMode ? (isLayoutCompact ? 76 : 60) : (isCompactTerm ? (isLayoutCompact ? 92 : isLayoutTabletOrBelow ? 88 : 80) : (isLayoutCompact ? 100 : 140))
+  const showTapDetails = forceExpandedLayout ? false : isLayoutTabletOrBelow
+  const showHoverDetails = forceExpandedLayout ? false : !isLayoutTabletOrBelow
 
   const conflictPairs = (() => {
     const pairs = new Map<string, { summary: string }>()
@@ -997,6 +1000,72 @@ function ScheduleTimetable({ termItems, termKey, conflicts, globalColorMap, dens
   )
 }
 
+type PdfScheduleExportSurfaceProps = {
+  itemsByTerm: Record<string, CartItem[]>
+  displayTerms: string[]
+  conflictsByTerm: Record<string, Set<string>>
+  globalColorMap: Record<string, number>
+}
+
+function PdfScheduleExportSurface({ itemsByTerm, displayTerms, conflictsByTerm, globalColorMap }: PdfScheduleExportSurfaceProps) {
+  if (displayTerms.length === 0) return null
+
+  const showFallWinterSideBySide = displayTerms.includes("fall") && displayTerms.includes("winter")
+
+  return (
+    <div
+      aria-hidden="true"
+      data-pdf-export-schedule
+      style={{
+        width: "1360px",
+        minWidth: "1360px",
+        maxWidth: "1360px",
+        background: "#ffffff",
+        padding: 24,
+      }}
+    >
+      <div className="space-y-6">
+        {showFallWinterSideBySide && (
+          <div className="grid grid-cols-1 gap-4">
+            <ScheduleTimetable
+              termItems={itemsByTerm["fall"] || []}
+              termKey="fall"
+              conflicts={conflictsByTerm["fall"] || new Set()}
+              globalColorMap={globalColorMap}
+              forceExpandedLayout
+            />
+            <ScheduleTimetable
+              termItems={itemsByTerm["winter"] || []}
+              termKey="winter"
+              conflicts={conflictsByTerm["winter"] || new Set()}
+              globalColorMap={globalColorMap}
+              forceExpandedLayout
+            />
+          </div>
+        )}
+
+        {displayTerms.map((term) => {
+          if ((term === "fall" || term === "winter") && showFallWinterSideBySide) {
+            return null
+          }
+
+          return (
+            <div key={term}>
+              <ScheduleTimetable
+                termItems={itemsByTerm[term] || []}
+                termKey={term}
+                conflicts={conflictsByTerm[term] || new Set()}
+                globalColorMap={globalColorMap}
+                forceExpandedLayout
+              />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbeddedMode?: boolean }) {
   const [isEmbeddedPreview, setIsEmbeddedPreview] = useState(forcedEmbeddedMode)
   const [hasResolvedEmbedMode, setHasResolvedEmbedMode] = useState(forcedEmbeddedMode)
@@ -1364,11 +1433,11 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
     const { default: html2canvas } = await import("html2canvas-pro")
     const { jsPDF } = await import("jspdf")
 
-    // Create PDF in landscape A4
+    // Use a larger landscape page for the timetable so the schedule blocks stay readable.
     const pdf = new jsPDF({
       orientation: "landscape",
       unit: "mm",
-      format: "a4",
+      format: "a3",
     })
     const pageWidth = pdf.internal.pageSize.getWidth()
     const pageHeight = pdf.internal.pageSize.getHeight()
@@ -1547,11 +1616,11 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
       if (pageCount > 0) pdf.addPage()
 
       const canvas = await html2canvas(element, {
-        scale: 1.8,
+        scale: 2.2,
         useCORS: true,
         backgroundColor: "#ffffff",
-        windowWidth: 1800,
-        windowHeight: 1200,
+        windowWidth: 2200,
+        windowHeight: 1450,
         onclone: preparePdfClone,
       })
 
@@ -1577,26 +1646,86 @@ export function CartPageContent({ forcedEmbeddedMode = false }: { forcedEmbedded
     }
 
     let pageCount = 0
+    let tempExportContainer: HTMLDivElement | null = null
+    let tempExportRoot: ReturnType<typeof createRoot> | null = null
 
-    // Render fall and winter individually to maximize legibility in the exported schedule blocks.
-    const hasFall = scheduleRef.current.querySelector<HTMLElement>("[data-term-schedule='fall']")
-    const hasWinter = scheduleRef.current.querySelector<HTMLElement>("[data-term-schedule='winter']")
+    try {
+      tempExportContainer = document.createElement("div")
+      tempExportContainer.setAttribute("data-pdf-export-host", "true")
+      tempExportContainer.style.position = "fixed"
+      tempExportContainer.style.top = "0"
+      tempExportContainer.style.left = "-10000px"
+      tempExportContainer.style.width = "1360px"
+      tempExportContainer.style.minWidth = "1360px"
+      tempExportContainer.style.maxWidth = "1360px"
+      tempExportContainer.style.pointerEvents = "none"
+      tempExportContainer.style.background = "#ffffff"
+      tempExportContainer.style.zIndex = "-1"
+      document.body.appendChild(tempExportContainer)
 
-    if (hasFall) await renderSchedulePage(hasFall)
-    if (hasWinter) await renderSchedulePage(hasWinter)
+      tempExportRoot = createRoot(tempExportContainer)
+      tempExportRoot.render(
+        <PdfScheduleExportSurface
+          itemsByTerm={itemsByTerm}
+          displayTerms={displayTerms}
+          conflictsByTerm={conflictsByTerm}
+          globalColorMap={globalColorMap}
+        />,
+      )
 
-    // Render all other term schedules (not fall/winter)
-    const allTermElements = scheduleRef.current.querySelectorAll<HTMLElement>("[data-term-schedule]")
-    for (const termEl of allTermElements) {
-      const termKey = termEl.getAttribute("data-term-schedule")
-      if (termKey === "fall" || termKey === "winter") continue // Skip fall/winter - already rendered above
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => resolve())
+        })
+      })
 
-      await renderSchedulePage(termEl)
+      const preferredExportRoot =
+        tempExportContainer.querySelector<HTMLElement>("[data-pdf-export-schedule]") ??
+        scheduleRef.current
+
+      if (!preferredExportRoot) {
+        return
+      }
+
+      const termElements = Array.from(preferredExportRoot.querySelectorAll<HTMLElement>("[data-term-schedule]"))
+      if (termElements.length === 0) {
+        return
+      }
+
+      const termsByKey = new Map<string, HTMLElement>()
+      termElements.forEach((el) => {
+        const key = el.getAttribute("data-term-schedule")
+        if (key && !termsByKey.has(key)) {
+          termsByKey.set(key, el)
+        }
+      })
+
+      // Render fall and winter individually to maximize legibility in the exported schedule blocks.
+      const hasFall = termsByKey.get("fall")
+      const hasWinter = termsByKey.get("winter")
+
+      if (hasFall) await renderSchedulePage(hasFall)
+      if (hasWinter) await renderSchedulePage(hasWinter)
+
+      // Render all other term schedules (not fall/winter)
+      for (const termEl of termElements) {
+        const termKey = termEl.getAttribute("data-term-schedule")
+        if (termKey === "fall" || termKey === "winter") continue // Skip fall/winter - already rendered above
+
+        await renderSchedulePage(termEl)
+      }
+
+      appendDetailedItemsPages()
+
+      pdf.save("YUPlan-Schedule.pdf")
+    } finally {
+      if (tempExportRoot) {
+        tempExportRoot.unmount()
+      }
+      if (tempExportContainer?.parentNode) {
+        tempExportContainer.parentNode.removeChild(tempExportContainer)
+      }
     }
-
-    appendDetailedItemsPages()
-
-    pdf.save("YUPlan-Schedule.pdf")
   }
 
   const showMobileActionBar = !isEmbeddedPreview && isMobile && items.length > 0
